@@ -72,7 +72,7 @@ const JarvisEyeAnimation = ({ onAnimationComplete }: JarvisEyeAnimationProps) =>
               animationDelay: "2s",
             }}
           >
-            Just A Rather Very Intelligent System
+            Sistema Inteligente de Assistência Virtual
           </p>
         </div>
       </div>

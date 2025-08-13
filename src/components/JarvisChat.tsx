@@ -15,7 +15,7 @@ const JarvisChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Good evening, sir. I am JARVIS, your intelligent assistant. How may I assist you today?",
+      text: "Boa noite, senhor. Eu sou JARVIS, seu assistente inteligente. Como posso ajudá-lo hoje?",
       isUser: false,
       timestamp: new Date(),
     },
@@ -50,7 +50,7 @@ const JarvisChat = () => {
     setTimeout(() => {
       const jarvisResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: `I understand your request: "${input}". I'm currently processing this information with my advanced AI capabilities. This is a demonstration of the JARVIS interface.`,
+        text: `Compreendo sua solicitação: "${input}". Estou processando esta informação com minhas capacidades avançadas de IA. Esta é uma demonstração da interface JARVIS.`,
         isUser: false,
         timestamp: new Date(),
       };
@@ -119,7 +119,7 @@ const JarvisChat = () => {
                 <div className="w-2 h-2 bg-jarvis-gold rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
               </div>
               <span className="text-xs text-jarvis-gold-light mt-2 block">
-                JARVIS is thinking...
+                JARVIS está pensando...
               </span>
             </div>
           </div>
@@ -135,7 +135,7 @@ const JarvisChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask JARVIS anything..."
+              placeholder="Pergunte qualquer coisa ao JARVIS..."
               className="bg-jarvis-surface-elevated border-jarvis-gold/30 text-jarvis-gold placeholder:text-jarvis-gold/50 focus:border-jarvis-gold focus:ring-jarvis-gold/20 pr-10"
             />
             <Button
