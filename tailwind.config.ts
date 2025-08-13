@@ -52,29 +52,17 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				}
-			},
-			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
-			},
-			colors: {
 				'jarvis-deep-black': 'hsl(var(--jarvis-deep-black))',
 				'jarvis-gold': 'hsl(var(--jarvis-gold))',
 				'jarvis-gold-dark': 'hsl(var(--jarvis-gold-dark))',
 				'jarvis-gold-light': 'hsl(var(--jarvis-gold-light))',
 				'jarvis-surface': 'hsl(var(--jarvis-surface))',
 				'jarvis-surface-elevated': 'hsl(var(--jarvis-surface-elevated))',
+			},
+			borderRadius: {
+				lg: 'var(--radius)',
+				md: 'calc(var(--radius) - 2px)',
+				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
 				'accordion-down': {
