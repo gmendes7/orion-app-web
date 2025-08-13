@@ -8,89 +8,61 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* JARVIS Theme - Deep Black & Metallic Gold */
+    --background: 0 0% 5.1%;
+    --foreground: 51 100% 50%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 7.8%;
+    --card-foreground: 51 100% 50%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 7.8%;
+    --popover-foreground: 51 100% 50%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 0% 5.1%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 0 0% 12.9%;
+    --secondary-foreground: 51 100% 70%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 12.9%;
+    --muted-foreground: 51 50% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 5.1%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12.9%;
+    --ring: 51 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* JARVIS Specific Colors */
+    --jarvis-deep-black: 0 0% 5.1%;
+    --jarvis-gold: 51 100% 50%;
+    --jarvis-gold-dark: 51 100% 35%;
+    --jarvis-gold-light: 51 100% 70%;
+    --jarvis-surface: 0 0% 7.8%;
+    --jarvis-surface-elevated: 0 0% 12.9%;
+    
+    /* Gradients */
+    --gradient-jarvis: linear-gradient(135deg, hsl(51 100% 50% / 0.1), hsl(51 100% 35% / 0.05));
+    --gradient-jarvis-border: linear-gradient(135deg, hsl(51 100% 50%), hsl(51 100% 35%));
+    
+    /* Glow Effects */
+    --glow-jarvis: 0 0 20px hsl(51 100% 50% / 0.3);
+    --glow-jarvis-strong: 0 0 40px hsl(51 100% 50% / 0.6);
+    
+    /* Animation Variables */
+    --transition-jarvis: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* JARVIS is always dark mode - these are fallbacks */
+    --background: 0 0% 5.1%;
+    --foreground: 51 100% 50%;
   }
 }
 
@@ -100,6 +72,76 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-mono overflow-hidden;
+    background: radial-gradient(ellipse at center, hsl(var(--jarvis-surface)) 0%, hsl(var(--jarvis-deep-black)) 70%);
+  }
+
+  /* JARVIS Eye Animation */
+  @keyframes jarvis-eye-open {
+    0% {
+      transform: scaleY(0) scaleX(1.2);
+      opacity: 0;
+    }
+    50% {
+      transform: scaleY(0.1) scaleX(1.1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scaleY(1) scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes jarvis-glow-pulse {
+    0%, 100% {
+      box-shadow: var(--glow-jarvis);
+    }
+    50% {
+      box-shadow: var(--glow-jarvis-strong);
+    }
+  }
+
+  @keyframes jarvis-text-glow {
+    0%, 100% {
+      text-shadow: 0 0 10px hsl(var(--jarvis-gold) / 0.5);
+    }
+    50% {
+      text-shadow: 0 0 20px hsl(var(--jarvis-gold) / 0.8);
+    }
+  }
+
+  /* JARVIS Component Classes */
+  .jarvis-eye {
+    animation: jarvis-eye-open 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .jarvis-glow {
+    animation: jarvis-glow-pulse 3s ease-in-out infinite;
+  }
+
+  .jarvis-text-glow {
+    animation: jarvis-text-glow 2s ease-in-out infinite;
+  }
+
+  .jarvis-border {
+    background: var(--gradient-jarvis-border);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .jarvis-chat-message {
+    background: var(--gradient-jarvis);
+    border: 1px solid hsl(var(--jarvis-gold) / 0.3);
+    transition: var(--transition-jarvis);
+  }
+
+  .jarvis-chat-message:hover {
+    border-color: hsl(var(--jarvis-gold) / 0.6);
+    box-shadow: var(--glow-jarvis);
   }
 }
