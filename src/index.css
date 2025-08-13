@@ -68,7 +68,7 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border/20;
   }
 
   body {
@@ -107,6 +107,17 @@ All colors MUST be HSL.
     }
     50% {
       text-shadow: 0 0 20px hsl(var(--jarvis-gold) / 0.8);
+    }
+  }
+
+  @keyframes jarvis-text-appear {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
