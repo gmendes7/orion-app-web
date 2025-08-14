@@ -52,12 +52,14 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				'jarvis-deep-black': 'hsl(var(--jarvis-deep-black))',
-				'jarvis-gold': 'hsl(var(--jarvis-gold))',
-				'jarvis-gold-dark': 'hsl(var(--jarvis-gold-dark))',
-				'jarvis-gold-light': 'hsl(var(--jarvis-gold-light))',
-				'jarvis-surface': 'hsl(var(--jarvis-surface))',
-				'jarvis-surface-elevated': 'hsl(var(--jarvis-surface-elevated))',
+				'orion-deep-space': 'hsl(var(--orion-deep-space))',
+				'orion-cosmic-orange': 'hsl(var(--orion-cosmic-orange))',
+				'orion-neon-blue': 'hsl(var(--orion-neon-blue))',
+				'orion-galactic-purple': 'hsl(var(--orion-galactic-purple))',
+				'orion-ice-white': 'hsl(var(--orion-ice-white))',
+				'orion-surface': 'hsl(var(--orion-surface))',
+				'orion-surface-elevated': 'hsl(var(--orion-surface-elevated))',
+				'orion-accent-glow': 'hsl(var(--orion-accent-glow))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -81,45 +83,56 @@ export default {
 						height: '0'
 					}
 				},
-				'jarvis-eye-open': {
-					'0%': {
-						transform: 'scaleY(0) scaleX(1.2)',
-						opacity: '0'
+				'orion-constellation': {
+					'0%, 100%': {
+						transform: 'translateY(0) rotate(0deg)',
+						opacity: '0.6'
 					},
 					'50%': {
-						transform: 'scaleY(0.1) scaleX(1.1)',
-						opacity: '0.8'
-					},
-					'100%': {
-						transform: 'scaleY(1) scaleX(1)',
+						transform: 'translateY(-10px) rotate(180deg)',
 						opacity: '1'
 					}
 				},
-				'jarvis-glow-pulse': {
+				'cosmic-glow': {
 					'0%, 100%': {
-						boxShadow: '0 0 20px hsl(51 100% 50% / 0.3)'
+						boxShadow: '0 0 20px hsl(204 100% 50% / 0.4)',
+						filter: 'brightness(1)'
 					},
 					'50%': {
-						boxShadow: '0 0 40px hsl(51 100% 50% / 0.6)'
+						boxShadow: '0 0 40px hsl(204 100% 50% / 0.8)',
+						filter: 'brightness(1.2)'
 					}
 				},
-				'jarvis-text-appear': {
+				'nebula-drift': {
 					'0%': {
-						opacity: '0',
-						transform: 'translateY(20px)'
+						transform: 'translateX(-10px) rotate(0deg)',
+						opacity: '0.3'
+					},
+					'50%': {
+						transform: 'translateX(10px) rotate(180deg)',
+						opacity: '0.8'
 					},
 					'100%': {
-						opacity: '1',
-						transform: 'translateY(0)'
+						transform: 'translateX(-10px) rotate(360deg)',
+						opacity: '0.3'
+					}
+				},
+				'saturn-spin': {
+					'from': {
+						transform: 'rotate(0deg)'
+					},
+					'to': {
+						transform: 'rotate(360deg)'
 					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'jarvis-eye-open': 'jarvis-eye-open 2s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-				'jarvis-glow-pulse': 'jarvis-glow-pulse 3s ease-in-out infinite',
-				'jarvis-text-appear': 'jarvis-text-appear 1s ease-out forwards'
+				'orion-constellation': 'orion-constellation 8s ease-in-out infinite',
+				'cosmic-glow': 'cosmic-glow 4s ease-in-out infinite',
+				'nebula-drift': 'nebula-drift 12s linear infinite',
+				'saturn-spin': 'saturn-spin 20s linear infinite'
 			}
 		}
 	},

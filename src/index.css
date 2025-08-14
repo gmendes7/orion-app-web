@@ -8,61 +8,67 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* JARVIS Theme - Deep Black & Metallic Gold */
-    --background: 0 0% 5.1%;
-    --foreground: 51 100% 50%;
+    /* O.R.I.Ö.N Theme - Deep Space & Cosmic Orange */
+    --background: 218 20% 8%;
+    --foreground: 204 100% 94%;
 
-    --card: 0 0% 7.8%;
-    --card-foreground: 51 100% 50%;
+    --card: 218 20% 10%;
+    --card-foreground: 204 100% 94%;
 
-    --popover: 0 0% 7.8%;
-    --popover-foreground: 51 100% 50%;
+    --popover: 218 20% 10%;
+    --popover-foreground: 204 100% 94%;
 
-    --primary: 51 100% 50%;
-    --primary-foreground: 0 0% 5.1%;
+    --primary: 204 100% 50%;
+    --primary-foreground: 218 20% 8%;
 
-    --secondary: 0 0% 12.9%;
-    --secondary-foreground: 51 100% 70%;
+    --secondary: 218 20% 15%;
+    --secondary-foreground: 204 100% 80%;
 
-    --muted: 0 0% 12.9%;
-    --muted-foreground: 51 50% 60%;
+    --muted: 218 20% 15%;
+    --muted-foreground: 204 50% 70%;
 
-    --accent: 51 100% 50%;
-    --accent-foreground: 0 0% 5.1%;
+    --accent: 271 100% 50%;
+    --accent-foreground: 218 20% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 12.9%;
-    --ring: 51 100% 50%;
+    --border: 218 20% 20%;
+    --input: 218 20% 15%;
+    --ring: 204 100% 50%;
 
     --radius: 1rem;
 
-    /* JARVIS Specific Colors */
-    --jarvis-deep-black: 0 0% 5.1%;
-    --jarvis-gold: 51 100% 50%;
-    --jarvis-gold-dark: 51 100% 35%;
-    --jarvis-gold-light: 51 100% 70%;
-    --jarvis-surface: 0 0% 7.8%;
-    --jarvis-surface-elevated: 0 0% 12.9%;
+    /* O.R.I.Ö.N Specific Colors */
+    --orion-deep-space: 218 20% 8%;
+    --orion-cosmic-orange: 25 100% 55%;
+    --orion-neon-blue: 204 100% 50%;
+    --orion-galactic-purple: 271 100% 50%;
+    --orion-ice-white: 204 100% 94%;
+    --orion-surface: 218 20% 10%;
+    --orion-surface-elevated: 218 20% 15%;
+    --orion-accent-glow: 25 100% 65%;
     
     /* Gradients */
-    --gradient-jarvis: linear-gradient(135deg, hsl(51 100% 50% / 0.1), hsl(51 100% 35% / 0.05));
-    --gradient-jarvis-border: linear-gradient(135deg, hsl(51 100% 50%), hsl(51 100% 35%));
+    --gradient-cosmic: linear-gradient(135deg, hsl(218 20% 8%), hsl(25 100% 15%), hsl(218 20% 5%));
+    --gradient-orion: linear-gradient(135deg, hsl(204 100% 50% / 0.1), hsl(271 100% 50% / 0.1));
+    --gradient-nebula: radial-gradient(ellipse at center, hsl(25 100% 55% / 0.2), transparent 60%);
     
     /* Glow Effects */
-    --glow-jarvis: 0 0 20px hsl(51 100% 50% / 0.3);
-    --glow-jarvis-strong: 0 0 40px hsl(51 100% 50% / 0.6);
+    --glow-neon: 0 0 20px hsl(204 100% 50% / 0.4);
+    --glow-cosmic: 0 0 30px hsl(25 100% 55% / 0.3);
+    --glow-purple: 0 0 25px hsl(271 100% 50% / 0.4);
+    --glow-strong: 0 0 40px hsl(204 100% 50% / 0.8);
     
     /* Animation Variables */
-    --transition-jarvis: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-cosmic: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-glow: all 0.3s ease-out;
   }
 
   .dark {
-    /* JARVIS is always dark mode - these are fallbacks */
-    --background: 0 0% 5.1%;
-    --foreground: 51 100% 50%;
+    /* O.R.I.Ö.N is always dark mode - these are fallbacks */
+    --background: 218 20% 8%;
+    --foreground: 204 100% 94%;
   }
 }
 
@@ -72,87 +78,132 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-mono overflow-hidden;
-    background: radial-gradient(ellipse at center, hsl(var(--jarvis-surface)) 0%, hsl(var(--jarvis-deep-black)) 70%);
+    @apply bg-background text-foreground overflow-hidden;
+    font-family: 'Inter', 'Orbitron', monospace;
+    background: var(--gradient-cosmic);
+    background-attachment: fixed;
   }
 
-  /* JARVIS Eye Animation */
-  @keyframes jarvis-eye-open {
-    0% {
-      transform: scaleY(0) scaleX(1.2);
-      opacity: 0;
+  /* O.R.I.Ö.N Animations */
+  @keyframes orion-constellation {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.6;
     }
     50% {
-      transform: scaleY(0.1) scaleX(1.1);
+      transform: translateY(-10px) rotate(180deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes cosmic-glow {
+    0%, 100% {
+      box-shadow: var(--glow-neon);
+      filter: brightness(1);
+    }
+    50% {
+      box-shadow: var(--glow-strong);
+      filter: brightness(1.2);
+    }
+  }
+
+  @keyframes nebula-drift {
+    0% {
+      transform: translateX(-10px) rotate(0deg);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translateX(10px) rotate(180deg);
       opacity: 0.8;
     }
     100% {
-      transform: scaleY(1) scaleX(1);
-      opacity: 1;
+      transform: translateX(-10px) rotate(360deg);
+      opacity: 0.3;
     }
   }
 
-  @keyframes jarvis-glow-pulse {
+  @keyframes stellar-text {
     0%, 100% {
-      box-shadow: var(--glow-jarvis);
+      text-shadow: 0 0 10px hsl(var(--orion-neon-blue) / 0.5);
     }
     50% {
-      box-shadow: var(--glow-jarvis-strong);
+      text-shadow: 0 0 20px hsl(var(--orion-neon-blue) / 0.8), 0 0 30px hsl(var(--orion-galactic-purple) / 0.4);
     }
   }
 
-  @keyframes jarvis-text-glow {
-    0%, 100% {
-      text-shadow: 0 0 10px hsl(var(--jarvis-gold) / 0.5);
+  @keyframes saturn-spin {
+    from {
+      transform: rotate(0deg);
     }
-    50% {
-      text-shadow: 0 0 20px hsl(var(--jarvis-gold) / 0.8);
-    }
-  }
-
-  @keyframes jarvis-text-appear {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
+    to {
+      transform: rotate(360deg);
     }
   }
 
-  /* JARVIS Component Classes */
-  .jarvis-eye {
-    animation: jarvis-eye-open 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  @keyframes typing-cursor {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
   }
 
-  .jarvis-glow {
-    animation: jarvis-glow-pulse 3s ease-in-out infinite;
+  /* O.R.I.Ö.N Component Classes */
+  .orion-constellation {
+    animation: orion-constellation 8s ease-in-out infinite;
   }
 
-  .jarvis-text-glow {
-    animation: jarvis-text-glow 2s ease-in-out infinite;
+  .cosmic-glow {
+    animation: cosmic-glow 4s ease-in-out infinite;
   }
 
-  .jarvis-border {
-    background: var(--gradient-jarvis-border);
-    background-size: 200% 200%;
-    animation: gradient-shift 3s ease infinite;
+  .nebula-drift {
+    animation: nebula-drift 12s linear infinite;
   }
 
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+  .stellar-text {
+    animation: stellar-text 3s ease-in-out infinite;
   }
 
-  .jarvis-chat-message {
-    background: var(--gradient-jarvis);
-    border: 1px solid hsl(var(--jarvis-gold) / 0.3);
-    transition: var(--transition-jarvis);
+  .saturn-spin {
+    animation: saturn-spin 20s linear infinite;
   }
 
-  .jarvis-chat-message:hover {
-    border-color: hsl(var(--jarvis-gold) / 0.6);
-    box-shadow: var(--glow-jarvis);
+  .typing-cursor {
+    animation: typing-cursor 1s step-end infinite;
   }
+
+  .orion-lantern {
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+      hsl(var(--orion-cosmic-orange) / 0.15) 0%, 
+      transparent 50%);
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .chat-message-orion {
+    background: var(--gradient-orion);
+    border: 1px solid hsl(var(--orion-neon-blue) / 0.3);
+    transition: var(--transition-cosmic);
+    backdrop-filter: blur(10px);
+  }
+
+  .chat-message-orion:hover {
+    border-color: hsl(var(--orion-neon-blue) / 0.6);
+    box-shadow: var(--glow-neon);
+    transform: translateY(-1px);
+  }
+
+  .orion-button {
+    background: linear-gradient(135deg, hsl(var(--orion-neon-blue) / 0.8), hsl(var(--orion-galactic-purple) / 0.6));
+    border: 1px solid hsl(var(--orion-neon-blue) / 0.4);
+    transition: var(--transition-glow);
+  }
+
+  .orion-button:hover {
+    box-shadow: var(--glow-neon);
+    transform: scale(1.02);
+    border-color: hsl(var(--orion-neon-blue));
+  }
+}
 }

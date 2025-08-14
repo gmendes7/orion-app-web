@@ -1,6 +1,8 @@
 import { useState } from "react";
-import JarvisEyeAnimation from "@/components/JarvisEyeAnimation";
-import JarvisChat from "@/components/JarvisChat";
+import OrionEyeAnimation from "@/components/OrionEyeAnimation";
+import OrionChat from "@/components/OrionChat";
+import SpaceBackground from "@/components/SpaceBackground";
+import LanternEffect from "@/components/LanternEffect";
 
 const Index = () => {
   const [showAnimation, setShowAnimation] = useState(true);
@@ -10,11 +12,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-jarvis-deep-black">
+    <div className="min-h-screen bg-orion-deep-space relative overflow-hidden">
+      {/* Fundo espacial */}
+      <SpaceBackground />
+      
+      {/* Efeito lanterna */}
+      <LanternEffect />
+      
       {showAnimation ? (
-        <JarvisEyeAnimation onAnimationComplete={handleAnimationComplete} />
+        <OrionEyeAnimation onAnimationComplete={handleAnimationComplete} />
       ) : (
-        <JarvisChat />
+        <div className="relative z-10">
+          <OrionChat />
+        </div>
       )}
     </div>
   );
