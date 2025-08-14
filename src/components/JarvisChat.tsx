@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Mic, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import TypingEffect from "./TypingEffect";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -12,6 +15,7 @@ interface Message {
 }
 
 const JarvisChat = () => {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -22,6 +26,7 @@ const JarvisChat = () => {
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -33,7 +38,7 @@ const JarvisChat = () => {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -42,27 +47,82 @@ const JarvisChat = () => {
       timestamp: new Date(),
     };
 
+    const currentInput = input;
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
 
-    // Simulate JARVIS response
-    setTimeout(() => {
+    try {
+      // Preparar conversa para contexto
+      const conversation = messages.map(msg => ({
+        role: msg.isUser ? 'user' : 'assistant',
+        content: msg.text
+      }));
+
+      console.log('Enviando mensagem para JARVIS AI...');
+      
+      const { data, error } = await supabase.functions.invoke('chat-ai', {
+        body: {
+          message: currentInput,
+          conversation: conversation
+        }
+      });
+
+      if (error) {
+        console.error('Erro ao chamar função:', error);
+        throw new Error(error.message || 'Erro ao comunicar com JARVIS');
+      }
+
+      if (data.error) {
+        console.error('Erro retornado pela função:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Criar mensagem do JARVIS com efeito de digitação
+      const jarvisMessageId = (Date.now() + 1).toString();
       const jarvisResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: `Compreendo sua solicitação: "${input}". Estou processando esta informação com minhas capacidades avançadas de IA. Esta é uma demonstração da interface JARVIS.`,
+        id: jarvisMessageId,
+        text: data.response,
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, jarvisResponse]);
+      setTypingMessageId(jarvisMessageId);
       setIsTyping(false);
-    }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      setIsTyping(false);
+      
+      // Mostrar mensagem de erro amigável
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Desculpe, senhor. Estou enfrentando dificuldades técnicas no momento. Por favor, verifique sua conexão e tente novamente.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        title: "Erro de Comunicação",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const handleTypingComplete = (messageId: string) => {
+    if (typingMessageId === messageId) {
+      setTypingMessageId(null);
     }
   };
 
@@ -102,7 +162,17 @@ const JarvisChat = () => {
                   : "bg-jarvis-surface-elevated text-jarvis-gold border border-jarvis-gold/30"
               )}
             >
-              <p className="text-sm leading-relaxed">{message.text}</p>
+              <p className="text-sm leading-relaxed">
+                {!message.isUser && typingMessageId === message.id ? (
+                  <TypingEffect 
+                    text={message.text}
+                    speed={25}
+                    onComplete={() => handleTypingComplete(message.id)}
+                  />
+                ) : (
+                  message.text
+                )}
+              </p>
               <span className="text-xs opacity-60 mt-2 block">
                 {message.timestamp.toLocaleTimeString()}
               </span>
@@ -148,7 +218,7 @@ const JarvisChat = () => {
           </div>
           <Button
             onClick={sendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className="bg-jarvis-gold text-jarvis-deep-black hover:bg-jarvis-gold-light disabled:opacity-50 disabled:cursor-not-allowed jarvis-glow"
           >
             <Send className="w-4 h-4" />
