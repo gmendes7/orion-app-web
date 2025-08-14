@@ -1,5 +1,5 @@
 import { useState } from "react";
-import OrionEyeAnimation from "@/components/OrionEyeAnimation";
+import RoboticEyeAnimation from "@/components/RoboticEyeAnimation";
 import OrionChat from "@/components/OrionChat";
 import SpaceBackground from "@/components/SpaceBackground";
 import LanternEffect from "@/components/LanternEffect";
@@ -12,7 +12,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-orion-deep-space relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Fundo espacial */}
       <SpaceBackground />
       
@@ -20,7 +20,7 @@ const Index = () => {
       <LanternEffect />
       
       {showAnimation ? (
-        <OrionEyeAnimation onAnimationComplete={handleAnimationComplete} />
+        <RoboticEyeAnimation onAnimationComplete={handleAnimationComplete} />
       ) : (
         <div className="relative z-10">
           <OrionChat />

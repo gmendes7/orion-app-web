@@ -8,61 +8,90 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* O.R.I.Ö.N Theme - Deep Space & Cosmic Orange */
-    --background: 218 20% 8%;
-    --foreground: 204 100% 94%;
+    /* Black Hole Theme - Base Colors */
+    --background: 230 15% 2%;
+    --foreground: 45 100% 95%;
 
-    --card: 218 20% 10%;
-    --card-foreground: 204 100% 94%;
+    --card: 230 15% 4%;
+    --card-foreground: 45 100% 95%;
 
-    --popover: 218 20% 10%;
-    --popover-foreground: 204 100% 94%;
+    --popover: 230 15% 4%;
+    --popover-foreground: 45 100% 95%;
 
-    --primary: 204 100% 50%;
-    --primary-foreground: 218 20% 8%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 230 15% 2%;
 
-    --secondary: 218 20% 15%;
-    --secondary-foreground: 204 100% 80%;
+    --secondary: 25 80% 15%;
+    --secondary-foreground: 45 100% 95%;
 
-    --muted: 218 20% 15%;
-    --muted-foreground: 204 50% 70%;
+    --muted: 230 15% 8%;
+    --muted-foreground: 45 30% 70%;
 
-    --accent: 271 100% 50%;
-    --accent-foreground: 218 20% 8%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 230 15% 2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 45 100% 95%;
 
-    --border: 218 20% 20%;
-    --input: 218 20% 15%;
-    --ring: 204 100% 50%;
+    --border: 230 15% 12%;
+    --input: 230 15% 8%;
+    --ring: 45 100% 50%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* O.R.I.Ö.N Specific Colors */
-    --orion-deep-space: 218 20% 8%;
-    --orion-cosmic-orange: 25 100% 55%;
-    --orion-neon-blue: 204 100% 50%;
-    --orion-galactic-purple: 271 100% 50%;
-    --orion-ice-white: 204 100% 94%;
-    --orion-surface: 218 20% 10%;
-    --orion-surface-elevated: 218 20% 15%;
-    --orion-accent-glow: 25 100% 65%;
+    /* Black Hole Theme Colors */
+    --orion-void: 230 15% 1%;           /* Deep void black */
+    --orion-event-horizon: 230 15% 3%;  /* Event horizon */
+    --orion-accretion-disk: 25 95% 53%; /* Orange accretion disk */
+    --orion-stellar-gold: 45 100% 50%;  /* Golden stellar matter */
+    --orion-energy-burst: 30 100% 60%;  /* Bright energy */
+    --orion-plasma-glow: 20 85% 45%;    /* Plasma glow */
+    --orion-space-dust: 45 20% 25%;     /* Space particles */
+    --orion-cosmic-blue: 200 100% 50%;  /* Cosmic accent */
     
-    /* Gradients */
-    --gradient-cosmic: linear-gradient(135deg, hsl(218 20% 8%), hsl(25 100% 15%), hsl(218 20% 5%));
-    --gradient-orion: linear-gradient(135deg, hsl(204 100% 50% / 0.1), hsl(271 100% 50% / 0.1));
-    --gradient-nebula: radial-gradient(ellipse at center, hsl(25 100% 55% / 0.2), transparent 60%);
+    /* Advanced Gradients */
+    --black-hole-gradient: radial-gradient(ellipse at center, 
+      hsl(var(--orion-stellar-gold) / 0.8) 0%, 
+      hsl(var(--orion-accretion-disk) / 0.6) 25%, 
+      hsl(var(--orion-plasma-glow) / 0.4) 50%, 
+      hsl(var(--orion-event-horizon)) 75%, 
+      hsl(var(--orion-void)) 100%);
     
-    /* Glow Effects */
-    --glow-neon: 0 0 20px hsl(204 100% 50% / 0.4);
-    --glow-cosmic: 0 0 30px hsl(25 100% 55% / 0.3);
-    --glow-purple: 0 0 25px hsl(271 100% 50% / 0.4);
-    --glow-strong: 0 0 40px hsl(204 100% 50% / 0.8);
+    --accretion-gradient: conic-gradient(from 0deg, 
+      hsl(var(--orion-stellar-gold)), 
+      hsl(var(--orion-accretion-disk)), 
+      hsl(var(--orion-energy-burst)), 
+      hsl(var(--orion-accretion-disk)), 
+      hsl(var(--orion-stellar-gold)));
+
+    --lantern-gradient: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+      hsl(var(--orion-stellar-gold) / 0.25) 0%, 
+      hsl(var(--orion-accretion-disk) / 0.15) 20%, 
+      hsl(var(--orion-plasma-glow) / 0.08) 40%, 
+      transparent 60%);
+
+    --gradient-cosmic: var(--black-hole-gradient);
+    --gradient-orion: linear-gradient(135deg, hsl(var(--orion-stellar-gold) / 0.1), hsl(var(--orion-accretion-disk) / 0.1));
+    --gradient-nebula: radial-gradient(ellipse at center, hsl(var(--orion-accretion-disk) / 0.2), transparent 60%);
     
-    /* Animation Variables */
+    /* Enhanced Glow Effects */
+    --glow-gold: 0 0 30px hsl(var(--orion-stellar-gold) / 0.6), 
+                 0 0 60px hsl(var(--orion-stellar-gold) / 0.3);
+    --glow-orange: 0 0 25px hsl(var(--orion-accretion-disk) / 0.6), 
+                   0 0 50px hsl(var(--orion-accretion-disk) / 0.3);
+    --glow-energy: 0 0 20px hsl(var(--orion-energy-burst) / 0.7);
+    --glow-plasma: 0 0 15px hsl(var(--orion-plasma-glow) / 0.8);
+    
+    /* Legacy compatibility */
+    --glow-neon: var(--glow-gold);
+    --glow-cosmic: var(--glow-orange);
+    --glow-purple: var(--glow-energy);
+    --glow-strong: var(--glow-gold);
+    
+    /* Transitions */
     --transition-cosmic: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --transition-glow: all 0.3s ease-out;
+    --transition-fast: all 0.15s ease-out;
   }
 
   .dark {
@@ -171,14 +200,58 @@ All colors MUST be HSL.
   }
 
   .orion-lantern {
-    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-      hsl(var(--orion-cosmic-orange) / 0.15) 0%, 
-      transparent 50%);
+    background: var(--lantern-gradient);
     pointer-events: none;
     position: fixed;
     inset: 0;
     z-index: 1;
-    transition: opacity 0.3s ease;
+    transition: all 0.2s ease-out;
+    mix-blend-mode: screen;
+  }
+
+  /* Black Hole Effect */
+  .black-hole-bg {
+    background: var(--black-hole-gradient);
+    animation: accretion-spin 60s linear infinite;
+  }
+
+  @keyframes accretion-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes robotic-eye-open {
+    0% {
+      clip-path: circle(0% at 50% 50%);
+      opacity: 0;
+    }
+    50% {
+      clip-path: circle(30% at 50% 50%);
+      opacity: 0.8;
+    }
+    100% {
+      clip-path: circle(50% at 50% 50%);
+      opacity: 1;
+    }
+  }
+
+  @keyframes hud-appear {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .robotic-eye {
+    animation: robotic-eye-open 2s ease-out forwards;
+  }
+
+  .hud-element {
+    animation: hud-appear 1s ease-out forwards;
   }
 
   .chat-message-orion {

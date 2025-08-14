@@ -128,107 +128,102 @@ const OrionChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-orion-deep-space relative">
-      {/* Header */}
+    <div className="flex flex-col h-screen relative">
+      {/* Minimalist Header - ChatGPT Style */}
       <motion.header 
-        initial={{ y: -50, opacity: 0 }}
+        initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="border-b border-orion-neon-blue/20 p-4 bg-orion-surface/80 backdrop-blur-md"
+        transition={{ duration: 0.4 }}
+        className="border-b border-border/10 p-3 md:p-4 backdrop-blur-xl bg-card/50"
       >
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Satellite className="w-8 h-8 text-orion-neon-blue cosmic-glow" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-cosmic-orange rounded-full animate-pulse" />
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <div className="relative group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <div className="w-3 h-3 bg-background rounded-full" 
+                     style={{ boxShadow: 'var(--glow-gold)' }} />
+              </div>
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-orion-neon-blue tracking-wide stellar-text" style={{ fontFamily: 'Orbitron, monospace' }}>
+              <h1 className="text-lg font-bold text-foreground tracking-wide" 
+                  style={{ fontFamily: "'Orbitron', monospace" }}>
                 O.R.I.Ö.N
               </h1>
-              <span className="text-xs text-orion-ice-white/80 flex items-center">
-                <Zap className="w-3 h-3 mr-1" />
-                Sistema Orbital Online
-              </span>
+              <span className="text-xs text-muted-foreground">Sistema Inteligente</span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="text-orion-neon-blue hover:bg-orion-neon-blue/10 cosmic-glow">
-            <Settings className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors">
+            <Settings className="w-4 h-4" />
           </Button>
         </div>
       </motion.header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-6xl mx-auto w-full">
+      {/* Messages Area - ChatGPT Style */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
         {messages.map((message, index) => (
           <motion.div
             key={message.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
             className={cn(
-              "flex",
+              "flex gap-3",
               message.isUser ? "justify-end" : "justify-start"
             )}
           >
-            <div
-              className={cn(
-                "max-w-xs md:max-w-md lg:max-w-2xl xl:max-w-3xl rounded-xl p-4 chat-message-orion",
-                message.isUser
-                  ? "bg-gradient-to-r from-orion-neon-blue/80 to-orion-galactic-purple/60 text-orion-ice-white ml-auto border-orion-neon-blue/40"
-                  : "bg-orion-surface-elevated/90 text-orion-ice-white border border-orion-cosmic-orange/30"
-              )}
-            >
-              <div className="flex items-start space-x-3">
-                {!message.isUser && (
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-cosmic-orange to-orion-neon-blue flex items-center justify-center">
-                      <Satellite className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="text-sm leading-relaxed">
-                    {!message.isUser && typingMessageId === message.id ? (
-                      <TypingEffect 
-                        text={message.text}
-                        speed={20}
-                        onComplete={() => handleTypingComplete(message.id)}
-                      />
-                    ) : (
-                      message.text
-                    )}
-                  </p>
-                  <span className="text-xs opacity-60 mt-2 block">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
+            {!message.isUser && (
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <div className="w-3 h-3 bg-background rounded-full" 
+                       style={{ boxShadow: 'var(--glow-gold)' }} />
                 </div>
               </div>
+            )}
+            
+            <div className={cn(
+              "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
+              message.isUser
+                ? "bg-primary text-primary-foreground ml-auto"
+                : "bg-card/80 text-card-foreground border border-border/20"
+            )}>
+              <p className="text-sm leading-relaxed">
+                {!message.isUser && typingMessageId === message.id ? (
+                  <TypingEffect 
+                    text={message.text}
+                    speed={15}
+                    onComplete={() => handleTypingComplete(message.id)}
+                  />
+                ) : (
+                  message.text
+                )}
+              </p>
+              <span className="text-xs opacity-50 mt-1 block">
+                {message.timestamp.toLocaleTimeString('pt-BR', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </span>
             </div>
           </motion.div>
         ))}
 
         {isTyping && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex justify-start"
+            className="flex gap-3 justify-start"
           >
-            <div className="bg-orion-surface-elevated/90 border border-orion-cosmic-orange/30 rounded-xl p-4 chat-message-orion max-w-xs">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-cosmic-orange to-orion-neon-blue flex items-center justify-center">
-                  <Satellite className="w-4 h-4 text-white animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex space-x-1 mb-2">
-                    <div className="w-2 h-2 bg-orion-cosmic-orange rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-orion-neon-blue rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                    <div className="w-2 h-2 bg-orion-galactic-purple rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                  </div>
-                  <span className="text-xs text-orion-ice-white/70">
-                    O.R.I.Ö.N processando dados...
-                  </span>
-                </div>
+            <div className="flex-shrink-0 mt-1">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
+                <div className="w-3 h-3 bg-background rounded-full" />
+              </div>
+            </div>
+            <div className="bg-card/80 border border-border/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
               </div>
             </div>
           </motion.div>
@@ -236,41 +231,52 @@ const OrionChat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <motion.div 
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="border-t border-orion-neon-blue/20 p-4 bg-orion-surface/80 backdrop-blur-md"
-      >
-        <div className="max-w-6xl mx-auto flex space-x-3">
-          <div className="flex-1 relative">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Transmitir mensagem para O.R.I.Ö.N..."
-              className="bg-orion-surface-elevated/90 border-orion-neon-blue/30 text-orion-ice-white placeholder:text-orion-ice-white/50 focus:border-orion-neon-blue focus:ring-orion-neon-blue/20 pr-12 rounded-xl backdrop-blur-sm"
-              disabled={isTyping}
-            />
+      {/* Input Area - Fixed Bottom */}
+      <div className="border-t border-border/10 p-4 backdrop-blur-xl bg-card/50">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 relative">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Converse com O.R.I.Ö.N..."
+                className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-12 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
+                disabled={isTyping}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent hover:bg-accent/10 h-8 w-8 transition-colors"
+              >
+                <Mic className="w-4 h-4" />
+              </Button>
+            </div>
             <Button
-              variant="ghost"
+              onClick={sendMessage}
+              disabled={!input.trim() || isTyping}
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 text-orion-cosmic-orange hover:bg-orion-cosmic-orange/10 h-8 w-8 cosmic-glow"
+              className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-200"
+              style={{ boxShadow: 'var(--glow-gold)' }}
             >
-              <Mic className="w-4 h-4" />
+              <Send className="w-4 h-4" />
             </Button>
           </div>
-          <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isTyping}
-            className="orion-button disabled:opacity-50 disabled:cursor-not-allowed h-10 px-6 rounded-xl"
+          
+          {/* Footer Credits */}
+          <motion.div 
+            className="text-center mt-4 text-xs text-muted-foreground/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 1 }}
           >
-            <Send className="w-4 h-4 mr-2" />
-            Transmitir
-          </Button>
+            <p>
+              Desenvolvido por{" "}
+              <span className="text-accent font-medium">Gabriel Mendes Lorenz Schjneider Sanhes</span>, 18 anos
+            </p>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
