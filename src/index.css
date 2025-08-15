@@ -153,10 +153,10 @@ All colors MUST be HSL.
 
   @keyframes stellar-text {
     0%, 100% {
-      text-shadow: 0 0 10px hsl(var(--orion-neon-blue) / 0.5);
+      text-shadow: 0 0 10px hsl(var(--orion-cosmic-blue) / 0.5);
     }
     50% {
-      text-shadow: 0 0 20px hsl(var(--orion-neon-blue) / 0.8), 0 0 30px hsl(var(--orion-galactic-purple) / 0.4);
+      text-shadow: 0 0 20px hsl(var(--orion-cosmic-blue) / 0.8), 0 0 30px hsl(var(--orion-accretion-disk) / 0.4);
     }
   }
 
@@ -256,26 +256,26 @@ All colors MUST be HSL.
 
   .chat-message-orion {
     background: var(--gradient-orion);
-    border: 1px solid hsl(var(--orion-neon-blue) / 0.3);
+    border: 1px solid hsl(var(--orion-cosmic-blue) / 0.3);
     transition: var(--transition-cosmic);
     backdrop-filter: blur(10px);
   }
 
   .chat-message-orion:hover {
-    border-color: hsl(var(--orion-neon-blue) / 0.6);
-    box-shadow: var(--glow-neon);
+    border-color: hsl(var(--orion-cosmic-blue) / 0.6);
+    box-shadow: var(--glow-gold);
     transform: translateY(-1px);
   }
 
   .orion-button {
-    background: linear-gradient(135deg, hsl(var(--orion-neon-blue) / 0.8), hsl(var(--orion-galactic-purple) / 0.6));
-    border: 1px solid hsl(var(--orion-neon-blue) / 0.4);
+    background: linear-gradient(135deg, hsl(var(--orion-cosmic-blue) / 0.8), hsl(var(--orion-accretion-disk) / 0.6));
+    border: 1px solid hsl(var(--orion-cosmic-blue) / 0.4);
     transition: var(--transition-glow);
   }
 
   .orion-button:hover {
-    box-shadow: var(--glow-neon);
+    box-shadow: var(--glow-gold);
     transform: scale(1.02);
-    border-color: hsl(var(--orion-neon-blue));
+    border-color: hsl(var(--orion-cosmic-blue));
   }
 }

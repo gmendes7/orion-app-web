@@ -52,14 +52,14 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				'orion-deep-space': 'hsl(var(--orion-deep-space))',
-				'orion-cosmic-orange': 'hsl(var(--orion-cosmic-orange))',
-				'orion-neon-blue': 'hsl(var(--orion-neon-blue))',
-				'orion-galactic-purple': 'hsl(var(--orion-galactic-purple))',
-				'orion-ice-white': 'hsl(var(--orion-ice-white))',
-				'orion-surface': 'hsl(var(--orion-surface))',
-				'orion-surface-elevated': 'hsl(var(--orion-surface-elevated))',
-				'orion-accent-glow': 'hsl(var(--orion-accent-glow))',
+				'orion-void': 'hsl(var(--orion-void))',
+				'orion-event-horizon': 'hsl(var(--orion-event-horizon))',
+				'orion-accretion-disk': 'hsl(var(--orion-accretion-disk))',
+				'orion-stellar-gold': 'hsl(var(--orion-stellar-gold))',
+				'orion-energy-burst': 'hsl(var(--orion-energy-burst))',
+				'orion-plasma-glow': 'hsl(var(--orion-plasma-glow))',
+				'orion-space-dust': 'hsl(var(--orion-space-dust))',
+				'orion-cosmic-blue': 'hsl(var(--orion-cosmic-blue))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -95,11 +95,11 @@ export default {
 				},
 				'cosmic-glow': {
 					'0%, 100%': {
-						boxShadow: '0 0 20px hsl(204 100% 50% / 0.4)',
+						boxShadow: '0 0 20px hsl(45 100% 50% / 0.4)',
 						filter: 'brightness(1)'
 					},
 					'50%': {
-						boxShadow: '0 0 40px hsl(204 100% 50% / 0.8)',
+						boxShadow: '0 0 40px hsl(45 100% 50% / 0.8)',
 						filter: 'brightness(1.2)'
 					}
 				},

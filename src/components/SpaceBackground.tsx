@@ -19,8 +19,8 @@ const MiniSaturn = ({ position }: { position: [number, number, number] }) => {
       {/* Planeta */}
       <Sphere args={[0.3, 16, 16]}>
         <meshStandardMaterial 
-          color="#FF8C42" 
-          emissive="#FF6B1A" 
+          color="hsl(25, 95%, 53%)" 
+          emissive="hsl(25, 85%, 45%)" 
           emissiveIntensity={0.2}
         />
       </Sphere>
@@ -28,19 +28,19 @@ const MiniSaturn = ({ position }: { position: [number, number, number] }) => {
       {/* Anéis */}
       <Torus args={[0.5, 0.05, 8, 24]} rotation={[Math.PI / 2, 0, 0]}>
         <meshStandardMaterial 
-          color="#FFB366" 
+          color="hsl(30, 100%, 60%)" 
           transparent 
           opacity={0.7}
-          emissive="#FF8C42"
+          emissive="hsl(25, 95%, 53%)"
           emissiveIntensity={0.1}
         />
       </Torus>
       <Torus args={[0.7, 0.03, 8, 24]} rotation={[Math.PI / 2, 0, 0]}>
         <meshStandardMaterial 
-          color="#FF9F59" 
+          color="hsl(28, 100%, 67%)" 
           transparent 
           opacity={0.5}
-          emissive="#FF8C42"
+          emissive="hsl(25, 95%, 53%)"
           emissiveIntensity={0.1}
         />
       </Torus>
@@ -74,7 +74,7 @@ const StarField = () => {
     <points ref={pointsRef}>
       <bufferGeometry />
       <pointsMaterial 
-        color="#00B4FF" 
+        color="hsl(200, 100%, 50%)" 
         size={0.02} 
         transparent 
         opacity={0.8}
@@ -93,9 +93,9 @@ const SpaceBackground = () => {
         gl={{ alpha: true, antialias: true }}
       >
         {/* Lighting */}
-        <ambientLight intensity={0.4} color="#00B4FF" />
-        <pointLight position={[10, 10, 10]} intensity={0.5} color="#FF8C42" />
-        <pointLight position={[-10, -10, 5]} intensity={0.3} color="#6A00FF" />
+        <ambientLight intensity={0.4} color="hsl(200, 100%, 50%)" />
+        <pointLight position={[10, 10, 10]} intensity={0.5} color="hsl(25, 95%, 53%)" />
+        <pointLight position={[-10, -10, 5]} intensity={0.3} color="hsl(45, 100%, 50%)" />
         
         {/* Componentes espaciais */}
         <StarField />
