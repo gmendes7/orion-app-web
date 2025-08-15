@@ -224,7 +224,7 @@ const OrionChat = () => {
             <div>
               <h1 className="text-lg font-bold text-foreground tracking-wide" 
                   style={{ fontFamily: "'Inter', sans-serif" }}>
-                Orion AI
+                O.R.I.Ö.N
               </h1>
               <span className="text-xs text-muted-foreground">Assistente Inteligente</span>
             </div>
