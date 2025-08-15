@@ -5,7 +5,7 @@ import { Send, Mic, Settings, MessageSquare, Volume2, VolumeX } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import TypingEffect from "./TypingEffect";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -362,19 +362,6 @@ const OrionChat = () => {
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          
-          {/* Footer Credits */}
-          <motion.div 
-            className="text-center mt-4 text-xs text-muted-foreground/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 1 }}
-          >
-            <p>
-              Desenvolvido por{" "}
-              <span className="text-accent font-medium">Gabriel Mendes Lorenz Schjneider Sanhes</span>, 18 anos
-            </p>
-          </motion.div>
         </div>
       </div>
 

@@ -148,7 +148,8 @@ export const performanceOptimizations = {
           console.log('Service Worker registrado:', registration);
           return registration;
         } catch (error) {
-          console.log('Erro ao registrar Service Worker:', error);
+          // Service Worker não disponível no ambiente de desenvolvimento
+          return null;
         }
       }
     },
