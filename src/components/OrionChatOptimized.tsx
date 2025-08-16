@@ -1,12 +1,19 @@
-import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Mic, Settings, MessageSquare, Volume2, VolumeX } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import TypingEffect from "./TypingEffect";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  MessageSquare,
+  Mic,
+  Send,
+  Settings,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import TypingEffect from "./TypingEffect";
 
 interface Message {
   id: string;
@@ -51,9 +58,9 @@ const OrionChat = () => {
 
   // Synthetic speech for typing sound effect
   const playTypingSound = () => {
-    if (audioEnabled && 'speechSynthesis' in window) {
+    if (audioEnabled && "speechSynthesis" in window) {
       // Create a subtle typing sound using Web Speech API
-      const utterance = new SpeechSynthesisUtterance('.');
+      const utterance = new SpeechSynthesisUtterance(".");
       utterance.volume = 0.1;
       utterance.rate = 10;
       utterance.pitch = 2;
@@ -77,20 +84,20 @@ const OrionChat = () => {
     setIsTyping(true);
 
     try {
-      const conversation = messages.map(msg => ({
-        role: msg.isUser ? 'user' : 'assistant',
-        content: msg.text
+      const conversation = messages.map((msg) => ({
+        role: msg.isUser ? "user" : "assistant",
+        content: msg.text,
       }));
 
-      const { data, error } = await supabase.functions.invoke('chat-ai', {
+      const { data, error } = await supabase.functions.invoke("chat-ai", {
         body: {
           message: currentInput,
-          conversation: conversation
-        }
+          conversation: conversation,
+        },
       });
 
       if (error) {
-        throw new Error(error.message || 'Erro de comunicação');
+        throw new Error(error.message || "Erro de comunicação");
       }
 
       if (data.error) {
@@ -108,26 +115,26 @@ const OrionChat = () => {
       setMessages((prev) => [...prev, orionResponse]);
       setTypingMessageId(orionMessageId);
       setIsTyping(false);
-      
+
       // Play typing sound when AI starts responding
       playTypingSound();
-
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error("Erro ao enviar mensagem:", error);
       setIsTyping(false);
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
         isUser: false,
         timestamp: new Date(),
       };
-      
+
       setMessages((prev) => [...prev, errorMessage]);
-      
+
       toast({
         title: "Erro de Comunicação",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     }
@@ -147,11 +154,13 @@ const OrionChat = () => {
   };
 
   const handleVoiceInput = async () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition =
+        (window as any).webkitSpeechRecognition ||
+        (window as any).SpeechRecognition;
       const recognition = new SpeechRecognition();
-      
-      recognition.lang = 'pt-BR';
+
+      recognition.lang = "pt-BR";
       recognition.continuous = false;
       recognition.interimResults = false;
 
@@ -181,7 +190,7 @@ const OrionChat = () => {
       recognition.start();
     } else {
       toast({
-        title: "Recurso Não Disponível",
+        title: "Desculpa no momento esse Recurso Não esta Disponível",
         description: "Seu navegador não suporta reconhecimento de voz.",
         variant: "destructive",
       });
@@ -192,11 +201,14 @@ const OrionChat = () => {
     if (feedbackRating === 0) return;
 
     // Store feedback (could be sent to analytics or database)
-    console.log('Feedback recebido:', { rating: feedbackRating, comment: feedbackComment });
-    
+    console.log("Feedback recebido:", {
+      rating: feedbackRating,
+      comment: feedbackComment,
+    });
+
     toast({
       title: "Obrigado pelo Feedback!",
-      description: "Suas sugestões nos ajudam a melhorar continuamente.",
+      description: "Suas sugestões nos ajudam a melhorar sempre.",
     });
 
     setShowFeedback(false);
@@ -207,7 +219,7 @@ const OrionChat = () => {
   return (
     <div className="flex flex-col h-screen relative">
       {/* Header */}
-      <motion.header 
+      <motion.header
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
@@ -222,26 +234,34 @@ const OrionChat = () => {
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground tracking-wide" 
-                  style={{ fontFamily: "'Inter', sans-serif" }}>
+              <h1
+                className="text-lg font-bold text-foreground tracking-wide"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 O.R.I.Ö.N
               </h1>
-              <span className="text-xs text-muted-foreground">Assistente Inteligente</span>
+              <span className="text-xs text-muted-foreground">
+                Assistente Inteligente
+              </span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setAudioEnabled(!audioEnabled)}
               className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
             >
-              {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {audioEnabled ? (
+                <Volume2 className="w-4 h-4" />
+              ) : (
+                <VolumeX className="w-4 h-4" />
+              )}
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setShowFeedback(true)}
               className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
             >
@@ -273,16 +293,18 @@ const OrionChat = () => {
                   </div>
                 </div>
               )}
-              
-              <div className={cn(
-                "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
-                message.isUser
-                  ? "bg-primary text-primary-foreground ml-auto"
-                  : "bg-card/80 text-card-foreground border border-border/20"
-              )}>
+
+              <div
+                className={cn(
+                  "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
+                  message.isUser
+                    ? "bg-primary text-primary-foreground ml-auto"
+                    : "bg-card/80 text-card-foreground border border-border/20"
+                )}
+              >
                 <p className="text-sm leading-relaxed">
                   {!message.isUser && typingMessageId === message.id ? (
-                    <TypingEffect 
+                    <TypingEffect
                       text={message.text}
                       speed={25}
                       onComplete={() => handleTypingComplete(message.id)}
@@ -292,9 +314,9 @@ const OrionChat = () => {
                   )}
                 </p>
                 <span className="text-xs opacity-50 mt-1 block">
-                  {message.timestamp.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  {message.timestamp.toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </span>
               </div>
@@ -303,7 +325,7 @@ const OrionChat = () => {
         </AnimatePresence>
 
         {isTyping && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="flex gap-3 justify-start"
@@ -316,8 +338,14 @@ const OrionChat = () => {
             <div className="bg-card/80 border border-border/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                />
               </div>
             </div>
           </motion.div>
@@ -345,8 +373,8 @@ const OrionChat = () => {
                 disabled={isListening || isTyping}
                 className={cn(
                   "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors",
-                  isListening 
-                    ? "text-accent bg-accent/10" 
+                  isListening
+                    ? "text-accent bg-accent/10"
                     : "text-muted-foreground hover:text-accent hover:bg-accent/10"
                 )}
               >
@@ -382,8 +410,10 @@ const OrionChat = () => {
               className="bg-card border border-border rounded-2xl p-6 w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-semibold mb-4">Como está sua experiência?</h3>
-              
+              <h3 className="text-lg font-semibold mb-4">
+                Como está sua experiência?
+              </h3>
+
               <div className="flex gap-2 mb-4">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -391,7 +421,9 @@ const OrionChat = () => {
                     onClick={() => setFeedbackRating(star)}
                     className={cn(
                       "text-2xl transition-colors",
-                      star <= feedbackRating ? "text-primary" : "text-muted-foreground"
+                      star <= feedbackRating
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     )}
                   >
                     ⭐
@@ -407,14 +439,14 @@ const OrionChat = () => {
               />
 
               <div className="flex gap-2 mt-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowFeedback(false)}
                   className="flex-1"
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={submitFeedback}
                   disabled={feedbackRating === 0}
                   className="flex-1"

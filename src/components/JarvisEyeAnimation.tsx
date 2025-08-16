@@ -4,7 +4,9 @@ interface JarvisEyeAnimationProps {
   onAnimationComplete: () => void;
 }
 
-const JarvisEyeAnimation = ({ onAnimationComplete }: JarvisEyeAnimationProps) => {
+const JarvisEyeAnimation = ({
+  onAnimationComplete,
+}: JarvisEyeAnimationProps) => {
   const [showEyes, setShowEyes] = useState(false);
 
   useEffect(() => {
@@ -19,7 +21,8 @@ const JarvisEyeAnimation = ({ onAnimationComplete }: JarvisEyeAnimationProps) =>
     }, 3500);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(tigit add .
+
       clearTimeout(completeTimer);
     };
   }, [onAnimationComplete]);
@@ -34,18 +37,22 @@ const JarvisEyeAnimation = ({ onAnimationComplete }: JarvisEyeAnimationProps) =>
               showEyes ? "animate-jarvis-eye-open" : "opacity-0"
             } jarvis-glow`}
             style={{
-              clipPath: showEyes ? "ellipse(100% 100% at center)" : "ellipse(100% 0% at center)",
+              clipPath: showEyes
+                ? "ellipse(100% 100% at center)"
+                : "ellipse(100% 0% at center)",
               transition: "clip-path 2s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           />
-          
+
           {/* Right Eye */}
           <div
             className={`w-24 h-12 bg-jarvis-gold rounded-full ${
               showEyes ? "animate-jarvis-eye-open" : "opacity-0"
             } jarvis-glow`}
             style={{
-              clipPath: showEyes ? "ellipse(100% 100% at center)" : "ellipse(100% 0% at center)",
+              clipPath: showEyes
+                ? "ellipse(100% 100% at center)"
+                : "ellipse(100% 0% at center)",
               transition: "clip-path 2s cubic-bezier(0.4, 0, 0.2, 1)",
               animationDelay: "0.1s",
             }}
@@ -56,10 +63,12 @@ const JarvisEyeAnimation = ({ onAnimationComplete }: JarvisEyeAnimationProps) =>
         <div className="mt-8 text-center">
           <h1
             className={`text-4xl font-bold text-jarvis-gold tracking-widest ${
-              showEyes ? "animate-jarvis-text-appear jarvis-text-glow" : "opacity-0"
+              showEyes
+                ? "animate-jarvis-text-appear jarvis-text-glow"
+                : "opacity-0"
             }`}
             style={{
-              animationDelay: "1.5s",
+              animationDelay: "0.5s",
             }}
           >
             J.A.R.V.I.S
