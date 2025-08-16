@@ -152,12 +152,115 @@ const OrionChat = () => {
       setTypingMessageId(null);
     }
   };
-
   const handleVoiceInput = async () => {
+    // Verifica suporte à API
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.error("SpeechRecognition API not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      console.log("🎤 Ouvindo...");
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("Você disse:", transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Erro no reconhecimento:", event.error);
+    };
+
+    recognition.onend = () => {
+      console.log("Reconhecimento encerrado.");
+    };
+
+    recognition.start();
+  };
+
+  async function handleVoiceInput(): Promise<void> {
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition =
-        (window as any).webkitSpeechRecognition ||
-        (window as any).SpeechRecognition;
+      async function handleVoiceInput() {
+        // Verifica suporte à API
+        const SpeechRecognition =
+          window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+          console.error("SpeechRecognition API not supported in this browser.");
+          return;
+        }
+
+        // Cria instância do reconhecimento
+        const recognition = new SpeechRecognition();
+        recognition.lang = "pt-BR"; // idioma do reconhecimento
+        recognition.continuous = false; // para ouvir apenas uma frase
+        recognition.interimResults = false; // retorna só resultados finais
+
+        // Eventos
+        recognition.onstart = () => {
+          console.log("🎤 Listening...");
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          console.log("Você disse:", transcript);
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Erro no reconhecimento:", event.error);
+        };
+
+        recognition.onend = () => {
+          console.log("Reconhecimento encerrado.");
+        };
+
+        recognition.start();
+      }
+      async function handleVoiceInput(): Promise<void> {
+        // Descobre qual implementação usar
+        const SpeechRecognition =
+          (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+          console.error("SpeechRecognition API not supported in this browser.");
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "pt-BR";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+          console.log("🎤 Ouvindo...");
+        };
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          console.log("Você disse:", transcript);
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error("Erro no reconhecimento:", event.error);
+        };
+
+        recognition.onend = () => {
+          console.log("Reconhecimento encerrado.");
+        };
+
+        recognition.start();
+      }
+
       const recognition = new SpeechRecognition();
 
       recognition.lang = "pt-BR";
@@ -195,7 +298,7 @@ const OrionChat = () => {
         variant: "destructive",
       });
     }
-  };
+  }
 
   const submitFeedback = () => {
     if (feedbackRating === 0) return;
