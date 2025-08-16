@@ -21,7 +21,7 @@ const JarvisEyeAnimation = ({
     }, 3500);
 
     return () => {
-      clearTimeout(tigit add .
+      clearTimeout(timer);
 
       clearTimeout(completeTimer);
     };
