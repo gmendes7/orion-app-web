@@ -22,20 +22,19 @@ const JarvisEyeAnimation = ({
 
     return () => {
       clearTimeout(timer);
-
       clearTimeout(completeTimer);
     };
   }, [onAnimationComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-jarvis-deep-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-orion-void">
       <div className="relative">
         {/* Left Eye */}
         <div className="flex space-x-8">
           <div
-            className={`w-24 h-12 bg-jarvis-gold rounded-full ${
-              showEyes ? "animate-jarvis-eye-open" : "opacity-0"
-            } jarvis-glow`}
+            className={`w-24 h-12 bg-orion-stellar-gold rounded-full ${
+              showEyes ? "robotic-eye" : "opacity-0"
+            }`}
             style={{
               clipPath: showEyes
                 ? "ellipse(100% 100% at center)"
@@ -46,9 +45,9 @@ const JarvisEyeAnimation = ({
 
           {/* Right Eye */}
           <div
-            className={`w-24 h-12 bg-jarvis-gold rounded-full ${
-              showEyes ? "animate-jarvis-eye-open" : "opacity-0"
-            } jarvis-glow`}
+            className={`w-24 h-12 bg-orion-stellar-gold rounded-full ${
+              showEyes ? "robotic-eye" : "opacity-0"
+            }`}
             style={{
               clipPath: showEyes
                 ? "ellipse(100% 100% at center)"
@@ -62,9 +61,9 @@ const JarvisEyeAnimation = ({
         {/* JARVIS Text */}
         <div className="mt-8 text-center">
           <h1
-            className={`text-4xl font-bold text-jarvis-gold tracking-widest ${
+            className={`text-4xl font-bold text-orion-stellar-gold tracking-widest ${
               showEyes
-                ? "animate-jarvis-text-appear jarvis-text-glow"
+                ? "hud-element stellar-text"
                 : "opacity-0"
             }`}
             style={{
