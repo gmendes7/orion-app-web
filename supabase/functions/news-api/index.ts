@@ -6,6 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function for safe fetch with timeout and retries
+async function safeFetch(url: string, options: RequestInit = {}, timeoutMs = 8000, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`HTTP ${response.status} - ${response.statusText} - ${body.slice(0, 300)}`);
+      }
+      
+      return response;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (attempt === retries) throw error;
+      await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 interface NewsRequest {
   query?: string;
   category?: 'business' | 'entertainment' | 'general' | 'health' | 'science' | 'sports' | 'technology';
@@ -45,7 +70,7 @@ serve(async (req) => {
 
     console.log(`📰 Buscando notícias: ${query || `${category} (${country})`}`);
 
-    const response = await fetch(url);
+    const response = await safeFetch(url);
     
     if (!response.ok) {
       const errorData = await response.json();
