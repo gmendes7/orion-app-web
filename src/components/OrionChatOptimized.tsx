@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -40,13 +42,23 @@ const OrionChat = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Voice input hook
+  const { startListening, isListening } = useVoiceInput({
+    onResult: (text) => setInput(text),
+    onError: (error) => toast({
+      title: "Erro no Reconhecimento de Voz",
+      description: error,
+      variant: "destructive",
+    }),
+    language: "pt-BR",
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,48 +162,6 @@ const OrionChat = () => {
   const handleTypingComplete = (messageId: string) => {
     if (typingMessageId === messageId) {
       setTypingMessageId(null);
-    }
-  };
-  const handleVoiceInput = async () => {
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = "pt-BR";
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-        toast({
-          title: "Erro no Reconhecimento de Voz",
-          description: "Não foi possível capturar o áudio. Tente novamente.",
-          variant: "destructive",
-        });
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } else {
-      toast({
-        title: "Recurso Não Disponível",
-        description: "Seu navegador não suporta reconhecimento de voz.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -367,7 +337,7 @@ const OrionChat = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleVoiceInput}
+                onClick={startListening}
                 disabled={isListening || isTyping}
                 className={cn(
                   "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors",
