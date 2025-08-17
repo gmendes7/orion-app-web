@@ -9,3 +9,18 @@ max_rows = 1000
 
 [functions.chat-ai]
 verify_jwt = false
+
+[functions.analyze-image]
+verify_jwt = false
+
+[functions.api-integrations]
+verify_jwt = false
+
+[functions.web-search]
+verify_jwt = false
+
+[functions.weather-api]
+verify_jwt = false
+
+[functions.news-api]
+verify_jwt = false

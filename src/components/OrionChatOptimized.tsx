@@ -13,6 +13,11 @@ import {
   Settings,
   Volume2,
   VolumeX,
+  Search,
+  Cloud,
+  Newspaper,
+  Paperclip,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TypingEffect from "./TypingEffect";
@@ -60,6 +65,32 @@ const OrionChat = () => {
     language: "pt-BR",
   });
 
+  // Text to speech hook
+  const { speak, isSpeaking, stop: stopSpeaking } = useTextToSpeech({
+    language: "pt-BR",
+    rate: 1,
+    pitch: 1,
+    volume: audioEnabled ? 1 : 0,
+  });
+
+  // Simple image upload handler
+  const handleImageUpload = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        // Para agora, apenas mostrar uma mensagem
+        toast({
+          title: "Upload de Imagem",
+          description: "Funcionalidade em desenvolvimento. Em breve você poderá enviar imagens!",
+        });
+      }
+    };
+    input.click();
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -80,6 +111,126 @@ const OrionChat = () => {
     }
   };
 
+  const handleImageAnalysis = async (imageUrl: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: { imageUrl },
+      });
+
+      if (error) throw error;
+
+      const analysisMessage: Message = {
+        id: Date.now().toString(),
+        text: `🖼️ **Análise da Imagem:**\n\n${data.description}`,
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, analysisMessage]);
+    } catch (error) {
+      console.error("Erro na análise de imagem:", error);
+      toast({
+        title: "Erro na Análise",
+        description: "Não foi possível analisar a imagem.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const detectAndExecuteCommands = async (text: string) => {
+    const lowerText = text.toLowerCase();
+    
+    // Comando de pesquisa web
+    if (lowerText.includes("pesquisar") || lowerText.includes("buscar na internet") || lowerText.includes("google")) {
+      const query = text.replace(/(pesquisar|buscar na internet|google)/i, "").trim();
+      if (query) {
+        return await handleWebSearch(query);
+      }
+    }
+    
+    // Comando de clima
+    if (lowerText.includes("clima") || lowerText.includes("tempo")) {
+      const city = text.replace(/(clima|tempo)\s*(de|em|da)?\s*/i, "").trim();
+      return await handleWeatherQuery(city || "São Paulo");
+    }
+    
+    // Comando de notícias
+    if (lowerText.includes("notícias") || lowerText.includes("news")) {
+      const query = text.replace(/(notícias|news)\s*(sobre|de)?\s*/i, "").trim();
+      return await handleNewsQuery(query);
+    }
+    
+    return null;
+  };
+
+  const handleWebSearch = async (query: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("web-search", {
+        body: { query, type: "search", count: 5 },
+      });
+
+      if (error) throw error;
+
+      return `🔍 **Resultados da Pesquisa: "${query}"**\n\n${data.answer}\n\n${
+        data.relatedQuestions?.length > 0 
+          ? `**Perguntas relacionadas:**\n${data.relatedQuestions.map((q: string) => `• ${q}`).join('\n')}`
+          : ''
+      }`;
+    } catch (error) {
+      console.error("Erro na pesquisa:", error);
+      return "❌ Não foi possível realizar a pesquisa no momento.";
+    }
+  };
+
+  const handleWeatherQuery = async (city: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("weather-api", {
+        body: { city, type: "current" },
+      });
+
+      if (error) throw error;
+
+      const weather = data.current;
+      return `🌤️ **Clima em ${data.location.name}, ${data.location.country}**\n\n` +
+             `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
+             `**Condição:** ${weather.description}\n` +
+             `**Umidade:** ${weather.humidity}%\n` +
+             `**Vento:** ${weather.wind.speed} m/s\n` +
+             `**Pressão:** ${weather.pressure} hPa\n\n` +
+             `🌅 **Nascer do sol:** ${data.sunrise}\n` +
+             `🌇 **Pôr do sol:** ${data.sunset}`;
+    } catch (error) {
+      console.error("Erro ao buscar clima:", error);
+      return "❌ Não foi possível obter informações do clima.";
+    }
+  };
+
+  const handleNewsQuery = async (query?: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("news-api", {
+        body: { 
+          query, 
+          category: query ? undefined : "general",
+          pageSize: 5 
+        },
+      });
+
+      if (error) throw error;
+
+      const articles = data.articles.slice(0, 5);
+      return `📰 **${query ? `Notícias sobre "${query}"` : 'Principais Notícias'}**\n\n` +
+             articles.map((article: any, index: number) => 
+               `**${index + 1}. ${article.title}**\n` +
+               `${article.description}\n` +
+               `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
+               `[Ler mais](${article.url})`
+             ).join('\n\n');
+    } catch (error) {
+      console.error("Erro ao buscar notícias:", error);
+      return "❌ Não foi possível obter as notícias.";
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
 
@@ -96,6 +247,30 @@ const OrionChat = () => {
     setIsTyping(true);
 
     try {
+      // Detectar e executar comandos especiais primeiro
+      const commandResult = await detectAndExecuteCommands(currentInput);
+      
+      if (commandResult) {
+        const commandResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: commandResult,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages((prev) => [...prev, commandResponse]);
+        setTypingMessageId(commandResponse.id);
+        setIsTyping(false);
+        
+        // Auto-falar resposta se áudio estiver habilitado
+        if (audioEnabled) {
+          speak(commandResult.replace(/\*\*/g, '').replace(/\[.*?\]/g, ''));
+        }
+        
+        return;
+      }
+
+      // Preparar contexto da conversa para o chat AI
       const conversation = messages.map((msg) => ({
         role: msg.isUser ? "user" : "assistant",
         content: msg.text,
@@ -127,6 +302,11 @@ const OrionChat = () => {
       setMessages((prev) => [...prev, orionResponse]);
       setTypingMessageId(orionMessageId);
       setIsTyping(false);
+
+      // Auto-falar resposta se áudio estiver habilitado
+      if (audioEnabled) {
+        speak(data.response);
+      }
 
       // Play typing sound when AI starts responding
       playTypingSound();
@@ -227,6 +407,19 @@ const OrionChat = () => {
                 <VolumeX className="w-4 h-4" />
               )}
             </Button>
+            
+            {/* Controles TTS */}
+            {isSpeaking && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={stopSpeaking}
+                className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+              >
+                <VolumeX className="w-4 h-4" />
+              </Button>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
@@ -324,16 +517,60 @@ const OrionChat = () => {
       {/* Input Area */}
       <div className="border-t border-border/10 p-4 backdrop-blur-xl bg-card/50">
         <div className="max-w-4xl mx-auto">
+          {/* Quick Action Buttons */}
+          <div className="flex gap-2 mb-3 overflow-x-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInput("Pesquisar sobre ")}
+              className="whitespace-nowrap"
+            >
+              <Search className="w-3 h-3 mr-1" />
+              Pesquisar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInput("Clima em ")}
+              className="whitespace-nowrap"
+            >
+              <Cloud className="w-3 h-3 mr-1" />
+              Clima
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInput("Notícias sobre ")}
+              className="whitespace-nowrap"
+            >
+              <Newspaper className="w-3 h-3 mr-1" />
+              Notícias
+            </Button>
+          </div>
+          
           <div className="relative flex items-center gap-3">
             <div className="flex-1 relative">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Digite sua mensagem..."
-                className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-12 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
+                placeholder="Digite sua mensagem ou use comandos: 'pesquisar', 'clima', 'notícias'..."
+                className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-24 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
                 disabled={isTyping}
               />
+              
+              {/* Upload de Imagem */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleImageUpload}
+                disabled={isTyping}
+                className="absolute right-14 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors hover:bg-accent/10"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              
+              {/* Botão de Voz */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -349,6 +586,7 @@ const OrionChat = () => {
                 <Mic className="w-4 h-4" />
               </Button>
             </div>
+            
             <Button
               onClick={sendMessage}
               disabled={!input.trim() || isTyping}
