@@ -6,6 +6,7 @@ export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 };
 
 // Helper function for safe fetch with timeout and retries
@@ -14,11 +15,10 @@ async function safeFetch(
   options: RequestInit = {},
   timeoutMs = 8000,
   retries = 2
-) {
+): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
     try {
       const response = await fetch(url, {
         ...options,
@@ -27,20 +27,30 @@ async function safeFetch(
       clearTimeout(timeout);
 
       if (!response.ok) {
-        const body = await response.text();
-        throw new Error(
-          `HTTP ${response.status} - ${response.statusText} - ${body.slice(
+        const body = await response.text().catch(() => "<binary/body>");
+        const err = new Error(
+          `HTTP ${response.status} ${response.statusText} - ${body.slice(
             0,
             300
           )}`
         );
+        // se não for última tentativa, aguarda e tenta novamente
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          continue;
+        }
+        throw err;
       }
 
       return response;
     } catch (error) {
       clearTimeout(timeout);
-      if (attempt === retries) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      // Retry em caso de timeout/erro de rede até exceder tentativas
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        continue;
+      }
+      throw error;
     }
   }
   throw new Error("Max retries exceeded");
@@ -52,12 +62,12 @@ interface WebSearchRequest {
   count?: number;
 }
 
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-  publishedDate?: string;
-  source?: string;
+interface WebSearchResponse {
+  answer: string;
+  relatedQuestions: any[];
+  query: string;
+  type: string;
+  timestamp: string;
 }
 
 // Exported handler (Edge Function style)
@@ -68,113 +78,154 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const {
-      query,
-      type = "search",
-      count = 5,
-    }: WebSearchRequest = await req.json();
+    const body = (await req
+      .json()
+      .catch(() => ({}))) as Partial<WebSearchRequest>;
 
-    if (!query?.trim() || query.length < 3) {
-      throw new Error("A consulta deve ter pelo menos 3 caracteres");
+    const query = (body.query ?? "").toString();
+    const type = (body.type ?? "search") as WebSearchRequest["type"];
+    const count = Number.isFinite(Number(body.count)) ? Number(body.count) : 5;
+
+    if (!query?.trim() || query.trim().length < 3) {
+      return new Response(
+        JSON.stringify({
+          error: "A consulta deve ter pelo menos 3 caracteres",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    if (count < 1 || count > 20) {
-      throw new Error("O número de resultados deve ser entre 1 e 20");
+    if (isNaN(count) || count < 1 || count > 20) {
+      return new Response(
+        JSON.stringify({
+          error: "O parâmetro 'count' deve estar entre 1 e 20",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     if (!["search", "news", "academic"].includes(type)) {
-      throw new Error(
-        "Tipo de pesquisa inválido. Use 'search', 'news' ou 'academic'."
+      return new Response(
+        JSON.stringify({
+          error: "Tipo inválido. Use 'search', 'news' ou 'academic'.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
+    // Resolve API key (Deno env preferred, fallback to process.env for local Node)
     let perplexityApiKey: string | undefined;
-    // Try Deno first (access via globalThis to avoid ReferenceError in non-Deno runtimes)
     try {
-      perplexityApiKey = (globalThis as ).Deno?.env?.get?.(
-        "PERPLEXITY_API_KEY"
-      );
+      // @ts-expect-error Deno specific
+      if (
+        typeof Deno !== "undefined" &&
+        typeof (Deno as any).env?.get === "function"
+      ) {
+        // Deno runtime (Supabase Edge Functions)
+        perplexityApiKey = (Deno as any).env.get("PERPLEXITY_API_KEY");
+      }
     } catch {
-      // ignore if Deno not available or access denied
+      // ignore
     }
-    // Fallback to Node's process.env if not found
-    if (!perplexityApiKey) {
-      perplexityApiKey = (globalThis as any).process?.env?.PERPLEXITY_API_KEY;
-    }
-    if (!perplexityApiKey) {
-      throw new Error("PERPLEXITY_API_KEY não configurada");
+    if (!perplexityApiKey && typeof process !== "undefined") {
+      // Node fallback for local dev
+      perplexityApiKey = process.env.PERPLEXITY_API_KEY;
     }
 
+    if (!perplexityApiKey) {
+      return new Response(
+        JSON.stringify({ error: "PERPLEXITY_API_KEY não configurada" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Build prompts
     let systemPrompt = "Você é um assistente de pesquisa especializado.";
     let searchPrompt = query;
 
     switch (type) {
       case "news":
-        systemPrompt += " Foque em notícias recentes e atuais.";
+        systemPrompt += " Foque em notícias recentes e confiáveis.";
         searchPrompt = `Últimas notícias sobre: ${query}`;
         break;
       case "academic":
-        systemPrompt +=
-          " Foque em informações acadêmicas e científicas confiáveis.";
+        systemPrompt += " Foque em fontes acadêmicas e científicas confiáveis.";
         searchPrompt = `Pesquisa acadêmica sobre: ${query}`;
         break;
       default:
-        systemPrompt += " Forneça informações precisas e atualizadas.";
+        systemPrompt +=
+          " Forneça uma resposta clara, estruturada e com tópicos.";
+        searchPrompt = query;
     }
 
-    const response = await safeFetch(
-      "https://api.perplexity.ai/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${perplexityApiKey}`,
-          "Content-Type": "application/json",
+    // Call Perplexity (chat completions)
+    const apiUrl = "https://api.perplexity.ai/chat/completions";
+    const payload = {
+      model: "llama-3.1-sonar-large-128k-online",
+      messages: [
+        {
+          role: "system",
+          content:
+            systemPrompt +
+            " Responda em português brasileiro de forma clara e organizada. Estruture em Tópicos/Seções quando aplicável.",
         },
-        body: JSON.stringify({
-          model: "llama-3.1-sonar-large-128k-online",
-          messages: [
-            {
-              role: "system",
-              content:
-                systemPrompt +
-                " Responda em português brasileiro de forma clara e organizada.",
-            },
-            {
-              role: "user",
-              content: searchPrompt,
-            },
-          ],
-          temperature: 0.2,
-          top_p: 0.9,
-          max_tokens: 2000,
-          return_images: false,
-          return_related_questions: true,
-          search_recency_filter: type === "news" ? "day" : "month",
-          frequency_penalty: 1,
-          presence_penalty: 0,
-        }),
-      }
-    );
+        {
+          role: "user",
+          content: searchPrompt,
+        },
+      ],
+      temperature: 0.2,
+      top_p: 0.9,
+      max_tokens: 2000,
+      return_images: false,
+      return_related_questions: true,
+      search_recency_filter: type === "news" ? "day" : "month",
+      frequency_penalty: 1,
+      presence_penalty: 0,
+      limit: count,
+    };
 
-    // Safely parse response JSON, falling back to raw text when JSON parsing fails
-    let data;
+    const resp = await safeFetch(apiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${perplexityApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Try parse JSON, fallback to text
+    let data: any = null;
     try {
-      data = await response.clone().json();
-    } catch (jsonErr) {
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { raw_text: text };
-      }
+      data = await resp.json();
+    } catch {
+      const txt = await resp.text().catch(() => "");
+      data = {
+        choices: [{ message: { content: txt } }],
+        related_questions: [],
+      };
     }
 
-    const result = {
-      answer:
-        data.choices?.[0]?.message?.content || "Nenhum resultado encontrado.",
-      relatedQuestions: data.related_questions || [],
+    const answer = data?.choices?.[0]?.message?.content ?? data?.answer ?? "";
+    const relatedQuestions = data?.related_questions ?? [];
+
+    const result: WebSearchResponse = {
+      answer: answer || "Nenhum resultado encontrado.",
+      relatedQuestions,
       query,
-      type,
+      type: type ?? "search",
       timestamp: new Date().toISOString(),
     };
 
