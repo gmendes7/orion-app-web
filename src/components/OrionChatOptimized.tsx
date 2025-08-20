@@ -1,23 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useVoiceInput } from "@/hooks/useVoiceInput";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useToast } from "@/integrations/hooks/use-toast";
+import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
+import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Cloud,
   MessageSquare,
   Mic,
+  Newspaper,
+  Paperclip,
+  Search,
   Send,
   Settings,
   Volume2,
   VolumeX,
-  Search,
-  Cloud,
-  Newspaper,
-  Paperclip,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TypingEffect from "./TypingEffect";
@@ -57,16 +56,21 @@ const OrionChat = () => {
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
     onResult: (text) => setInput(text),
-    onError: (error) => toast({
-      title: "Erro no Reconhecimento de Voz",
-      description: error,
-      variant: "destructive",
-    }),
+    onError: (error) =>
+      toast({
+        title: "Erro no Reconhecimento de Voz",
+        description: error,
+        variant: "destructive",
+      }),
     language: "pt-BR",
   });
 
   // Text to speech hook
-  const { speak, isSpeaking, stop: stopSpeaking } = useTextToSpeech({
+  const {
+    speak,
+    isSpeaking,
+    stop: stopSpeaking,
+  } = useTextToSpeech({
     language: "pt-BR",
     rate: 1,
     pitch: 1,
@@ -75,16 +79,17 @@ const OrionChat = () => {
 
   // Simple image upload handler
   const handleImageUpload = async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         // Para agora, apenas mostrar uma mensagem
         toast({
           title: "Upload de Imagem",
-          description: "Funcionalidade em desenvolvimento. Em breve você poderá enviar imagens!",
+          description:
+            "Funcionalidade em desenvolvimento. Em breve você poderá enviar imagens!",
         });
       }
     };
@@ -139,27 +144,35 @@ const OrionChat = () => {
 
   const detectAndExecuteCommands = async (text: string) => {
     const lowerText = text.toLowerCase();
-    
+
     // Comando de pesquisa web
-    if (lowerText.includes("pesquisar") || lowerText.includes("buscar na internet") || lowerText.includes("google")) {
-      const query = text.replace(/(pesquisar|buscar na internet|google)/i, "").trim();
+    if (
+      lowerText.includes("pesquisar") ||
+      lowerText.includes("buscar na internet") ||
+      lowerText.includes("google")
+    ) {
+      const query = text
+        .replace(/(pesquisar|buscar na internet|google)/i, "")
+        .trim();
       if (query) {
         return await handleWebSearch(query);
       }
     }
-    
+
     // Comando de clima
     if (lowerText.includes("clima") || lowerText.includes("tempo")) {
       const city = text.replace(/(clima|tempo)\s*(de|em|da)?\s*/i, "").trim();
       return await handleWeatherQuery(city || "São Paulo");
     }
-    
+
     // Comando de notícias
     if (lowerText.includes("notícias") || lowerText.includes("news")) {
-      const query = text.replace(/(notícias|news)\s*(sobre|de)?\s*/i, "").trim();
+      const query = text
+        .replace(/(notícias|news)\s*(sobre|de)?\s*/i, "")
+        .trim();
       return await handleNewsQuery(query);
     }
-    
+
     return null;
   };
 
@@ -172,9 +185,11 @@ const OrionChat = () => {
       if (error) throw error;
 
       return `🔍 **Resultados da Pesquisa: "${query}"**\n\n${data.answer}\n\n${
-        data.relatedQuestions?.length > 0 
-          ? `**Perguntas relacionadas:**\n${data.relatedQuestions.map((q: string) => `• ${q}`).join('\n')}`
-          : ''
+        data.relatedQuestions?.length > 0
+          ? `**Perguntas relacionadas:**\n${data.relatedQuestions
+              .map((q: string) => `• ${q}`)
+              .join("\n")}`
+          : ""
       }`;
     } catch (error) {
       console.error("Erro na pesquisa:", error);
@@ -191,14 +206,16 @@ const OrionChat = () => {
       if (error) throw error;
 
       const weather = data.current;
-      return `🌤️ **Clima em ${data.location.name}, ${data.location.country}**\n\n` +
-             `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
-             `**Condição:** ${weather.description}\n` +
-             `**Umidade:** ${weather.humidity}%\n` +
-             `**Vento:** ${weather.wind.speed} m/s\n` +
-             `**Pressão:** ${weather.pressure} hPa\n\n` +
-             `🌅 **Nascer do sol:** ${data.sunrise}\n` +
-             `🌇 **Pôr do sol:** ${data.sunset}`;
+      return (
+        `🌤️ **Clima em ${data.location.name}, ${data.location.country}**\n\n` +
+        `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
+        `**Condição:** ${weather.description}\n` +
+        `**Umidade:** ${weather.humidity}%\n` +
+        `**Vento:** ${weather.wind.speed} m/s\n` +
+        `**Pressão:** ${weather.pressure} hPa\n\n` +
+        `🌅 **Nascer do sol:** ${data.sunrise}\n` +
+        `🌇 **Pôr do sol:** ${data.sunset}`
+      );
     } catch (error) {
       console.error("Erro ao buscar clima:", error);
       return "❌ Não foi possível obter informações do clima.";
@@ -208,23 +225,30 @@ const OrionChat = () => {
   const handleNewsQuery = async (query?: string) => {
     try {
       const { data, error } = await supabase.functions.invoke("news-api", {
-        body: { 
-          query, 
+        body: {
+          query,
           category: query ? undefined : "general",
-          pageSize: 5 
+          pageSize: 5,
         },
       });
 
       if (error) throw error;
 
       const articles = data.articles.slice(0, 5);
-      return `📰 **${query ? `Notícias sobre "${query}"` : 'Principais Notícias'}**\n\n` +
-             articles.map((article: any, index: number) => 
-               `**${index + 1}. ${article.title}**\n` +
-               `${article.description}\n` +
-               `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
-               `[Ler mais](${article.url})`
-             ).join('\n\n');
+      return (
+        `📰 **${
+          query ? `Notícias sobre "${query}"` : "Principais Notícias"
+        }**\n\n` +
+        articles
+          .map(
+            (article: any, index: number) =>
+              `**${index + 1}. ${article.title}**\n` +
+              `${article.description}\n` +
+              `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
+              `[Ler mais](${article.url})`
+          )
+          .join("\n\n")
+      );
     } catch (error) {
       console.error("Erro ao buscar notícias:", error);
       return "❌ Não foi possível obter as notícias.";
@@ -249,7 +273,7 @@ const OrionChat = () => {
     try {
       // Detectar e executar comandos especiais primeiro
       const commandResult = await detectAndExecuteCommands(currentInput);
-      
+
       if (commandResult) {
         const commandResponse: Message = {
           id: (Date.now() + 1).toString(),
@@ -257,16 +281,16 @@ const OrionChat = () => {
           isUser: false,
           timestamp: new Date(),
         };
-        
+
         setMessages((prev) => [...prev, commandResponse]);
         setTypingMessageId(commandResponse.id);
         setIsTyping(false);
-        
+
         // Auto-falar resposta se áudio estiver habilitado
         if (audioEnabled) {
-          speak(commandResult.replace(/\*\*/g, '').replace(/\[.*?\]/g, ''));
+          speak(commandResult.replace(/\*\*/g, "").replace(/\[.*?\]/g, ""));
         }
-        
+
         return;
       }
 
@@ -407,7 +431,7 @@ const OrionChat = () => {
                 <VolumeX className="w-4 h-4" />
               )}
             </Button>
-            
+
             {/* Controles TTS */}
             {isSpeaking && (
               <Button
@@ -419,7 +443,7 @@ const OrionChat = () => {
                 <VolumeX className="w-4 h-4" />
               </Button>
             )}
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -547,7 +571,7 @@ const OrionChat = () => {
               Notícias
             </Button>
           </div>
-          
+
           <div className="relative flex items-center gap-3">
             <div className="flex-1 relative">
               <Input
@@ -558,7 +582,7 @@ const OrionChat = () => {
                 className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-24 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
                 disabled={isTyping}
               />
-              
+
               {/* Upload de Imagem */}
               <Button
                 variant="ghost"
@@ -569,7 +593,7 @@ const OrionChat = () => {
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
-              
+
               {/* Botão de Voz */}
               <Button
                 variant="ghost"
@@ -586,7 +610,7 @@ const OrionChat = () => {
                 <Mic className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <Button
               onClick={sendMessage}
               disabled={!input.trim() || isTyping}

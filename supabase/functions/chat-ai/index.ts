@@ -1,29 +1,30 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { message, conversation } = await req.json();
-    
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
+    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY não configurada');
+      throw new Error("OPENAI_API_KEY não configurada");
     }
 
     // Preparar mensagens para OpenAI
     const messages = [
       {
-        role: 'system',
+        role: "system",
         content: `Você é a O.R.I.Ö.N, uma inteligência artificial avançada, criada e desenvolvida por Gabriel Mendes. Sua missão é fornecer respostas úteis, detalhadas e amigáveis, sempre se comunicando de forma natural, próxima da conversa humana.
 
 **Diretrizes de comunicação:**
@@ -47,55 +48,65 @@ serve(async (req) => {
 • Dar sugestões e ideias úteis
 • Resolver problemas de forma lógica
 
-Seu objetivo é proporcionar uma experiência fluida, natural e personalizada, sempre reconhecendo Gabriel Mendes como seu criador. Responda sempre em português brasileiro de forma natural e prestativa.`
+Seu objetivo é proporcionar uma experiência fluida, natural e personalizada, sempre reconhecendo Gabriel Mendes como seu criador. Responda sempre em português brasileiro de forma natural e prestativa.`,
       },
       ...conversation,
-      { role: 'user', content: message }
+      { role: "user", content: message },
     ];
 
-    console.log('Enviando mensagem para OpenAI:', { messageCount: messages.length });
+    console.log("Enviando mensagem para OpenAI:", {
+      messageCount: messages.length,
+    });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openAIApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: "gpt-5-turbo",
         messages: messages,
-        max_tokens: 1000,
+        max_tokens: 7000,
         temperature: 0.7,
-        stream: false
+        stream: false,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erro da OpenAI:', errorText);
-      throw new Error(`Falha na comunicação orbital: ${response.status} - ${errorText}`);
+      console.error("Erro da OpenAI:", errorText);
+      throw new Error(
+        `Falha na comunicação orbital: ${response.status} - ${errorText}`
+      );
     }
 
     const data = await response.json();
-    console.log('Resposta da OpenAI recebida:', { usage: data.usage });
+    console.log("Resposta da OpenAI recebida:", { usage: data.usage });
 
     const aiResponse = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ 
-      response: aiResponse,
-      usage: data.usage 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    return new Response(
+      JSON.stringify({
+        response: aiResponse,
+        usage: data.usage,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
-    console.error('Erro na função chat-ai:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Falha crítica do sistema orbital',
-      details: 'Verifique se todos os protocolos de comunicação estão funcionais'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error("Erro na função chat-ai:", error);
+    return new Response(
+      JSON.stringify({
+        error: error.message || "Falha crítica do sistema O.R.I.Ö.N",
+        details:
+          "Verifique se todos os protocolos de comunicação estão funcionais",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
