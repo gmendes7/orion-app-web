@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 
 // Lazy loading dos componentes não-críticos
 const SpaceBackground = lazy(() => import('@/components/SpaceBackground'));
@@ -170,7 +170,11 @@ export const performanceOptimizations = {
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         entries.forEach((entry) => {
-          console.log('FID:', (entry as any).processingStart - entry.startTime);
+          // processingStart exists on PerformanceEventTiming
+          const processingStart = (entry as PerformanceEventTiming & { processingStart?: number }).processingStart;
+          if (typeof processingStart === 'number') {
+            console.log('FID:', processingStart - entry.startTime);
+          }
         });
       }).observe({ type: 'first-input', buffered: true });
 
@@ -179,8 +183,9 @@ export const performanceOptimizations = {
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         entries.forEach((entry) => {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const e = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          if (!e.hadRecentInput) {
+            clsValue += Number(e.value ?? 0);
           }
         });
         console.log('CLS:', clsValue);
@@ -191,12 +196,15 @@ export const performanceOptimizations = {
     monitorMemory: () => {
       if ('memory' in performance) {
         setInterval(() => {
-          const memory = (performance as any).memory;
-          console.log('Memory usage:', {
-            used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
-            total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
-            limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB'
-          });
+          const perfAny = performance as unknown as { memory?: { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number } };
+          const memory = perfAny.memory;
+          if (memory) {
+            console.log('Memory usage:', {
+              used: Math.round((memory.usedJSHeapSize ?? 0) / 1048576) + ' MB',
+              total: Math.round((memory.totalJSHeapSize ?? 0) / 1048576) + ' MB',
+              limit: Math.round((memory.jsHeapSizeLimit ?? 0) / 1048576) + ' MB'
+            });
+          }
         }, 30000); // A cada 30 segundos
       }
     },

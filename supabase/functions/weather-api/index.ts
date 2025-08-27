@@ -1,5 +1,16 @@
+// Use Deno's built-in serve to avoid remote std import resolution issues
+// (Deno provides a global Deno.serve in newer runtime versions)
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Use Deno's built-in serve (no std http/server import required)
+
+// Minimal Deno env type for TypeScript to recognize Deno.env.get in this file
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+  // Minimal typing for Deno.serve used in this function
+  serve(handler: (req: Request) => Response | Promise<Response>): void;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,24 +22,30 @@ async function safeFetch(url: string, options: RequestInit = {}, timeoutMs = 800
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     try {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeout);
-      
+
       if (!response.ok) {
         const body = await response.text();
         throw new Error(`HTTP ${response.status} - ${response.statusText} - ${body.slice(0, 300)}`);
       }
-      
+
       return response;
     } catch (error) {
       clearTimeout(timeout);
-      if (attempt === retries) throw error;
-      await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+      // If this was the last attempt, rethrow the error to be handled by caller
+      if (attempt === retries) {
+        throw error;
+      }
+      // Otherwise, wait a bit and retry (simple backoff)
+      await new Promise((res) => setTimeout(res, 200 * (attempt + 1)));
     }
   }
-  throw new Error('Max retries exceeded');
+
+  // Should not reach here, but satisfy function return expectations
+  throw new Error('Failed to fetch after retries');
 }
 
 interface WeatherRequest {
@@ -39,7 +56,7 @@ interface WeatherRequest {
   days?: number;
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -67,10 +84,28 @@ serve(async (req) => {
     console.log(`🌤️ Buscando ${type} para: ${city || `${lat}, ${lon}`}`);
 
     const response = await safeFetch(url);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Erro da API: ${errorData.message || response.status}`);
+
+    // safeFetch may throw on errors; guard against a possibly undefined response and extract a sensible message
+    if (!response || !response.ok) {
+      let errorMsg = 'unknown';
+      try {
+        const errorData: unknown = response ? await response.json() : null;
+        if (errorData && typeof errorData === 'object') {
+          const obj = errorData as Record<string, unknown>;
+          if (typeof obj.message === 'string') {
+            errorMsg = obj.message;
+          } else if (typeof obj.error === 'string') {
+            errorMsg = obj.error;
+          } else {
+            errorMsg = response ? String(response.status) : 'unknown';
+          }
+        } else {
+          errorMsg = response ? String(response.status) : 'unknown';
+        }
+      } catch {
+        errorMsg = response ? String(response.status) : 'unknown';
+      }
+      throw new Error(`Erro da API: ${errorMsg}`);
     }
 
     const data = await response.json();
@@ -105,17 +140,26 @@ serve(async (req) => {
       };
     } else {
       // Forecast
-      const forecasts = data.list.slice(0, days * 8).map((item: any) => ({
-        date: new Date(item.dt * 1000).toLocaleDateString('pt-BR'),
-        time: new Date(item.dt * 1000).toLocaleTimeString('pt-BR'),
-        temperature: Math.round(item.main.temp),
-        feels_like: Math.round(item.main.feels_like),
-        description: item.weather[0].description,
-        icon: item.weather[0].icon,
-        humidity: item.main.humidity,
-        wind_speed: item.wind.speed,
-        clouds: item.clouds.all
-      }));
+      const forecasts = data.list.slice(0, days * 8).map((item: unknown) => {
+        const it = item as Record<string, unknown>;
+        const dt = typeof it.dt === 'number' ? it.dt : 0;
+        const main = (it.main as Record<string, unknown>) || {};
+        const weatherArr = Array.isArray(it.weather) ? it.weather : [];
+        const wind = (it.wind as Record<string, unknown>) || {};
+        const clouds = (it.clouds as Record<string, unknown>) || {};
+
+        return {
+          date: new Date(dt * 1000).toLocaleDateString('pt-BR'),
+          time: new Date(dt * 1000).toLocaleTimeString('pt-BR'),
+          temperature: Math.round(Number(main.temp ?? 0)),
+          feels_like: Math.round(Number(main.feels_like ?? 0)),
+          description: String((weatherArr[0] && (weatherArr[0] as Record<string, unknown>).description) ?? ''),
+          icon: String((weatherArr[0] && (weatherArr[0] as Record<string, unknown>).icon) ?? ''),
+          humidity: Number(main.humidity ?? 0),
+          wind_speed: Number(wind.speed ?? 0),
+          clouds: Number(clouds.all ?? 0),
+        };
+      });
 
       result = {
         location: {
@@ -140,10 +184,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       error: 'Erro ao obter dados meteorológicos',
       details: error.message,
-      fallback: 'Não foi possível obter os dados meteorológicos no momento. Verifique se a cidade foi digitada corretamente.'
+      fallback: 'Não foi possível obter os dados meteorológicos no momento. Verifique se a cidade foi digitada corretamente, e se você possui uma conexão com a internet estável.'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+})

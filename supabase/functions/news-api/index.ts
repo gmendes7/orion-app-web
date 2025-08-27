@@ -1,5 +1,6 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-expect-error: remote Deno std module; ignore editor/module-resolution errors in non-Deno TypeScript tooling
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,18 +46,29 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      query, 
-      category = 'general', 
-      country = 'br', 
-      pageSize = 10,
-      sortBy = 'publishedAt'
-    }: NewsRequest = await req.json();
+  const { 
+    query, 
+    category = 'general', 
+    country = 'br', 
+    pageSize = 10,
+    sortBy = 'publishedAt'
+  }: NewsRequest = await req.json();
 
-    const apiKey = Deno.env.get('NEWS_API_KEY');
-    if (!apiKey) {
-      throw new Error('NEWS_API_KEY não configurada');
-    }
+  // Support both Deno and Node (or other) environments without referencing `Deno` at compile time
+  const _global = globalThis as unknown as {
+    Deno?: { env?: { get?: (key: string) => string | undefined } };
+    process?: { env?: { NEWS_API_KEY?: string } };
+    __NEWS_API_KEY?: string;
+  };
+
+  const apiKey: string | undefined =
+    _global.Deno?.env?.get?.('NEWS_API_KEY')
+    ?? _global.process?.env?.NEWS_API_KEY
+    ?? _global.__NEWS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('NEWS_API_KEY não configurada');
+  }
 
     let url = 'https://newsapi.org/v2/';
     
@@ -80,26 +92,32 @@ serve(async (req) => {
     const data = await response.json();
     
     // Filtrar e formatar notícias
-    const articles = data.articles
-      .filter((article: any) => 
-        article.title && 
-        article.description && 
-        !article.title.includes('[Removed]') &&
-        !article.description.includes('[Removed]')
-      )
-      .map((article: any) => ({
-        title: article.title,
-        description: article.description,
-        url: article.url,
-        urlToImage: article.urlToImage,
-        publishedAt: new Date(article.publishedAt).toLocaleString('pt-BR'),
-        source: {
-          name: article.source.name,
-          id: article.source.id
-        },
-        author: article.author
-      }))
-      .slice(0, pageSize);
+    const articles = (Array.isArray(data.articles) ? data.articles : [])
+      .filter((article: unknown) => {
+        const a = article as Record<string, unknown>;
+        return (
+          typeof a.title === 'string' &&
+          typeof a.description === 'string' &&
+          !a.title.includes('[Removed]') &&
+          !a.description.includes('[Removed]')
+        );
+      })
+      .map((article: unknown) => {
+        const a = article as Record<string, unknown>;
+        return {
+          title: String(a.title ?? ''),
+          description: String(a.description ?? ''),
+          url: String(a.url ?? ''),
+          urlToImage: String(a.urlToImage ?? ''),
+          publishedAt: new Date(String(a.publishedAt ?? '')).toLocaleString('pt-BR'),
+          source: {
+            name: String((a.source as Record<string, unknown>)?.name ?? ''),
+            id: (a.source as Record<string, unknown>)?.id ?? null,
+          },
+          author: String(a.author ?? ''),
+        };
+      })
+      .slice(0, pageSize as number);
 
     const result = {
       articles,

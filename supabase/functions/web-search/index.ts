@@ -1,46 +1,43 @@
-// web-search/index.ts
-// Função para realizar pesquisas na web usando Perplexity AI
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+declare const Deno: {
+  env?: { get(name: string): string | undefined };
+} | undefined;
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-forwarded-for",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 };
 
-// Helper function for safe fetch with timeout and retries
+// safeFetch implementation (complete)...
 async function safeFetch(
   url: string,
   options: RequestInit = {},
   timeoutMs = 8000,
   retries = 2
-) {
+): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
+      const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeout);
-
       if (!response.ok) {
-        const body = await response.text();
-        throw new Error(
-          `HTTP ${response.status} - ${response.statusText} - ${body.slice(
-            0,
-            300
-          )}`
-        );
+        const body = await response.text().catch(() => "<no-body>");
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`HTTP ${response.status} ${response.statusText} - ${String(body).slice(0, 300)}`);
       }
-
       return response;
-    } catch (error) {
+    } catch (e) {
       clearTimeout(timeout);
-      if (attempt === retries) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        continue;
+      }
+      throw e;
     }
   }
   throw new Error("Max retries exceeded");
@@ -52,149 +49,161 @@ interface WebSearchRequest {
   count?: number;
 }
 
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-  publishedDate?: string;
-  source?: string;
+interface WebSearchResponse {
+  answer: string;
+  relatedQuestions: unknown[];
+  query: string;
+  type: string;
+  timestamp: string;
 }
 
-// Exported handler (Edge Function style)
-export default async function handler(req: Request): Promise<Response> {
-  // Preflight CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// Resolve env for Deno or Node (local dev)
+function getEnvVar(name: string): string | undefined {
   try {
-    const {
-      query,
-      type = "search",
-      count = 5,
-    }: WebSearchRequest = await req.json();
+    if (typeof Deno !== "undefined") {
+      const deno = Deno as unknown as { env?: { get?: (n: string) => string | undefined } };
+      if (deno.env && typeof deno.env.get === "function") {
+        return deno.env.get(name);
+      }
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof process !== "undefined") {
+    const proc = process as unknown as { env?: Record<string, string | undefined> };
+    if (proc.env && Object.prototype.hasOwnProperty.call(proc.env, name)) {
+      return proc.env[name];
+    }
+  }
+  return undefined;
+}
 
-    if (!query?.trim() || query.length < 3) {
-      throw new Error("A consulta deve ter pelo menos 3 caracteres");
+export default async function (req: Request): Promise<Response> {
+  const allowedTypes = ["search", "news", "academic"] as const;
+  try {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const query = String(body.query ?? "").trim();
+    const type = (typeof body.type === "string" && allowedTypes.includes(body.type as typeof allowedTypes[number])
+      ? (body.type as typeof allowedTypes[number])
+      : "search");
+    const count =
+      typeof body.count === "number" && Number.isFinite(body.count) ? Math.floor(body.count as number) : 5;
+
+    if (!query || query.length < 3) {
+      return new Response(JSON.stringify({ error: "A consulta deve ter pelo menos 3 caracteres" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (count < 1 || count > 20) {
-      throw new Error("O número de resultados deve ser entre 1 e 20");
+    if (!allowedTypes.includes(type)) {
+      return new Response(JSON.stringify({ error: "Tipo inválido. Use 'search', 'news' ou 'academic'." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (!["search", "news", "academic"].includes(type)) {
-      throw new Error(
-        "Tipo de pesquisa inválido. Use 'search', 'news' ou 'academic'."
-      );
-    }
-
-    let perplexityApiKey: string | undefined;
-    // Try Deno first (access via globalThis to avoid ReferenceError in non-Deno runtimes)
-    try {
-      perplexityApiKey = (globalThis as ).Deno?.env?.get?.(
-        "PERPLEXITY_API_KEY"
-      );
-    } catch {
-      // ignore if Deno not available or access denied
-    }
-    // Fallback to Node's process.env if not found
+    const perplexityApiKey = getEnvVar("PERPLEXITY_API_KEY");
     if (!perplexityApiKey) {
-      perplexityApiKey = (globalThis as any).process?.env?.PERPLEXITY_API_KEY;
+      return new Response(JSON.stringify({ error: "PERPLEXITY_API_KEY não configurada" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-    if (!perplexityApiKey) {
-      throw new Error("PERPLEXITY_API_KEY não configurada");
-    }
+    const key = perplexityApiKey;
 
+    // Build prompts
     let systemPrompt = "Você é um assistente de pesquisa especializado.";
     let searchPrompt = query;
-
     switch (type) {
       case "news":
-        systemPrompt += " Foque em notícias recentes e atuais.";
+        systemPrompt += " Foque em notícias recentes e confiáveis.";
         searchPrompt = `Últimas notícias sobre: ${query}`;
         break;
       case "academic":
-        systemPrompt +=
-          " Foque em informações acadêmicas e científicas confiáveis.";
+        systemPrompt += " Foque em fontes acadêmicas e científicas confiáveis.";
         searchPrompt = `Pesquisa acadêmica sobre: ${query}`;
         break;
       default:
-        systemPrompt += " Forneça informações precisas e atualizadas.";
+        systemPrompt += " Forneça uma resposta clara, estruturada e com tópicos.";
+        searchPrompt = query;
     }
 
-    const response = await safeFetch(
-      "https://api.perplexity.ai/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${perplexityApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-sonar-large-128k-online",
-          messages: [
-            {
-              role: "system",
-              content:
-                systemPrompt +
-                " Responda em português brasileiro de forma clara e organizada.",
-            },
-            {
-              role: "user",
-              content: searchPrompt,
-            },
-          ],
-          temperature: 0.2,
-          top_p: 0.9,
-          max_tokens: 2000,
-          return_images: false,
-          return_related_questions: true,
-          search_recency_filter: type === "news" ? "day" : "month",
-          frequency_penalty: 1,
-          presence_penalty: 0,
-        }),
-      }
-    );
+    const apiUrl = "https://api.perplexity.ai/chat/completions";
+    const payload = {
+      model: "llama-3.1-sonar-large-128k-online",
+      messages: [
+        { role: "system", content: systemPrompt + " Responda em português brasileiro de forma clara e organizada." },
+        { role: "user", content: searchPrompt },
+      ],
+      temperature: 0.2,
+      top_p: 0.9,
+      max_tokens: 2000,
+      return_images: false,
+      return_related_questions: true,
+      search_recency_filter: type === "news" ? "day" : "month",
+      frequency_penalty: 1,
+      presence_penalty: 0,
+      limit: count,
+    };
 
-    // Safely parse response JSON, falling back to raw text when JSON parsing fails
-    let data;
+    const resp = await safeFetch(apiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let data: unknown = null;
     try {
-      data = await response.clone().json();
-    } catch (jsonErr) {
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { raw_text: text };
-      }
+      data = await resp.json();
+    } catch {
+      const txt = await resp.text().catch(() => "");
+      data = { choices: [{ message: { content: txt } }], related_questions: [] };
     }
 
-    const result = {
-      answer:
-        data.choices?.[0]?.message?.content || "Nenhum resultado encontrado.",
-      relatedQuestions: data.related_questions || [],
+    const anyData = (data ?? {}) as Record<string, unknown>;
+
+    // Try to extract answer from choices.message.content or from answer field
+    let extractedAnswer: string | undefined;
+    const choices = Array.isArray(anyData.choices) ? (anyData.choices as Array<Record<string, unknown>>) : undefined;
+    if (choices && choices[0]) {
+      const first = choices[0] as Record<string, unknown>;
+      const msg = first.message as Record<string, unknown> | undefined;
+      if (msg && typeof msg.content === "string") {
+        extractedAnswer = msg.content;
+      }
+    }
+    if (extractedAnswer === undefined && typeof anyData.answer === "string") {
+      extractedAnswer = anyData.answer;
+    }
+    const answer = String(extractedAnswer ?? "");
+
+    const relatedQuestions = Array.isArray(anyData.related_questions)
+      ? (anyData.related_questions as unknown[])
+      : [];
+
+    const result: WebSearchResponse = {
+      answer: String(answer || "Nenhum resultado encontrado."),
+      relatedQuestions,
       query,
-      type,
+      type: type ?? "search",
       timestamp: new Date().toISOString(),
     };
 
     return new Response(JSON.stringify(result), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    console.error("❌ Erro na função web-search:", err);
+  } catch (err: unknown) {
     return new Response(
       JSON.stringify({
         error: "Erro na pesquisa",
-        details: err.message || String(err),
-        fallback:
-          "Desculpe, não foi possível realizar a pesquisa no momento. Tente novamente em alguns instantes.",
+        details: err instanceof Error ? err.message : String(err),
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 }
