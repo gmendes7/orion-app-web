@@ -1,15 +1,15 @@
-// web-search/index.ts
-// Função para realizar pesquisas na web usando Perplexity AI
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+declare const Deno: {
+  env?: { get(name: string): string | undefined };
+} | undefined;
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-forwarded-for",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 };
 
-// Helper function for safe fetch with timeout and retries
+// safeFetch implementation (complete)...
 async function safeFetch(
   url: string,
   options: RequestInit = {},
@@ -20,37 +20,24 @@ async function safeFetch(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
+      const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeout);
-
       if (!response.ok) {
-        const body = await response.text().catch(() => "<binary/body>");
-        const err = new Error(
-          `HTTP ${response.status} ${response.statusText} - ${body.slice(
-            0,
-            300
-          )}`
-        );
-        // se não for última tentativa, aguarda e tenta novamente
+        const body = await response.text().catch(() => "<no-body>");
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
           continue;
         }
-        throw err;
+        throw new Error(`HTTP ${response.status} ${response.statusText} - ${String(body).slice(0, 300)}`);
       }
-
       return response;
-    } catch (error) {
+    } catch (e) {
       clearTimeout(timeout);
-      // Retry em caso de timeout/erro de rede até exceder tentativas
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
         continue;
       }
-      throw error;
+      throw e;
     }
   }
   throw new Error("Max retries exceeded");
@@ -64,97 +51,70 @@ interface WebSearchRequest {
 
 interface WebSearchResponse {
   answer: string;
-  relatedQuestions: any[];
+  relatedQuestions: unknown[];
   query: string;
   type: string;
   timestamp: string;
 }
 
-// Exported handler (Edge Function style)
-export default async function handler(req: Request): Promise<Response> {
-  // Preflight CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// Resolve env for Deno or Node (local dev)
+function getEnvVar(name: string): string | undefined {
   try {
-    const body = (await req
-      .json()
-      .catch(() => ({}))) as Partial<WebSearchRequest>;
-
-    const query = (body.query ?? "").toString();
-    const type = (body.type ?? "search") as WebSearchRequest["type"];
-    const count = Number.isFinite(Number(body.count)) ? Number(body.count) : 5;
-
-    if (!query?.trim() || query.trim().length < 3) {
-      return new Response(
-        JSON.stringify({
-          error: "A consulta deve ter pelo menos 3 caracteres",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    if (isNaN(count) || count < 1 || count > 20) {
-      return new Response(
-        JSON.stringify({
-          error: "O parâmetro 'count' deve estar entre 1 e 20",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    if (!["search", "news", "academic"].includes(type)) {
-      return new Response(
-        JSON.stringify({
-          error: "Tipo inválido. Use 'search', 'news' ou 'academic'.",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Resolve API key (Deno env preferred, fallback to process.env for local Node)
-    let perplexityApiKey: string | undefined;
-    try {
-      // @ts-expect-error Deno specific
-      if (
-        typeof Deno !== "undefined" &&
-        typeof (Deno as any).env?.get === "function"
-      ) {
-        // Deno runtime (Supabase Edge Functions)
-        perplexityApiKey = (Deno as any).env.get("PERPLEXITY_API_KEY");
+    if (typeof Deno !== "undefined") {
+      const deno = Deno as unknown as { env?: { get?: (n: string) => string | undefined } };
+      if (deno.env && typeof deno.env.get === "function") {
+        return deno.env.get(name);
       }
-    } catch {
-      // ignore
     }
-    if (!perplexityApiKey && typeof process !== "undefined") {
-      // Node fallback for local dev
-      perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+  } catch {
+    // ignore
+  }
+  if (typeof process !== "undefined") {
+    const proc = process as unknown as { env?: Record<string, string | undefined> };
+    if (proc.env && Object.prototype.hasOwnProperty.call(proc.env, name)) {
+      return proc.env[name];
+    }
+  }
+  return undefined;
+}
+
+export default async function (req: Request): Promise<Response> {
+  const allowedTypes = ["search", "news", "academic"] as const;
+  try {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const query = String(body.query ?? "").trim();
+    const type = (typeof body.type === "string" && allowedTypes.includes(body.type as typeof allowedTypes[number])
+      ? (body.type as typeof allowedTypes[number])
+      : "search");
+    const count =
+      typeof body.count === "number" && Number.isFinite(body.count) ? Math.floor(body.count as number) : 5;
+
+    if (!query || query.length < 3) {
+      return new Response(JSON.stringify({ error: "A consulta deve ter pelo menos 3 caracteres" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (!perplexityApiKey) {
-      return new Response(
-        JSON.stringify({ error: "PERPLEXITY_API_KEY não configurada" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (!allowedTypes.includes(type)) {
+      return new Response(JSON.stringify({ error: "Tipo inválido. Use 'search', 'news' ou 'academic'." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    const perplexityApiKey = getEnvVar("PERPLEXITY_API_KEY");
+    if (!perplexityApiKey) {
+      return new Response(JSON.stringify({ error: "PERPLEXITY_API_KEY não configurada" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const key = perplexityApiKey;
 
     // Build prompts
     let systemPrompt = "Você é um assistente de pesquisa especializado.";
     let searchPrompt = query;
-
     switch (type) {
       case "news":
         systemPrompt += " Foque em notícias recentes e confiáveis.";
@@ -165,26 +125,16 @@ export default async function handler(req: Request): Promise<Response> {
         searchPrompt = `Pesquisa acadêmica sobre: ${query}`;
         break;
       default:
-        systemPrompt +=
-          " Forneça uma resposta clara, estruturada e com tópicos.";
+        systemPrompt += " Forneça uma resposta clara, estruturada e com tópicos.";
         searchPrompt = query;
     }
 
-    // Call Perplexity (chat completions)
     const apiUrl = "https://api.perplexity.ai/chat/completions";
     const payload = {
       model: "llama-3.1-sonar-large-128k-online",
       messages: [
-        {
-          role: "system",
-          content:
-            systemPrompt +
-            " Responda em português brasileiro de forma clara e organizada. Estruture em Tópicos/Seções quando aplicável.",
-        },
-        {
-          role: "user",
-          content: searchPrompt,
-        },
+        { role: "system", content: systemPrompt + " Responda em português brasileiro de forma clara e organizada." },
+        { role: "user", content: searchPrompt },
       ],
       temperature: 0.2,
       top_p: 0.9,
@@ -200,29 +150,43 @@ export default async function handler(req: Request): Promise<Response> {
     const resp = await safeFetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${perplexityApiKey}`,
+        Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
 
-    // Try parse JSON, fallback to text
-    let data: any = null;
+    let data: unknown = null;
     try {
       data = await resp.json();
     } catch {
       const txt = await resp.text().catch(() => "");
-      data = {
-        choices: [{ message: { content: txt } }],
-        related_questions: [],
-      };
+      data = { choices: [{ message: { content: txt } }], related_questions: [] };
     }
 
-    const answer = data?.choices?.[0]?.message?.content ?? data?.answer ?? "";
-    const relatedQuestions = data?.related_questions ?? [];
+    const anyData = (data ?? {}) as Record<string, unknown>;
+
+    // Try to extract answer from choices.message.content or from answer field
+    let extractedAnswer: string | undefined;
+    const choices = Array.isArray(anyData.choices) ? (anyData.choices as Array<Record<string, unknown>>) : undefined;
+    if (choices && choices[0]) {
+      const first = choices[0] as Record<string, unknown>;
+      const msg = first.message as Record<string, unknown> | undefined;
+      if (msg && typeof msg.content === "string") {
+        extractedAnswer = msg.content;
+      }
+    }
+    if (extractedAnswer === undefined && typeof anyData.answer === "string") {
+      extractedAnswer = anyData.answer;
+    }
+    const answer = String(extractedAnswer ?? "");
+
+    const relatedQuestions = Array.isArray(anyData.related_questions)
+      ? (anyData.related_questions as unknown[])
+      : [];
 
     const result: WebSearchResponse = {
-      answer: answer || "Nenhum resultado encontrado.",
+      answer: String(answer || "Nenhum resultado encontrado."),
       relatedQuestions,
       query,
       type: type ?? "search",
@@ -230,22 +194,16 @@ export default async function handler(req: Request): Promise<Response> {
     };
 
     return new Response(JSON.stringify(result), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    console.error("❌ Erro na função web-search:", err);
+  } catch (err: unknown) {
     return new Response(
       JSON.stringify({
         error: "Erro na pesquisa",
-        details: err.message || String(err),
-        fallback:
-          "Desculpe, não foi possível realizar a pesquisa no momento. Tente novamente em alguns instantes.",
+        details: err instanceof Error ? err.message : String(err),
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 }

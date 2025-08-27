@@ -5,8 +5,10 @@ export const getCache = (k: string) => {
     return null;
   }
 };
-export const setCache = (k: string, v: any) => {
+export const setCache = (k: string, v: unknown) => {
   try {
     localStorage.setItem(k, JSON.stringify(v));
-  } catch {}
+  } catch {
+    // ignore quota or serialization errors
+  }
 };

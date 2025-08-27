@@ -395,8 +395,17 @@ const OrionChat = () => {
       setIsTyping(false);
       setTypingMessageId(null);
       if (audioEnabled && finalText.trim()) {
-        // assume função speak existe no escopo
-        speak(finalText).catch(() => {});
+        try {
+          const result = speak?.(finalText);
+          const hasCatch = (v: unknown): v is { catch: (onRejected?: (reason?: unknown) => unknown) => unknown } =>
+            typeof v === "object" && v !== null && typeof (v as { catch?: unknown }).catch === "function";
+
+          if (hasCatch(result)) {
+            result.catch(() => {});
+          }
+        } catch {
+          // Ignore synchronous errors from speak
+        }
       }
     };
 
@@ -420,12 +429,6 @@ const OrionChat = () => {
         signal,
       });
 
-      if (!res.ok || !res.body) {
-        const txt = await res.text();
-        toast({ title: "Erro", description: txt, variant: "destructive" });
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-        return;
-      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -433,14 +436,14 @@ const OrionChat = () => {
       let buffer = "";
 
       while (!done) {
-        const { value, done: d } = await reader.read();
-        done = d;
-        if (value) {
+        const chunk = await reader.read();
+        const value = chunk.value;
+        const dDone = chunk.done;
+        done = dDone === true;
+        if (value !== undefined && value !== null) {
           buffer += decoder.decode(value, { stream: true });
 
-          // OpenAI SSE streams: linhas iniciadas com "data: "
           const lines = buffer.split(/\r?\n/);
-          // mantém a última linha parcial em buffer
           buffer = lines.pop() ?? "";
 
           for (const line of lines) {
@@ -450,35 +453,35 @@ const OrionChat = () => {
               done = true;
               break;
             }
-            // remove prefix "data: "
-            const data = trimmed.startsWith("data:")
-              ? trimmed.replace(/^data:\s*/, "")
-              : trimmed;
+            const data = trimmed.startsWith("data:") ? trimmed.replace(/^data:\s*/, "") : trimmed;
             try {
               const parsed = JSON.parse(data);
-              // OpenAI chat completions streaming: parsed.choices[].delta.content
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
+              const delta = parsed?.choices?.[0]?.delta?.content;
+              if (typeof delta === "string" && delta.length > 0) {
                 setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, text: m.text + delta } : m
-                  )
+                  prev.map((m) => (m.id === assistantId ? { ...m, text: m.text + delta } : m))
                 );
-                // opcional: feedback sonoro/visual de digitação
-                playTypingSound?.();
+                if (typeof playTypingSound === "function") {
+                  playTypingSound();
+                }
               }
-            } catch (err) {
-              // não-JSON ou outro formato — ignora
+            } catch {
+              // ignora linhas não-JSON
             }
           }
         }
       }
 
-      const finalText =
-        messagesRef.current?.find((m) => m.id === assistantId)?.text || "";
+      // finalize: call onFinish with final text
+      const finalText = (messagesRef.current ?? messages).find((m) => m.id === assistantId)?.text ?? "";
       onFinish(finalText);
     } catch (err) {
-      if ((err as any)?.name === "AbortError") {
+      const errName =
+        typeof err === "object" && err !== null && "name" in err
+          ? (err as { name?: unknown }).name
+          : undefined;
+
+      if (errName === "AbortError") {
         toast({ title: "Cancelado", description: "Petição cancelada." });
       } else {
         toast({

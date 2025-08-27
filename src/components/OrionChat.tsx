@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Mic, Settings, Satellite, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import TypingEffect from "./TypingEffect";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Mic, Send, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import TypingEffect from "./TypingEffect";
 
 interface Message {
   id: string;

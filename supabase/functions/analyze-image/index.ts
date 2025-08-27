@@ -1,102 +1,156 @@
 // If running in Deno, ensure your editor supports Deno types (e.g., enable Deno extension in VSCode).
 // If running in Node.js, use a compatible HTTP server like Express:
-import bodyParser from "body-parser";
-import express from "express";
 
 // analyze-image/index.ts
 // Função para analisar imagens usando OpenAI GPT-4 Vision
 
-const corsHeaders = {
+// analyze-image as Supabase Edge Function (Deno / Fetch handler)
+declare const Deno: {
+  env?: { get(name: string): string | undefined };
+} | undefined;
+
+export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-forwarded-for",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 };
 
-// Express version of the handler
-const app = express();
-app.use(bodyParser.json());
-
-app.options("*", (req, res) => {
-  res.set(corsHeaders).sendStatus(204);
-});
-
-app.post("/", async (req, res) => {
+function getOpenAiKey(): string | undefined {
   try {
-    const { image, filename } = req.body;
-
-    if (!image) {
-      throw new Error("Imagem não fornecida");
+    if (typeof Deno !== "undefined" && Deno?.env && typeof Deno.env.get === "function") {
+      return Deno.env.get("OPENAI_API_KEY");
     }
+  } catch {
+    // ignore
+  }
+  if (typeof process !== "undefined") return process.env.OPENAI_API_KEY;
+  return undefined;
+}
 
-    const openAIApiKey = process.env.OPENAI_API_KEY;
-    if (!openAIApiKey) {
-      throw new Error("OpenAI API key não configurada");
-    }
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Método não permitido" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
-    console.log("Analyzing image:", filename);
+  // parse body safely
+  let body: Record<string, unknown> = {};
+  try {
+    const txt = await req.text();
+    body = txt ? JSON.parse(txt) : {};
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "JSON inválido", details: String(err) }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+  if (!imageUrl) {
+    return new Response(JSON.stringify({ error: "imageUrl é obrigatório" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const OPENAI_KEY = getOpenAiKey();
+  if (!OPENAI_KEY) {
+    return new Response(JSON.stringify({ error: "OPENAI_API_KEY não configurada" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // preferência por Responses API (suporta image inputs). Ajuste OPENAI_MODEL nas envs se necessário.
+  const envModel = (typeof Deno !== "undefined" && Deno?.env && typeof Deno.env.get === "function")
+    ? Deno.env.get("OPENAI_MODEL")
+    : (typeof process !== "undefined" && process?.env ? process.env.OPENAI_MODEL : undefined);
+  const model = envModel || "gpt-4o-mini";
+
+  // Tenta chamar Responses API com input_image (funciona se sua conta/model suportam visão)
+  try {
+    const resp = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
+        Authorization: `Bearer ${OPENAI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
-        max_tokens: 500,
-        messages: [
+        model,
+        input: [
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: "Analise esta imagem e descreva o que você vê de forma clara e objetiva. Se houver texto, transcreva-o. Se for um gráfico ou diagrama, explique os dados principais. Responda em português brasileiro.",
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${image}`,
-                },
-              },
+              { type: "input_text", text: "Descreva esta imagem em português. Primeiro um resumo (1-2 frases), depois tópicos com detalhes." },
+              { type: "input_image", image_url: imageUrl },
             ],
           },
         ],
+        // limites para reduzir custo/latência
+        max_output_tokens: 500,
+        temperature: 0.2,
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(
-        `OpenAI API error: ${error.error?.message || "Erro desconhecido"}`
-      );
+    const txt = await resp.text();
+    if (!resp.ok) {
+      console.error("OpenAI /responses erro:", resp.status, txt);
+      // fallback: retorna o texto de erro para debugging
+      return new Response(JSON.stringify({ error: "Erro ao contactar OpenAI", details: txt }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const data = await response.json();
-    const analysis =
-      data.choices[0]?.message?.content || "Não foi possível analisar a imagem";
+    // tenta interpretar resposta do Responses API
+    type OpenAIResponse = {
+      output?: Array<
+        | { content?: Array<{ text?: string; speech?: string }> }
+        | string
+      >;
+      choices?: Array<{ message?: { content?: string } }>;
+    };
 
-    console.log("Image analysis completed successfully");
+    let json: OpenAIResponse | null = null;
+    try {
+      json = JSON.parse(txt) as OpenAIResponse;
+    } catch {
+      json = null;
+    }
 
-    res.set(corsHeaders).json({
-      analysis,
-      filename,
-      success: true,
+    // Extrair texto da estrutura comum do Responses API
+    let description = "";
+    if (json?.output && Array.isArray(json.output)) {
+      for (const out of json.output) {
+        if (typeof out === "string") {
+          description += out;
+        } else if (Array.isArray(out.content)) {
+          for (const c of out.content) {
+            if (typeof c.text === "string") description += c.text;
+            if (typeof c.speech === "string") description += c.speech;
+          }
+        }
+      }
+    }
+
+    // fallback simples: tenta extrair choices.message.content (caso seja Chat-like)
+    if (!description && json?.choices?.[0]?.message?.content) {
+      description = json.choices[0].message.content;
+    }
+
+    description = String(description || "Não foi possível obter descrição da imagem.");
+
+    return new Response(JSON.stringify({ description }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: unknown) {
-    console.error("Error in analyze-image function:", error);
-
-    const message = error instanceof Error ? error.message : String(error);
-
-    res.status(500).set(corsHeaders).json({
-      error: message,
-      analysis:
-        "Desculpe, não foi possível analisar esta imagem no momento. Tente novamente.",
-      success: false,
+  } catch (err) {
+    console.error("analyze-image erro inesperado:", err);
+    return new Response(JSON.stringify({ error: "Erro interno", details: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+}

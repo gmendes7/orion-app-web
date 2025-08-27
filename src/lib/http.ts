@@ -1,7 +1,7 @@
 export type FetchOpts = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeoutMs?: number;
   retries?: number;
 };
