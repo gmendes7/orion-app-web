@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/integrations/hooks/use-toast";
@@ -6,6 +5,7 @@ import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
 import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { safeCommandExecution, formatNeonResponse } from "@/utils/safeCommandExecution";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Cloud,
@@ -18,9 +18,15 @@ import {
   Settings,
   Volume2,
   VolumeX,
+  Plus,
+  Edit3,
+  Trash2,
+  Menu,
+  X
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TypingEffect from "./TypingEffect";
+import { HexagonBackground } from "./HexagonBackground";
 
 interface Message {
   id: string;
@@ -29,30 +35,41 @@ interface Message {
   timestamp: Date;
 }
 
-interface FeedbackData {
-  rating: number;
-  comment: string;
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastMessage: Date;
 }
 
 const OrionChat = () => {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
+  const [conversations, setConversations] = useState<Conversation[]>([
     {
-      id: "1",
-      text: "Olá! Sou o Orion, seu assistente de IA. Como posso ajudar você hoje?",
-      isUser: false,
-      timestamp: new Date(),
-    },
+      id: "default",
+      title: "Nova Conversa",
+      messages: [
+        {
+          id: "1",
+          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ],
+      lastMessage: new Date()
+    }
   ]);
+  
+  const [currentConversationId, setCurrentConversationId] = useState("default");
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackComment, setFeedbackComment] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const currentConversation = conversations.find(c => c.id === currentConversationId) || conversations[0];
+  const messages = currentConversation?.messages || [];
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
@@ -78,25 +95,6 @@ const OrionChat = () => {
     volume: audioEnabled ? 1 : 0,
   });
 
-  // Simple image upload handler
-  const handleImageUpload = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        // Para agora, apenas mostrar uma mensagem
-        toast({
-          title: "Upload de Imagem",
-          description:
-            "Funcionalidade em desenvolvimento. Em breve você poderá enviar imagens!",
-        });
-      }
-    };
-    input.click();
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -105,42 +103,126 @@ const OrionChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Synthetic speech for typing sound effect
-  const playTypingSound = () => {
-    if (audioEnabled && "speechSynthesis" in window) {
-      // Create a subtle typing sound using Web Speech API
-      const utterance = new SpeechSynthesisUtterance(".");
-      utterance.volume = 0.1;
-      utterance.rate = 10;
-      utterance.pitch = 2;
-      speechSynthesis.speak(utterance);
+  // Criar nova conversa
+  const createNewConversation = () => {
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      title: "Nova Conversa",
+      messages: [
+        {
+          id: Date.now().toString(),
+          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ],
+      lastMessage: new Date()
+    };
+
+    setConversations(prev => [newConversation, ...prev]);
+    setCurrentConversationId(newConversation.id);
+    setSidebarOpen(false);
+  };
+
+  // Deletar conversa
+  const deleteConversation = (conversationId: string) => {
+    if (conversations.length === 1) return; // Não deletar a última conversa
+    
+    setConversations(prev => prev.filter(c => c.id !== conversationId));
+    
+    if (currentConversationId === conversationId) {
+      const remaining = conversations.filter(c => c.id !== conversationId);
+      setCurrentConversationId(remaining[0]?.id || "");
     }
   };
 
-  const handleImageAnalysis = async (imageUrl: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-image", {
-        body: { imageUrl },
-      });
+  // Comandos com sistema de fallback
+  const handleWebSearch = async (query: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("web-search", {
+          body: { query, type: "search", count: 5 },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const analysisMessage: Message = {
-        id: Date.now().toString(),
-        text: `🖼️ **Análise da Imagem:**\n\n${data.description}`,
-        isUser: false,
-        timestamp: new Date(),
-      };
+        return `🔍 **Resultados da Pesquisa: "${query}"** ✨\n\n${data.answer}\n\n${
+          data.relatedQuestions?.length > 0
+            ? `**Perguntas relacionadas:**\n${data.relatedQuestions
+                .map((q: string) => `• ${q}`)
+                .join("\n")}`
+            : ""
+        }`;
+      },
+      "🔍 Não consegui encontrar resultados agora. Tente reformular sua pergunta ou aguarde um momento. ✨",
+      "search"
+    );
 
-      setMessages((prev) => [...prev, analysisMessage]);
-    } catch (error) {
-      console.error("Erro na análise de imagem:", error);
-      toast({
-        title: "Erro na Análise",
-        description: "Não foi possível analisar a imagem.",
-        variant: "destructive",
-      });
-    }
+    return formatNeonResponse(result.message, !result.success);
+  };
+
+  const handleWeatherQuery = async (city: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("weather-api", {
+          body: { city, type: "current" },
+        });
+
+        if (error) throw error;
+
+        const weather = data.current;
+        return (
+          `🌤️ **Clima em ${data.location.name}, ${data.location.country}** ✨\n\n` +
+          `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
+          `**Condição:** ${weather.description}\n` +
+          `**Umidade:** ${weather.humidity}%\n` +
+          `**Vento:** ${weather.wind.speed} m/s\n` +
+          `**Pressão:** ${weather.pressure} hPa\n\n` +
+          `🌅 **Nascer do sol:** ${data.sunrise}\n` +
+          `🌇 **Pôr do sol:** ${data.sunset}`
+        );
+      },
+      "🌤️ Desculpe, não consegui acessar a previsão do tempo agora. Mas posso tentar de novo mais tarde! ☀️",
+      "weather"
+    );
+
+    return formatNeonResponse(result.message, !result.success);
+  };
+
+  const handleNewsQuery = async (query?: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("news-api", {
+          body: {
+            query,
+            category: query ? undefined : "general",
+            pageSize: 5,
+          },
+        });
+
+        if (error) throw error;
+
+        const articles = data.articles.slice(0, 5);
+        return (
+          `📰 **${
+            query ? `Notícias sobre "${query}"` : "Principais Notícias"
+          }** ✨\n\n` +
+          articles
+            .map(
+              (article: any, index: number) =>
+                `**${index + 1}. ${article.title}**\n` +
+                `${article.description}\n` +
+                `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
+                `[Ler mais](${article.url})`
+            )
+            .join("\n\n")
+        );
+      },
+      "📰 No momento não consegui buscar as notícias. Tente novamente em alguns minutos. 📺",
+      "news"
+    );
+
+    return formatNeonResponse(result.message, !result.success);
   };
 
   const detectAndExecuteCommands = async (text: string) => {
@@ -177,85 +259,6 @@ const OrionChat = () => {
     return null;
   };
 
-  const handleWebSearch = async (query: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("web-search", {
-        body: { query, type: "search", count: 5 },
-      });
-
-      if (error) throw error;
-
-      return `🔍 **Resultados da Pesquisa: "${query}"**\n\n${data.answer}\n\n${
-        data.relatedQuestions?.length > 0
-          ? `**Perguntas relacionadas:**\n${data.relatedQuestions
-              .map((q: string) => `• ${q}`)
-              .join("\n")}`
-          : ""
-      }`;
-    } catch (error) {
-      console.error("Erro na pesquisa:", error);
-      return "❌ Não foi possível realizar a pesquisa no momento.";
-    }
-  };
-
-  const handleWeatherQuery = async (city: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("weather-api", {
-        body: { city, type: "current" },
-      });
-
-      if (error) throw error;
-
-      const weather = data.current;
-      return (
-        `🌤️ **Clima em ${data.location.name}, ${data.location.country}**\n\n` +
-        `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
-        `**Condição:** ${weather.description}\n` +
-        `**Umidade:** ${weather.humidity}%\n` +
-        `**Vento:** ${weather.wind.speed} m/s\n` +
-        `**Pressão:** ${weather.pressure} hPa\n\n` +
-        `🌅 **Nascer do sol:** ${data.sunrise}\n` +
-        `🌇 **Pôr do sol:** ${data.sunset}`
-      );
-    } catch (error) {
-      console.error("Erro ao buscar clima:", error);
-      return "❌ Não foi possível obter informações do clima.";
-    }
-  };
-
-  const handleNewsQuery = async (query?: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("news-api", {
-        body: {
-          query,
-          category: query ? undefined : "general",
-          pageSize: 5,
-        },
-      });
-
-      if (error) throw error;
-
-      const articles = data.articles.slice(0, 5);
-      return (
-        `📰 **${
-          query ? `Notícias sobre "${query}"` : "Principais Notícias"
-        }**\n\n` +
-        articles
-          .map(
-            (article: any, index: number) =>
-              `**${index + 1}. ${article.title}**\n` +
-              `${article.description}\n` +
-              `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
-              `[Ler mais](${article.url})`
-          )
-          .join("\n\n")
-      );
-    } catch (error) {
-      console.error("Erro ao buscar notícias:", error);
-      return "❌ Não foi possível obter as notícias.";
-    }
-  };
-
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
 
@@ -267,7 +270,14 @@ const OrionChat = () => {
     };
 
     const currentInput = input;
-    setMessages((prev) => [...prev, userMessage]);
+    
+    // Atualizar conversa atual
+    setConversations(prev => prev.map(conv => 
+      conv.id === currentConversationId 
+        ? { ...conv, messages: [...conv.messages, userMessage], lastMessage: new Date() }
+        : conv
+    ));
+    
     setInput("");
     setIsTyping(true);
 
@@ -283,7 +293,12 @@ const OrionChat = () => {
           timestamp: new Date(),
         };
 
-        setMessages((prev) => [...prev, commandResponse]);
+        setConversations(prev => prev.map(conv => 
+          conv.id === currentConversationId 
+            ? { ...conv, messages: [...conv.messages, commandResponse] }
+            : conv
+        ));
+        
         setTypingMessageId(commandResponse.id);
         setIsTyping(false);
 
@@ -324,7 +339,12 @@ const OrionChat = () => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, orionResponse]);
+      setConversations(prev => prev.map(conv => 
+        conv.id === currentConversationId 
+          ? { ...conv, messages: [...conv.messages, orionResponse] }
+          : conv
+      ));
+      
       setTypingMessageId(orionMessageId);
       setIsTyping(false);
 
@@ -332,35 +352,59 @@ const OrionChat = () => {
       if (audioEnabled) {
         speak(data.response);
       }
-
-      // Play typing sound when AI starts responding
-      playTypingSound();
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       setIsTyping(false);
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
+        text: formatNeonResponse("Desculpe, ocorreu um erro na comunicação. Tente novamente.", true),
         isUser: false,
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
+      setConversations(prev => prev.map(conv => 
+        conv.id === currentConversationId 
+          ? { ...conv, messages: [...conv.messages, errorMessage] }
+          : conv
+      ));
 
       toast({
         title: "Erro de Comunicação",
-        description:
-          error instanceof Error ? error.message : "Erro desconhecido",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      const textarea = e.target as HTMLTextAreaElement;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      
+      if (e.shiftKey) {
+        // Remover indentação
+        const value = textarea.value;
+        const beforeTab = value.substring(0, start);
+        const afterTab = value.substring(end);
+        if (beforeTab.endsWith("  ")) {
+          setInput(beforeTab.slice(0, -2) + afterTab);
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start - 2;
+          }, 0);
+        }
+      } else {
+        // Adicionar indentação
+        setInput(input.substring(0, start) + "  " + input.substring(end));
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + 2;
+        }, 0);
+      }
     }
   };
 
@@ -370,893 +414,366 @@ const OrionChat = () => {
     }
   };
 
-  const submitFeedback = () => {
-    if (feedbackRating === 0) return;
-
-    // Store feedback (could be sent to analytics or database)
-    console.log("Feedback recebido:", {
-      rating: feedbackRating,
-      comment: feedbackComment,
-    });
-
-    toast({
-      title: "Obrigado pelo Feedback!",
-      description: "Suas sugestões nos ajudam a melhorar sempre.",
-    });
-
-    setShowFeedback(false);
-    setFeedbackRating(0);
-    setFeedbackComment("");
-  };
-
-  return (
-    <div className="flex flex-col h-screen relative">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="border-b border-border/10 p-3 md:p-4 backdrop-blur-xl bg-card/50"
-      >
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3">
-            <div className="relative group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <MessageSquare className="w-4 h-4 text-background" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
-            </div>
-            <div>
-              <h1
-                className="text-lg font-bold text-foreground tracking-wide"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                O.R.I.Ö.N
-              </h1>
-              <span className="text-xs text-muted-foreground">
-                Assistente Inteligente
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setAudioEnabled(!audioEnabled)}
-              className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
-            >
-              {audioEnabled ? (
-                <Volume2 className="w-4 h-4" />
-              ) : (
-                <VolumeX className="w-4 h-4" />
-              )}
-            </Button>
-
-            {/* Controles TTS */}
-            {isSpeaking && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={stopSpeaking}
-                className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
-              >
-                <VolumeX className="w-4 h-4" />
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowFeedback(true)}
-              className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
-        <AnimatePresence>
-          {messages.map((message, index) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className={cn(
-                "flex gap-3",
-                message.isUser ? "justify-end" : "justify-start"
-              )}
-            >
-              {!message.isUser && (
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <MessageSquare className="w-3 h-3 text-background" />
-                  </div>
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
-                  message.isUser
-                    ? "bg-primary text-primary-foreground ml-auto"
-                    : "bg-card/80 text-card-foreground border border-border/20"
-                )}
-              >
-                <p className="text-sm leading-relaxed">
-                  {!message.isUser && typingMessageId === message.id ? (
-                    <TypingEffect
-                      text={message.text}
-                      speed={25}
-                      onComplete={() => handleTypingComplete(message.id)}
-                    />
-                  ) : (
-                    message.text
-                  )}
-                </p>
-                <span className="text-xs opacity-50 mt-1 block">
-                  {message.timestamp.toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex gap-3 justify-start"
-          >
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
-                <MessageSquare className="w-3 h-3 text-background" />
-              </div>
-            </div>
-            <div className="bg-card/80 border border-border/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="border-t border-border/10 p-4 backdrop-blur-xl bg-card/50">
-        <div className="max-w-4xl mx-auto">
-          {/* Quick Action Buttons */}
-          <div className="flex gap-2 mb-3 overflow-x-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setInput("Pesquisar sobre ")}
-              className="whitespace-nowrap"
-            >
-              <Search className="w-3 h-3 mr-1" />
-              Pesquisar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setInput("Clima em ")}
-              className="whitespace-nowrap"
-            >
-              <Cloud className="w-3 h-3 mr-1" />
-              Clima
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setInput("Notícias sobre ")}
-              className="whitespace-nowrap"
-            >
-              <Newspaper className="w-3 h-3 mr-1" />
-              Notícias
-            </Button>
-          </div>
-
-          <div className="relative flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite sua mensagem ou use comandos: 'pesquisar', 'clima', 'notícias'..."
-                className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-24 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
-                disabled={isTyping}
-              />
-
-              {/* Upload de Imagem */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleImageUpload}
-                disabled={isTyping}
-                className="absolute right-14 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors hover:bg-accent/10"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-
-              {/* Botão de Voz */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={startListening}
-                disabled={isListening || isTyping}
-                className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors",
-                  isListening
-                    ? "text-accent bg-accent/10"
-                    : "text-muted-foreground hover:text-accent hover:bg-accent/10"
-                )}
-              >
-                <Mic className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isTyping}
-              size="icon"
-              className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-200"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Feedback Modal */}
-      <AnimatePresence>
-        {showFeedback && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowFeedback(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold mb-4">
-                Como está sua experiência?
-              </h3>
-
-              <div className="flex gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setFeedbackRating(star)}
-                    className={cn(
-                      "text-2xl transition-colors",
-                      star <= feedbackRating
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    ⭐
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                value={feedbackComment}
-                onChange={(e) => setFeedbackComment(e.target.value)}
-                placeholder="Deixe suas sugestões (opcional)"
-                className="w-full p-3 bg-background border border-border rounded-lg resize-none h-20 text-sm"
-              />
-
-              <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFeedback(false)}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={submitFeedback}
-                  disabled={feedbackRating === 0}
-                  className="flex-1"
-                >
-                  Enviar
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-export default OrionChat;
-=======
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  MessageSquare,
-  Mic,
-  Send,
-  Settings,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import TypingEffect from "./TypingEffect";
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
-
-interface FeedbackData {
-  rating: number;
-  comment: string;
-}
-
-const OrionChat = () => {
-  const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
+  // Botões de ação rápida
+  const quickActions = [
     {
-      id: "1",
-      text: "Olá! Sou o Orion, seu assistente de IA. Como posso ajudar você hoje?",
-      isUser: false,
-      timestamp: new Date(),
+      icon: Search,
+      label: "Pesquisar",
+      action: () => setInput("Pesquisar sobre "),
+      color: "from-orion-cosmic-blue to-orion-stellar-gold"
     },
-  ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackComment, setFeedbackComment] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Synthetic speech for typing sound effect
-  const playTypingSound = () => {
-    if (audioEnabled && "speechSynthesis" in window) {
-      // Create a subtle typing sound using Web Speech API
-      const utterance = new SpeechSynthesisUtterance(".");
-      utterance.volume = 0.1;
-      utterance.rate = 10;
-      utterance.pitch = 2;
-      speechSynthesis.speak(utterance);
+    {
+      icon: Cloud,
+      label: "Clima",
+      action: () => setInput("Clima em "),
+      color: "from-orion-energy-burst to-orion-accretion-disk"
+    },
+    {
+      icon: Newspaper,
+      label: "Notícias",
+      action: () => setInput("Notícias sobre "),
+      color: "from-orion-plasma-glow to-orion-stellar-gold"
     }
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || isTyping) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: input,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    const currentInput = input;
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsTyping(true);
-
-    try {
-      const conversation = messages.map((msg) => ({
-        role: msg.isUser ? "user" : "assistant",
-        content: msg.text,
-      }));
-
-      const { data, error } = await supabase.functions.invoke("chat-ai", {
-        body: {
-          message: currentInput,
-          conversation: conversation,
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || "Erro de comunicação");
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      const orionMessageId = (Date.now() + 1).toString();
-      const orionResponse: Message = {
-        id: orionMessageId,
-        text: data.response,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, orionResponse]);
-      setTypingMessageId(orionMessageId);
-      setIsTyping(false);
-
-      // Play typing sound when AI starts responding
-      playTypingSound();
-    } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
-      setIsTyping(false);
-
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
-
-      toast({
-        title: "Erro de Comunicação",
-        description:
-          error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const handleTypingComplete = (messageId: string) => {
-    if (typingMessageId === messageId) {
-      setTypingMessageId(null);
-    }
-  };
-  
-  
-      console.error("SpeechRecognition API not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      console.log("🎤 Ouvindo...");
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      console.log("Você disse:", transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error("Erro no reconhecimento:", event.error);
-    };
-
-    recognition.onend = () => {
-      console.log("Reconhecimento encerrado.");
-    };
-
-    recognition.start();
-  };
-
-  async function handleVoiceInput(): Promise<void> {
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      async function handleVoiceInput() {
-        // Verifica suporte à API
-        const SpeechRecognition =
-          window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-          console.error("SpeechRecognition API not supported in this browser.");
-          return;
-        }
-
-        // Cria instância do reconhecimento
-        const recognition = new SpeechRecognition();
-        recognition.lang = "pt-BR"; // idioma do reconhecimento
-        recognition.continuous = false; // para ouvir apenas uma frase
-        recognition.interimResults = false; // retorna só resultados finais
-
-        // Eventos
-        recognition.onstart = () => {
-          console.log("🎤 Listening...");
-        };
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          console.log("Você disse:", transcript);
-        };
-
-        recognition.onerror = (event) => {
-          console.error("Erro no reconhecimento:", event.error);
-        };
-
-        recognition.onend = () => {
-          console.log("Reconhecimento encerrado.");
-        };
-
-        recognition.start();
-      }
-      async function handleVoiceInput(): Promise<void> {
-        // Descobre qual implementação usar
-        const SpeechRecognition =
-          (window as any).SpeechRecognition ||
-          (window as any).webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-          console.error("SpeechRecognition API not supported in this browser.");
-          return;
-        }
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = "pt-BR";
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-          console.log("🎤 Ouvindo...");
-        };
-
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          console.log("Você disse:", transcript);
-        };
-
-        recognition.onerror = (event: any) => {
-          console.error("Erro no reconhecimento:", event.error);
-        };
-
-        recognition.onend = () => {
-          console.log("Reconhecimento encerrado.");
-        };
-
-        recognition.start();
-      }
-
-      const recognition = new SpeechRecognition();
-
-      recognition.lang = "pt-BR";
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-      };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-        toast({
-          title: "Erro no Reconhecimento de Voz",
-          description: "Não foi possível capturar o áudio. Tente novamente.",
-          variant: "destructive",
-        });
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } else {
-      toast({
-        title: "Desculpa no momento esse Recurso Não esta Disponível",
-        description: "Seu navegador não suporta reconhecimento de voz.",
-        variant: "destructive",
-      });
-    }
-  }
-
-  const submitFeedback = () => {
-    if (feedbackRating === 0) return;
-
-    // Store feedback (could be sent to analytics or database)
-    console.log("Feedback recebido:", {
-      rating: feedbackRating,
-      comment: feedbackComment,
-    });
-
-    toast({
-      title: "Obrigado pelo Feedback!",
-      description: "Suas sugestões nos ajudam a melhorar sempre.",
-    });
-
-    setShowFeedback(false);
-    setFeedbackRating(0);
-    setFeedbackComment("");
-  };
+  ];
 
   return (
-    <div className="flex flex-col h-screen relative">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="border-b border-border/10 p-3 md:p-4 backdrop-blur-xl bg-card/50"
-      >
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3">
-            <div className="relative group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <MessageSquare className="w-4 h-4 text-background" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
-            </div>
-            <div>
-              <h1
-                className="text-lg font-bold text-foreground tracking-wide"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                O.R.I.Ö.N
-              </h1>
-              <span className="text-xs text-muted-foreground">
-                Assistente Inteligente
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setAudioEnabled(!audioEnabled)}
-              className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
-            >
-              {audioEnabled ? (
-                <Volume2 className="w-4 h-4" />
-              ) : (
-                <VolumeX className="w-4 h-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowFeedback(true)}
-              className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
-        <AnimatePresence>
-          {messages.map((message, index) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className={cn(
-                "flex gap-3",
-                message.isUser ? "justify-end" : "justify-start"
-              )}
-            >
-              {!message.isUser && (
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <MessageSquare className="w-3 h-3 text-background" />
-                  </div>
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
-                  message.isUser
-                    ? "bg-primary text-primary-foreground ml-auto"
-                    : "bg-card/80 text-card-foreground border border-border/20"
-                )}
-              >
-                <p className="text-sm leading-relaxed">
-                  {!message.isUser && typingMessageId === message.id ? (
-                    <TypingEffect
-                      text={message.text}
-                      speed={25}
-                      onComplete={() => handleTypingComplete(message.id)}
-                    />
-                  ) : (
-                    message.text
-                  )}
-                </p>
-                <span className="text-xs opacity-50 mt-1 block">
-                  {message.timestamp.toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex gap-3 justify-start"
-          >
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
-                <MessageSquare className="w-3 h-3 text-background" />
-              </div>
-            </div>
-            <div className="bg-card/80 border border-border/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="border-t border-border/10 p-4 backdrop-blur-xl bg-card/50">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite sua mensagem..."
-                className="bg-background/80 border-border/30 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 pr-12 rounded-2xl h-12 backdrop-blur-sm shadow-sm"
-                disabled={isTyping}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleVoiceInput}
-                disabled={isListening || isTyping}
-                className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-colors",
-                  isListening
-                    ? "text-accent bg-accent/10"
-                    : "text-muted-foreground hover:text-accent hover:bg-accent/10"
-                )}
-              >
-                <Mic className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isTyping}
-              size="icon"
-              className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-200"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Feedback Modal */}
+    <div className="flex h-screen bg-background text-foreground relative overflow-hidden">
+      <HexagonBackground />
+      
+      {/* Sidebar */}
       <AnimatePresence>
-        {showFeedback && (
+        {sidebarOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowFeedback(false)}
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed inset-y-0 left-0 z-50 w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:relative md:translate-x-0 md:w-64 lg:w-80"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-2xl p-6 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold mb-4">
-                Como está sua experiência?
-              </h3>
-
-              <div className="flex gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setFeedbackRating(star)}
-                    className={cn(
-                      "text-2xl transition-colors",
-                      star <= feedbackRating
-                        ? "text-primary"
-                        : "text-muted-foreground"
-                    )}
+            <div className="flex flex-col h-full">
+              {/* Header do Sidebar */}
+              <div className="p-4 border-b border-orion-cosmic-blue/20">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-orion-stellar-gold">Conversas</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSidebarOpen(false)}
+                    className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
                   >
-                    ⭐
-                  </button>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                <Button
+                  onClick={createNewConversation}
+                  className="w-full mt-3 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold hover:opacity-90 text-orion-void font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Conversa
+                </Button>
+              </div>
+
+              {/* Lista de Conversas */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                {conversations.map((conv) => (
+                  <motion.div
+                    key={conv.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-3 rounded-lg cursor-pointer group transition-all duration-200",
+                      currentConversationId === conv.id
+                        ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
+                        : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
+                    )}
+                    onClick={() => {
+                      setCurrentConversationId(conv.id);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-orion-stellar-gold truncate">
+                          {conv.title}
+                        </p>
+                        <p className="text-xs text-orion-space-dust mt-1">
+                          {conv.lastMessage.toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      
+                      {conversations.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteConversation(conv.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 text-orion-space-dust hover:text-orion-accretion-disk transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-
-              <textarea
-                value={feedbackComment}
-                onChange={(e) => setFeedbackComment(e.target.value)}
-                placeholder="Deixe suas sugestões (opcional)"
-                className="w-full p-3 bg-background border border-border rounded-lg resize-none h-20 text-sm"
-              />
-
-              <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFeedback(false)}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={submitFeedback}
-                  disabled={feedbackRating === 0}
-                  className="flex-1"
-                >
-                  Enviar
-                </Button>
-              </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col relative z-10">
+        {/* Header */}
+        <motion.header
+          initial={{ y: -30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="border-b border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 shadow-lg"
+        >
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              <div className="relative group">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/20">
+                  <MessageSquare className="w-5 h-5 text-orion-void" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
+              </div>
+              
+              <div>
+                <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
+                  O.R.I.Ö.N
+                </h1>
+                <span className="text-sm text-orion-space-dust">
+                  Assistente Inteligente Futurista
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAudioEnabled(!audioEnabled)}
+                className="text-orion-cosmic-blue hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
+              >
+                {audioEnabled ? (
+                  <Volume2 className="w-5 h-5" />
+                ) : (
+                  <VolumeX className="w-5 h-5" />
+                )}
+              </Button>
+
+              {isSpeaking && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={stopSpeaking}
+                  className="text-orion-accretion-disk hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
+                >
+                  <VolumeX className="w-5 h-5 animate-pulse" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full">
+          <AnimatePresence>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                className={cn(
+                  "flex gap-4",
+                  message.isUser ? "justify-end" : "justify-start"
+                )}
+              >
+                {!message.isUser && (
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/30">
+                      <MessageSquare className="w-4 h-4 text-orion-void" />
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-5 py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
+                    message.isUser
+                      ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
+                      : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                  )}
+                >
+                  <div className="text-sm leading-relaxed">
+                    {!message.isUser && typingMessageId === message.id ? (
+                      <TypingEffect
+                        text={message.text}
+                        speed={25}
+                        onComplete={() => handleTypingComplete(message.id)}
+                      />
+                    ) : (
+                      <div className="prose prose-sm prose-invert max-w-none">
+                        {message.text.split('\n').map((line, i) => (
+                          <p key={i} className="mb-2 last:mb-0">
+                            {line.includes('**') ? (
+                              <span dangerouslySetInnerHTML={{
+                                __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-orion-stellar-gold">$1</strong>')
+                              }} />
+                            ) : (
+                              line
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/30">
+                  <MessageSquare className="w-4 h-4 text-orion-void" />
+                </div>
+                <div className="chat-message-orion rounded-2xl px-5 py-4 backdrop-blur-sm">
+                  <div className="flex space-x-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-2 h-2 bg-orion-stellar-gold rounded-full"
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.5, 1, 0.5],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          delay: i * 0.2,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="px-4 py-2">
+          <div className="flex gap-2 justify-center max-w-4xl mx-auto">
+            {quickActions.map((action, index) => (
+              <motion.button
+                key={action.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={action.action}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300",
+                  "bg-gradient-to-r", action.color,
+                  "text-orion-void hover:scale-105 hover:shadow-lg active:scale-95",
+                  "border border-white/20 backdrop-blur-sm"
+                )}
+              >
+                <action.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{action.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-4"
+        >
+          <div className="max-w-4xl mx-auto">
+            <div className="relative flex items-end gap-3">
+              <div className="flex-1 relative">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Digite sua mensagem... (Shift+Enter para nova linha, Tab para indentar)"
+                  disabled={isTyping}
+                  rows={Math.min(Math.max(input.split('\n').length, 1), 4)}
+                  className={cn(
+                    "w-full resize-none rounded-xl px-4 py-3 pr-12 text-sm",
+                    "bg-orion-event-horizon/50 border-2 border-orion-cosmic-blue/30",
+                    "text-foreground placeholder-orion-space-dust",
+                    "focus:border-orion-stellar-gold/60 focus:ring-2 focus:ring-orion-stellar-gold/20",
+                    "transition-all duration-300 backdrop-blur-sm",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  style={{
+                    minHeight: '48px',
+                    maxHeight: '120px'
+                  }}
+                />
+                
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startListening}
+                    disabled={isListening || isTyping}
+                    className={cn(
+                      "w-8 h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
+                      isListening && "text-orion-accretion-disk animate-pulse scale-110"
+                    )}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                onClick={sendMessage}
+                disabled={!input.trim() || isTyping}
+                className={cn(
+                  "w-12 h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
+                  "text-orion-void font-medium shadow-lg transition-all duration-300",
+                  "hover:scale-105 hover:shadow-xl active:scale-95",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+                  "border border-white/20"
+                )}
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };
 
 export default OrionChat;
->>>>>>> Stashed changes
