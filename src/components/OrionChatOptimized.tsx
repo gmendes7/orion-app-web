@@ -55,28 +55,41 @@ const OrionChat = () => {
   // Carregar mensagens quando a conversa muda
   useEffect(() => {
     const loadConversationMessages = async () => {
-      if (currentConversationId) {
-        const dbMessages = await loadMessages(currentConversationId);
-        const displayMessages: DisplayMessage[] = dbMessages.map(
-          (msg: DBMessage) => ({
-            id: msg.id,
-            text: msg.content,
-            isUser: msg.is_user,
-            timestamp: new Date(msg.created_at),
-          })
-        );
+      try {
+        if (currentConversationId) {
+          const dbMessages = await loadMessages(currentConversationId);
+          const displayMessages: DisplayMessage[] = dbMessages.map(
+            (msg: DBMessage) => ({
+              id: msg.id,
+              text: msg.content,
+              isUser: msg.is_user,
+              timestamp: new Date(msg.created_at),
+            })
+          );
 
-        // Se não há mensagens, adicionar mensagem de boas-vindas
-        if (displayMessages.length === 0) {
-          displayMessages.push({
-            id: "welcome",
-            text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
-            isUser: false,
-            timestamp: new Date(),
-          });
+          // Se não há mensagens, adicionar mensagem de boas-vindas
+          if (displayMessages.length === 0) {
+            displayMessages.push({
+              id: "welcome",
+              text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+              isUser: false,
+              timestamp: new Date(),
+            });
+          }
+
+          setMessages(displayMessages);
+        } else {
+          // Limpa as mensagens se nenhuma conversa estiver selecionada
+          setMessages([]);
         }
-
-        setMessages(displayMessages);
+      } catch (error) {
+        console.error("Failed to load messages:", error);
+        toast({
+          title: "Erro ao Carregar Conversa",
+          description:
+            "Não foi possível carregar as mensagens. Por favor, tente novamente.",
+          variant: "destructive",
+        });
       }
     };
 
@@ -298,7 +311,7 @@ const OrionChat = () => {
       <OrionSidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
-        conversations={conversations}
+        conversations={conversations || []}
         currentConversationId={currentConversationId}
         setCurrentConversationId={setCurrentConversationId}
         loading={conversationsLoading}

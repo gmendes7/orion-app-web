@@ -1,15 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-// 1. Get the environment variables specific to Vite
+// 1. Obtenha as variáveis de ambiente específicas do Vite
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 2. Check if the variables are defined, and throw an error if not
+// 2. Verifique se as variáveis estão definidas para evitar erros silenciosos
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    "Supabase URL and Anon Key must be defined in your .env.local file"
+    "Supabase URL and Anon Key must be defined in your .env.local file with the VITE_ prefix."
   );
 }
 
-// 3. Create and export the Supabase client for a client-side app
+// 3. Crie e exporte o cliente Supabase para uma aplicação client-side (SPA)
+// Esta é a forma correta para um projeto Vite + React.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
