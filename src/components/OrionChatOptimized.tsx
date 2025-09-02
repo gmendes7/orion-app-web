@@ -1,33 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  useConversations,
+  type Message as DBMessage,
+} from "@/hooks/useConversations";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
 import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { supabase } from "@/integrations/supabase/client";
+import { ORION_LOGO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { safeCommandExecution, formatNeonResponse } from "@/utils/safeCommandExecution";
-import { useAuth } from "@/contexts/AuthContext";
-import { useConversations, type Message as DBMessage } from "@/hooks/useConversations";
-import { AnimatePresence, motion } from "framer-motion";
 import {
-  Cloud,
-  MessageSquare,
-  Mic,
-  Newspaper,
-  Search,
-  Send,
-  Volume2,
-  VolumeX,
-  Plus,
-  Trash2,
-  Menu,
-  X,
-  LogOut,
-  User
-} from "lucide-react";
+  formatNeonResponse,
+  safeCommandExecution,
+} from "@/utils/safeCommandExecution";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import TypingEffect from "./TypingEffect";
+import { ChatInput } from "./ChatInput";
 import { HexagonBackground } from "./HexagonBackground";
+import { OrionSidebar } from "./OrionSidebar";
+import TypingEffect from "./TypingEffect";
 
 interface DisplayMessage {
   id: string;
@@ -52,7 +45,6 @@ const OrionChat = () => {
   } = useConversations();
 
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
-  const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -64,13 +56,15 @@ const OrionChat = () => {
     const loadConversationMessages = async () => {
       if (currentConversationId) {
         const dbMessages = await loadMessages(currentConversationId);
-        const displayMessages: DisplayMessage[] = dbMessages.map((msg: DBMessage) => ({
-          id: msg.id,
-          text: msg.content,
-          isUser: msg.is_user,
-          timestamp: new Date(msg.created_at),
-        }));
-        
+        const displayMessages: DisplayMessage[] = dbMessages.map(
+          (msg: DBMessage) => ({
+            id: msg.id,
+            text: msg.content,
+            isUser: msg.is_user,
+            timestamp: new Date(msg.created_at),
+          })
+        );
+
         // Se não há mensagens, adicionar mensagem de boas-vindas
         if (displayMessages.length === 0) {
           displayMessages.push({
@@ -80,7 +74,7 @@ const OrionChat = () => {
             timestamp: new Date(),
           });
         }
-        
+
         setMessages(displayMessages);
       }
     };
@@ -90,7 +84,10 @@ const OrionChat = () => {
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
-    onResult: (text) => setInput(text),
+    onResult: (text) => {
+      // Quando o reconhecimento de voz termina, envia a mensagem diretamente
+      sendMessage(text);
+    },
     onError: (error) =>
       toast({
         title: "Erro no Reconhecimento de Voz",
@@ -138,7 +135,9 @@ const OrionChat = () => {
 
         if (error) throw error;
 
-        return `🔍 **Resultados da Pesquisa: "${query}"** ✨\n\n${data.answer}\n\n${
+        return `🔍 **Resultados da Pesquisa: "${query}"** ✨\n\n${
+          data.answer
+        }\n\n${
           data.relatedQuestions?.length > 0
             ? `**Perguntas relacionadas:**\n${data.relatedQuestions
                 .map((q: string) => `• ${q}`)
@@ -251,29 +250,28 @@ const OrionChat = () => {
     return null;
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || isTyping || !currentConversationId) return;
+  const sendMessage = async (messageContent: string) => {
+    if (!messageContent.trim() || isTyping || !currentConversationId) return;
 
     const userMessage: DisplayMessage = {
       id: Date.now().toString(),
-      text: input,
+      text: messageContent,
       isUser: true,
       timestamp: new Date(),
     };
 
-    const currentInput = input;
-    
+    const updatedMessages = [...messages, userMessage];
+
     // Atualizar UI imediatamente
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
+    setMessages(updatedMessages);
     setIsTyping(true);
 
     try {
       // Salvar mensagem do usuário no banco
-      await saveMessage(currentConversationId, currentInput, true);
+      await saveMessage(currentConversationId, messageContent, true);
 
       // Detectar e executar comandos especiais primeiro
-      const commandResult = await detectAndExecuteCommands(currentInput);
+      const commandResult = await detectAndExecuteCommands(messageContent);
 
       if (commandResult) {
         const commandResponse: DisplayMessage = {
@@ -283,7 +281,7 @@ const OrionChat = () => {
           timestamp: new Date(),
         };
 
-        setMessages(prev => [...prev, commandResponse]);
+        setMessages((prev) => [...prev, commandResponse]);
         setTypingMessageId(commandResponse.id);
         setIsTyping(false);
 
@@ -299,14 +297,14 @@ const OrionChat = () => {
       }
 
       // Preparar contexto da conversa para o chat AI
-      const conversation = messages.map((msg) => ({
+      const conversation = updatedMessages.map((msg) => ({
         role: msg.isUser ? "user" : "assistant",
         content: msg.text,
       }));
 
       const { data, error } = await supabase.functions.invoke("chat-ai", {
         body: {
-          message: currentInput,
+          message: messageContent,
           conversation: conversation,
         },
       });
@@ -327,7 +325,7 @@ const OrionChat = () => {
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, orionResponse]);
+      setMessages((prev) => [...prev, orionResponse]);
       setTypingMessageId(orionMessageId);
       setIsTyping(false);
 
@@ -344,12 +342,15 @@ const OrionChat = () => {
 
       const errorMessage: DisplayMessage = {
         id: (Date.now() + 1).toString(),
-        text: formatNeonResponse("Desculpe, ocorreu um erro na comunicação. Tente novamente.", true),
+        text: formatNeonResponse(
+          "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
+          true
+        ),
         isUser: false,
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
 
       // Tentar salvar mensagem de erro
       try {
@@ -362,41 +363,28 @@ const OrionChat = () => {
 
       toast({
         title: "Erro de Comunicação",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      const textarea = e.target as HTMLTextAreaElement;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      
-      if (e.shiftKey) {
-        // Remover indentação
-        const value = textarea.value;
-        const beforeTab = value.substring(0, start);
-        const afterTab = value.substring(end);
-        if (beforeTab.endsWith("  ")) {
-          setInput(beforeTab.slice(0, -2) + afterTab);
-          setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd = start - 2;
-          }, 0);
-        }
-      } else {
-        // Adicionar indentação
-        setInput(input.substring(0, start) + "  " + input.substring(end));
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 2;
-        }, 0);
-      }
-    }
+  // Função para processar pseudo-markdown para HTML
+  const processMarkdown = (text: string) => {
+    return (
+      text
+        // Converte **negrito** para <strong>
+        .replace(
+          /\*\*(.*?)\*\*/g,
+          '<strong class="text-orion-stellar-gold">$1</strong>'
+        )
+        // Converte [texto](url) para <a>
+        .replace(
+          /\[(.*?)\]\((.*?)\)/g,
+          '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-orion-accretion-disk hover:underline">$1</a>'
+        )
+    );
   };
 
   const handleTypingComplete = (messageId: string) => {
@@ -409,150 +397,22 @@ const OrionChat = () => {
     await signOut();
   };
 
-  // Botões de ação rápida
-  const quickActions = [
-    {
-      icon: Search,
-      label: "Pesquisar",
-      action: () => setInput("Pesquisar sobre "),
-      color: "from-orion-cosmic-blue to-orion-stellar-gold"
-    },
-    {
-      icon: Cloud,
-      label: "Clima",
-      action: () => setInput("Clima em "),
-      color: "from-orion-energy-burst to-orion-accretion-disk"
-    },
-    {
-      icon: Newspaper,
-      label: "Notícias",
-      action: () => setInput("Notícias sobre "),
-      color: "from-orion-plasma-glow to-orion-stellar-gold"
-    }
-  ];
-
   return (
     <div className="flex h-screen bg-background text-foreground relative overflow-hidden">
       <HexagonBackground />
-      
+
       {/* Sidebar */}
-      <AnimatePresence>
-        {(sidebarOpen || window.innerWidth >= 768) && (
-          <motion.div
-            initial={{ x: -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className={cn(
-              "bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl",
-              "fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80",
-              "md:flex md:flex-col"
-            )}
-          >
-            <div className="flex flex-col h-full">
-              {/* Header do Sidebar */}
-              <div className="p-4 border-b border-orion-cosmic-blue/20">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-orion-stellar-gold">Conversas</h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSidebarOpen(false)}
-                    className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-                
-                <Button
-                  onClick={createNewConversation}
-                  className="w-full mt-3 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold hover:opacity-90 text-orion-void font-medium"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nova Conversa
-                </Button>
-              </div>
-
-              {/* Lista de Conversas */}
-              <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {conversationsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-6 h-6 border-2 border-orion-stellar-gold border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : (
-                  conversations.map((conv) => (
-                    <motion.div
-                      key={conv.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={cn(
-                        "p-3 rounded-lg cursor-pointer group transition-all duration-200",
-                        currentConversationId === conv.id
-                          ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
-                          : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
-                      )}
-                      onClick={() => {
-                        setCurrentConversationId(conv.id);
-                        setSidebarOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-orion-stellar-gold truncate">
-                            {conv.title}
-                          </p>
-                          <p className="text-xs text-orion-space-dust mt-1">
-                            {new Date(conv.updated_at).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                        
-                        {conversations.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteConversation(conv.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 w-6 h-6 text-orion-space-dust hover:text-orion-accretion-disk transition-opacity"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-
-              {/* User Info and Logout */}
-              <div className="p-4 border-t border-orion-cosmic-blue/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center">
-                      <User className="w-4 h-4 text-orion-void" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-orion-stellar-gold truncate">
-                        {user?.email?.split('@')[0] || 'Usuário'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="text-orion-space-dust hover:text-orion-accretion-disk transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <OrionSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        setCurrentConversationId={setCurrentConversationId}
+        loading={conversationsLoading}
+        createNewConversation={createNewConversation}
+        deleteConversation={deleteConversation}
+        handleLogout={handleLogout}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10">
@@ -573,18 +433,18 @@ const OrionChat = () => {
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              
+
               <div className="relative group">
                 <div className="w-10 h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                  <img
+                    src={ORION_LOGO_URL}
                     alt="O.R.I.Ö.N Logo"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
               </div>
-              
+
               <div>
                 <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
                   O.R.I.Ö.N
@@ -641,8 +501,8 @@ const OrionChat = () => {
                 {!message.isUser && (
                   <div className="flex-shrink-0 mt-1">
                     <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
-                      <img 
-                        src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                      <img
+                        src={ORION_LOGO_URL}
                         alt="O.R.I.Ö.N"
                         className="w-full h-full object-cover"
                       />
@@ -667,15 +527,13 @@ const OrionChat = () => {
                       />
                     ) : (
                       <div className="prose prose-sm prose-invert max-w-none">
-                        {message.text.split('\n').map((line, i) => (
+                        {message.text.split("\n").map((line, i) => (
                           <p key={i} className="mb-2 last:mb-0">
-                            {line.includes('**') ? (
-                              <span dangerouslySetInnerHTML={{
-                                __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-orion-stellar-gold">$1</strong>')
-                              }} />
-                            ) : (
-                              line
-                            )}
+                            <span
+                              dangerouslySetInnerHTML={{
+                                __html: processMarkdown(line),
+                              }}
+                            />
                           </p>
                         ))}
                       </div>
@@ -694,8 +552,8 @@ const OrionChat = () => {
             >
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                  <img
+                    src={ORION_LOGO_URL}
                     alt="O.R.I.Ö.N"
                     className="w-full h-full object-cover"
                   />
@@ -726,93 +584,12 @@ const OrionChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions */}
-        <div className="px-2 sm:px-4 py-2">
-          <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-4xl mx-auto">
-            {quickActions.map((action, index) => (
-              <motion.button
-                key={action.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                onClick={action.action}
-                className={cn(
-                  "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-300",
-                  "bg-gradient-to-r", action.color,
-                  "text-orion-void hover:scale-105 hover:shadow-lg active:scale-95",
-                  "border border-white/20 backdrop-blur-sm"
-                )}
-              >
-                <action.icon className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline sm:inline text-xs sm:text-sm">{action.label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Area */}
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-2 sm:p-4"
-        >
-          <div className="max-w-4xl mx-auto">
-            <div className="relative flex items-end gap-2 sm:gap-3">
-              <div className="flex-1 relative">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Digite sua mensagem... (Shift+Enter para nova linha, Tab para indentar)"
-                  disabled={isTyping}
-                  rows={Math.min(Math.max(input.split('\n').length, 1), 4)}
-                  className={cn(
-                    "w-full resize-none rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-sm",
-                    "bg-orion-event-horizon/50 border-2 border-orion-cosmic-blue/30",
-                    "text-foreground placeholder-orion-space-dust",
-                    "focus:border-orion-stellar-gold/60 focus:ring-2 focus:ring-orion-stellar-gold/20",
-                    "transition-all duration-300 backdrop-blur-sm",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                  )}
-                  style={{
-                    minHeight: '48px',
-                    maxHeight: '120px'
-                  }}
-                />
-                
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={startListening}
-                  disabled={isListening || isTyping}
-                  className={cn(
-                    "w-6 h-6 sm:w-8 sm:h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
-                    isListening && "text-orion-accretion-disk animate-pulse scale-110"
-                  )}
-                >
-                  <Mic className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
-                </div>
-              </div>
-
-              <Button
-                onClick={sendMessage}
-                disabled={!input.trim() || isTyping}
-                className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
-                  "text-orion-void font-medium shadow-lg transition-all duration-300",
-                  "hover:scale-105 hover:shadow-xl active:scale-95",
-                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
-                  "border border-white/20"
-                )}
-              >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+        <ChatInput
+          onSendMessage={sendMessage}
+          isTyping={isTyping}
+          isListening={isListening}
+          startListening={startListening}
+        />
       </div>
     </div>
   );
