@@ -6,61 +6,52 @@ import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { safeCommandExecution, formatNeonResponse } from "@/utils/safeCommandExecution";
+import { useAuth } from "@/contexts/AuthContext";
+import { useConversations, type Message as DBMessage } from "@/hooks/useConversations";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Cloud,
   MessageSquare,
   Mic,
   Newspaper,
-  Paperclip,
   Search,
   Send,
-  Settings,
   Volume2,
   VolumeX,
   Plus,
-  Edit3,
   Trash2,
   Menu,
-  X
+  X,
+  LogOut,
+  User
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import TypingEffect from "./TypingEffect";
 import { HexagonBackground } from "./HexagonBackground";
 
-interface Message {
+interface DisplayMessage {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
 }
 
-interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  lastMessage: Date;
-}
-
 const OrionChat = () => {
   const { toast } = useToast();
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: "default",
-      title: "Nova Conversa",
-      messages: [
-        {
-          id: "1",
-          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
-          isUser: false,
-          timestamp: new Date(),
-        },
-      ],
-      lastMessage: new Date()
-    }
-  ]);
-  
-  const [currentConversationId, setCurrentConversationId] = useState("default");
+  const { user, signOut } = useAuth();
+  const {
+    conversations,
+    currentConversationId,
+    setCurrentConversationId,
+    loading: conversationsLoading,
+    loadMessages,
+    createConversation,
+    updateConversationTitle,
+    deleteConversation,
+    saveMessage,
+  } = useConversations();
+
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
@@ -68,8 +59,34 @@ const OrionChat = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentConversation = conversations.find(c => c.id === currentConversationId) || conversations[0];
-  const messages = currentConversation?.messages || [];
+  // Carregar mensagens quando a conversa muda
+  useEffect(() => {
+    const loadConversationMessages = async () => {
+      if (currentConversationId) {
+        const dbMessages = await loadMessages(currentConversationId);
+        const displayMessages: DisplayMessage[] = dbMessages.map((msg: DBMessage) => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at),
+        }));
+        
+        // Se não há mensagens, adicionar mensagem de boas-vindas
+        if (displayMessages.length === 0) {
+          displayMessages.push({
+            id: "welcome",
+            text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+            isUser: false,
+            timestamp: new Date(),
+          });
+        }
+        
+        setMessages(displayMessages);
+      }
+    };
+
+    loadConversationMessages();
+  }, [currentConversationId, loadMessages]);
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
@@ -104,35 +121,10 @@ const OrionChat = () => {
   }, [messages]);
 
   // Criar nova conversa
-  const createNewConversation = () => {
-    const newConversation: Conversation = {
-      id: Date.now().toString(),
-      title: "Nova Conversa",
-      messages: [
-        {
-          id: Date.now().toString(),
-          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
-          isUser: false,
-          timestamp: new Date(),
-        },
-      ],
-      lastMessage: new Date()
-    };
-
-    setConversations(prev => [newConversation, ...prev]);
-    setCurrentConversationId(newConversation.id);
-    setSidebarOpen(false);
-  };
-
-  // Deletar conversa
-  const deleteConversation = (conversationId: string) => {
-    if (conversations.length === 1) return; // Não deletar a última conversa
-    
-    setConversations(prev => prev.filter(c => c.id !== conversationId));
-    
-    if (currentConversationId === conversationId) {
-      const remaining = conversations.filter(c => c.id !== conversationId);
-      setCurrentConversationId(remaining[0]?.id || "");
+  const createNewConversation = async () => {
+    const newConv = await createConversation("Nova Conversa");
+    if (newConv) {
+      setSidebarOpen(false);
     }
   };
 
@@ -260,9 +252,9 @@ const OrionChat = () => {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || isTyping || !currentConversationId) return;
 
-    const userMessage: Message = {
+    const userMessage: DisplayMessage = {
       id: Date.now().toString(),
       text: input,
       isUser: true,
@@ -271,36 +263,32 @@ const OrionChat = () => {
 
     const currentInput = input;
     
-    // Atualizar conversa atual
-    setConversations(prev => prev.map(conv => 
-      conv.id === currentConversationId 
-        ? { ...conv, messages: [...conv.messages, userMessage], lastMessage: new Date() }
-        : conv
-    ));
-    
+    // Atualizar UI imediatamente
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
 
     try {
+      // Salvar mensagem do usuário no banco
+      await saveMessage(currentConversationId, currentInput, true);
+
       // Detectar e executar comandos especiais primeiro
       const commandResult = await detectAndExecuteCommands(currentInput);
 
       if (commandResult) {
-        const commandResponse: Message = {
+        const commandResponse: DisplayMessage = {
           id: (Date.now() + 1).toString(),
           text: commandResult,
           isUser: false,
           timestamp: new Date(),
         };
 
-        setConversations(prev => prev.map(conv => 
-          conv.id === currentConversationId 
-            ? { ...conv, messages: [...conv.messages, commandResponse] }
-            : conv
-        ));
-        
+        setMessages(prev => [...prev, commandResponse]);
         setTypingMessageId(commandResponse.id);
         setIsTyping(false);
+
+        // Salvar resposta no banco
+        await saveMessage(currentConversationId, commandResult, false);
 
         // Auto-falar resposta se áudio estiver habilitado
         if (audioEnabled) {
@@ -332,21 +320,19 @@ const OrionChat = () => {
       }
 
       const orionMessageId = (Date.now() + 1).toString();
-      const orionResponse: Message = {
+      const orionResponse: DisplayMessage = {
         id: orionMessageId,
         text: data.response,
         isUser: false,
         timestamp: new Date(),
       };
 
-      setConversations(prev => prev.map(conv => 
-        conv.id === currentConversationId 
-          ? { ...conv, messages: [...conv.messages, orionResponse] }
-          : conv
-      ));
-      
+      setMessages(prev => [...prev, orionResponse]);
       setTypingMessageId(orionMessageId);
       setIsTyping(false);
+
+      // Salvar resposta no banco
+      await saveMessage(currentConversationId, data.response, false);
 
       // Auto-falar resposta se áudio estiver habilitado
       if (audioEnabled) {
@@ -356,18 +342,23 @@ const OrionChat = () => {
       console.error("Erro ao enviar mensagem:", error);
       setIsTyping(false);
 
-      const errorMessage: Message = {
+      const errorMessage: DisplayMessage = {
         id: (Date.now() + 1).toString(),
         text: formatNeonResponse("Desculpe, ocorreu um erro na comunicação. Tente novamente.", true),
         isUser: false,
         timestamp: new Date(),
       };
 
-      setConversations(prev => prev.map(conv => 
-        conv.id === currentConversationId 
-          ? { ...conv, messages: [...conv.messages, errorMessage] }
-          : conv
-      ));
+      setMessages(prev => [...prev, errorMessage]);
+
+      // Tentar salvar mensagem de erro
+      try {
+        if (currentConversationId) {
+          await saveMessage(currentConversationId, errorMessage.text, false);
+        }
+      } catch (saveError) {
+        console.error("Erro ao salvar mensagem de erro:", saveError);
+      }
 
       toast({
         title: "Erro de Comunicação",
@@ -412,6 +403,10 @@ const OrionChat = () => {
     if (typingMessageId === messageId) {
       setTypingMessageId(null);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   // Botões de ação rápida
@@ -476,48 +471,79 @@ const OrionChat = () => {
 
               {/* Lista de Conversas */}
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {conversations.map((conv) => (
-                  <motion.div
-                    key={conv.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      "p-3 rounded-lg cursor-pointer group transition-all duration-200",
-                      currentConversationId === conv.id
-                        ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
-                        : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
-                    )}
-                    onClick={() => {
-                      setCurrentConversationId(conv.id);
-                      setSidebarOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-orion-stellar-gold truncate">
-                          {conv.title}
-                        </p>
-                        <p className="text-xs text-orion-space-dust mt-1">
-                          {conv.lastMessage.toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                      
-                      {conversations.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteConversation(conv.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 w-6 h-6 text-orion-space-dust hover:text-orion-accretion-disk transition-opacity"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                {conversationsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-orion-stellar-gold border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  conversations.map((conv) => (
+                    <motion.div
+                      key={conv.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "p-3 rounded-lg cursor-pointer group transition-all duration-200",
+                        currentConversationId === conv.id
+                          ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
+                          : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
                       )}
+                      onClick={() => {
+                        setCurrentConversationId(conv.id);
+                        setSidebarOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-orion-stellar-gold truncate">
+                            {conv.title}
+                          </p>
+                          <p className="text-xs text-orion-space-dust mt-1">
+                            {new Date(conv.updated_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        
+                        {conversations.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteConversation(conv.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 w-6 h-6 text-orion-space-dust hover:text-orion-accretion-disk transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+
+              {/* User Info and Logout */}
+              <div className="p-4 border-t border-orion-cosmic-blue/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center">
+                      <User className="w-4 h-4 text-orion-void" />
                     </div>
-                  </motion.div>
-                ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-orion-stellar-gold truncate">
+                        {user?.email?.split('@')[0] || 'Usuário'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    className="text-orion-space-dust hover:text-orion-accretion-disk transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -539,7 +565,7 @@ const OrionChat = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(true)}
-                className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                className="text-orion-cosmic-blue hover:text-orion-stellar-gold"
               >
                 <Menu className="w-5 h-5" />
               </Button>
