@@ -12,13 +12,12 @@ import { ORION_LOGO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { formatNeonResponse } from "@/utils/safeCommandExecution";
 import { AnimatePresence, motion } from "framer-motion";
-import { Copy, Menu, Square, Volume2, VolumeX } from "lucide-react";
+import { Menu, Square, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkGfm from "remark-gfm";
 import { ChatInput } from "./ChatInput";
+import CodeBlockRenderer from "./CodeBlockRenderer";
 import { HexagonBackground } from "./HexagonBackground";
 import { OrionSidebar } from "./OrionSidebar";
 
@@ -429,36 +428,21 @@ const OrionChat = () => {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ node, inline, className, children, ...props }) {
+                        code({
+                          node,
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }: any) {
                           const match = /language-(\w+)/.exec(className || "");
                           const codeText = String(children).replace(/\n$/, "");
-                          const handleCopy = () => {
-                            navigator.clipboard.writeText(codeText);
-                            toast({
-                              title: "Copiado!",
-                              description:
-                                "Código copiado para a área de transferência.",
-                            });
-                          };
                           return !inline && match ? (
-                            <div className="relative my-2 bg-[#0d1117] rounded-lg">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 h-6 w-6 text-gray-400 hover:text-white"
-                                onClick={handleCopy}
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                              <SyntaxHighlighter
-                                style={vscDarkPlus}
-                                language={match[1]}
-                                PreTag="div"
-                                {...props}
-                              >
-                                {codeText}
-                              </SyntaxHighlighter>
-                            </div>
+                            <CodeBlockRenderer
+                              language={match[1]}
+                              codeText={codeText}
+                              {...props}
+                            />
                           ) : (
                             <code
                               className={cn(
