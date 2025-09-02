@@ -139,10 +139,13 @@ const Auth = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk shadow-2xl shadow-orion-stellar-gold/30 mb-6"
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-2xl shadow-orion-stellar-gold/30 mb-6 overflow-hidden"
             >
-              <MessageSquare className="w-10 h-10 text-orion-void" />
-              <Sparkles className="w-6 h-6 text-orion-void absolute -top-1 -right-1 animate-pulse" />
+              <img 
+                src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                alt="O.R.I.Ö.N Logo"
+                className="w-full h-full object-cover"
+              />
             </motion.div>
             
             <h1 className="text-3xl font-bold text-orion-stellar-gold stellar-text mb-2">

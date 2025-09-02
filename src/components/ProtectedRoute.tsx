@@ -21,8 +21,12 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           animate={{ opacity: 1, scale: 1 }}
           className="relative z-10"
         >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-2xl shadow-orion-stellar-gold/20">
-            <MessageSquare className="w-8 h-8 text-orion-void animate-pulse" />
+          <div className="w-16 h-16 rounded-2xl shadow-2xl shadow-orion-stellar-gold/20 overflow-hidden">
+            <img 
+              src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+              alt="O.R.I.Ö.N Logo"
+              className="w-full h-full object-cover animate-pulse"
+            />
           </div>
         </motion.div>
       </div>

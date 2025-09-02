@@ -437,13 +437,17 @@ const OrionChat = () => {
       
       {/* Sidebar */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {(sidebarOpen || window.innerWidth >= 768) && (
           <motion.div
             initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed inset-y-0 left-0 z-50 w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:relative md:translate-x-0 md:w-64 lg:w-80"
+            className={cn(
+              "bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl",
+              "fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80",
+              "md:flex md:flex-col"
+            )}
           >
             <div className="flex flex-col h-full">
               {/* Header do Sidebar */}
@@ -571,8 +575,12 @@ const OrionChat = () => {
               </Button>
               
               <div className="relative group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/20">
-                  <MessageSquare className="w-5 h-5 text-orion-void" />
+                <div className="w-10 h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                    alt="O.R.I.Ö.N Logo"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
               </div>
@@ -616,7 +624,7 @@ const OrionChat = () => {
         </motion.header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 sm:space-y-6 max-w-4xl mx-auto w-full">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -632,15 +640,19 @@ const OrionChat = () => {
               >
                 {!message.isUser && (
                   <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/30">
-                      <MessageSquare className="w-4 h-4 text-orion-void" />
+                    <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
+                      <img 
+                        src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                        alt="O.R.I.Ö.N"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </div>
                 )}
 
                 <div
                   className={cn(
-                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-5 py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
+                    "max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
                     message.isUser
                       ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
                       : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
@@ -681,8 +693,12 @@ const OrionChat = () => {
               className="flex justify-start"
             >
               <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/30">
-                  <MessageSquare className="w-4 h-4 text-orion-void" />
+                <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
+                    alt="O.R.I.Ö.N"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="chat-message-orion rounded-2xl px-5 py-4 backdrop-blur-sm">
                   <div className="flex space-x-1">
@@ -711,8 +727,8 @@ const OrionChat = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="px-4 py-2">
-          <div className="flex gap-2 justify-center max-w-4xl mx-auto">
+        <div className="px-2 sm:px-4 py-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-4xl mx-auto">
             {quickActions.map((action, index) => (
               <motion.button
                 key={action.label}
@@ -721,14 +737,14 @@ const OrionChat = () => {
                 transition={{ delay: index * 0.1 }}
                 onClick={action.action}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300",
+                  "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-300",
                   "bg-gradient-to-r", action.color,
                   "text-orion-void hover:scale-105 hover:shadow-lg active:scale-95",
                   "border border-white/20 backdrop-blur-sm"
                 )}
               >
-                <action.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{action.label}</span>
+                <action.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline sm:inline text-xs sm:text-sm">{action.label}</span>
               </motion.button>
             ))}
           </div>
@@ -739,10 +755,10 @@ const OrionChat = () => {
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-4"
+          className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-2 sm:p-4"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="relative flex items-end gap-3">
+            <div className="relative flex items-end gap-2 sm:gap-3">
               <div className="flex-1 relative">
                 <textarea
                   value={input}
@@ -752,7 +768,7 @@ const OrionChat = () => {
                   disabled={isTyping}
                   rows={Math.min(Math.max(input.split('\n').length, 1), 4)}
                   className={cn(
-                    "w-full resize-none rounded-xl px-4 py-3 pr-12 text-sm",
+                    "w-full resize-none rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-sm",
                     "bg-orion-event-horizon/50 border-2 border-orion-cosmic-blue/30",
                     "text-foreground placeholder-orion-space-dust",
                     "focus:border-orion-stellar-gold/60 focus:ring-2 focus:ring-orion-stellar-gold/20",
@@ -766,18 +782,18 @@ const OrionChat = () => {
                 />
                 
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={startListening}
-                    disabled={isListening || isTyping}
-                    className={cn(
-                      "w-8 h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
-                      isListening && "text-orion-accretion-disk animate-pulse scale-110"
-                    )}
-                  >
-                    <Mic className="w-4 h-4" />
-                  </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={startListening}
+                  disabled={isListening || isTyping}
+                  className={cn(
+                    "w-6 h-6 sm:w-8 sm:h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
+                    isListening && "text-orion-accretion-disk animate-pulse scale-110"
+                  )}
+                >
+                  <Mic className="w-3 h-3 sm:w-4 sm:h-4" />
+                </Button>
                 </div>
               </div>
 
@@ -785,14 +801,14 @@ const OrionChat = () => {
                 onClick={sendMessage}
                 disabled={!input.trim() || isTyping}
                 className={cn(
-                  "w-12 h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
                   "text-orion-void font-medium shadow-lg transition-all duration-300",
                   "hover:scale-105 hover:shadow-xl active:scale-95",
                   "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
                   "border border-white/20"
                 )}
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
           </div>
