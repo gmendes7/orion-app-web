@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Plus, X } from "lucide-react";
+import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 
 interface Conversation {
@@ -19,6 +19,7 @@ interface OrionSidebarProps {
   loading: boolean;
   createNewConversation: () => void;
   deleteConversation: (id: string) => void;
+  renameConversation: (id: string, newTitle: string) => void;
   handleLogout: () => void;
 }
 
@@ -31,6 +32,7 @@ export const OrionSidebar = ({
   loading,
   createNewConversation,
   deleteConversation,
+  renameConversation,
   handleLogout,
 }: OrionSidebarProps) => {
   const { user } = useAuth();
@@ -38,17 +40,7 @@ export const OrionSidebar = ({
   return (
     <AnimatePresence>
       {(isOpen || window.innerWidth >= 768) && (
-        <motion.div
-          initial={{ x: -300, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -300, opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={cn(
-            "bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl",
-            "fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80",
-            "md:flex md:flex-col"
-          )}
-        >
+        <div className="fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:flex md:flex-col">
           <div className="flex flex-col h-full">
             {/* Header do Sidebar */}
             <div className="p-4 border-b border-orion-cosmic-blue/20">
@@ -83,23 +75,22 @@ export const OrionSidebar = ({
                 </div>
               ) : (
                 conversations.map((conv) => (
-                  <motion.div
+                  <ConversationItem
                     key={conv.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      "p-3 rounded-lg cursor-pointer group transition-all duration-200",
-                      currentConversationId === conv.id
-                        ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
-                        : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
-                    )}
-                    onClick={() => {
+                    conversation={conv}
+                    isCurrent={currentConversationId === conv.id}
+                    onSelect={() => {
                       setCurrentConversationId(conv.id);
                       setIsOpen(false);
                     }}
-                  >
-                    {/* ... (conteúdo do item da conversa) ... */}
-                  </motion.div>
+                    onDelete={() => deleteConversation(conv.id)}
+                    onRename={() => {
+                      const newTitle = prompt("Novo título:", conv.title);
+                      if (newTitle && newTitle.trim() !== "") {
+                        renameConversation(conv.id, newTitle.trim());
+                      }
+                    }}
+                  />
                 ))
               )}
             </div>
@@ -109,67 +100,8 @@ export const OrionSidebar = ({
               {/* ... (conteúdo do rodapé do usuário) ... */}
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
 };
-NEXT_PUBLIC_SUPABASE_URL=https://wcwwqfiolxcluyuhmxxf.supabase.co ;
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDcimport 
-
-interface Conversation {
-  id: string;
-  title: string;
-  updated_at: string;
-}
-
-interface OrionSidebarProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-  conversations: Conversation[];
-  currentConversationId: string | null;
-  setCurrentConversationId: (id: string) => void;
-  loading: boolean;
-  createNewConversation: () => void;
-  deleteConversation: (id: string) => void;
-  handleLogout: () => void;
-}
-
-export const OrionSidebar = ({
-  isOpen,
-  setIsOpen,
-  conversations,
-  currentConversationId,
-  setCurrentConversationId,
-  loading,
-  createNewConversation,
-  deleteConversation,
-  handleLogout,
-}: OrionSidebarProps) => {
-  const { user } = useAuth();
-
-  return (
-    <AnimatePresence>
-      {(isOpen || window.innerWidth >= 768) && (
-        <motion.div
-          initial={{ x: -300, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -300, opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={cn(
-            "bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl",
-            "fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80",
-            "md:flex md:flex-col"
-          )}
-        >
-          <div className="flex flex-col h-full">
-            {/* Header do Sidebar */}
-            <div className="p-4 border-b border-orion-cosmic-blue/20">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-orion-stellar-gold">
-                  Conversas
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick

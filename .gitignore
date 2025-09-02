@@ -1,24 +1,78 @@
+-- Ativar RLS para as tabelas
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+-- Políticas para a tabela 'conversations'
+CREATE POLICY "Users can view their own conversations."
+  ON conversations FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own conversations."
+  ON conversations FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own conversations."
+  ON conversations FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own conversations."
+  ON conversations FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Políticas para a tabela 'messages'
+CREATE POLICY "Users can view messages in their own conversations."
+  ON messages FOR SELECT
+  USING (
+    auth.uid() = (
+      SELECT user_id FROM conversations
+      WHERE id = messages.conversation_id
+    )
+  );
+
+CREATE POLICY "Users can create messages in their own conversations."
+  ON messages FOR INSERT
+  WITH CHECK (
+    auth.uid() = (
+      SELECT user_id FROM conversations
+      WHERE id = messages.conversation_id
+    )
+  );
+
+-- Geralmente, não se permite update ou delete de mensagens, mas se for necessário:
+CREATE POLICY "Users can update their own messages."
+  ON messages FOR UPDATE
+  USING (
+    auth.uid() = (
+      SELECT user_id FROM conversations
+      WHERE id = messages.conversation_id
+    )
+  );
+# Arquivos de ambiente - NUNCA comitar!
+.env*
+
 # Ambientes virtuais Python
 .venv/
 venv/
 env/
 
-# Cache e builds do Python
+# Cache do Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-build/
-dist/
 
-# Dependências do Node.js
-node_modules/
-
-# Configs de IDEs e logs
+# Configs de IDEs
 .vscode/
 .idea/
-*.log
 
 # Arquivos temporários do sistema
 .DS_Store
 Thumbs.db
+
+# Logs e Builds
+*.log
+dist/
+build/
+
+# Arquivos de cache e build do Next.js
+.next/
+node_modules
