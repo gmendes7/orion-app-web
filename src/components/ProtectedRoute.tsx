@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
-import { HexagonBackground } from './HexagonBackground';
+
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,8 +13,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-        <HexagonBackground />
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden">
 
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}

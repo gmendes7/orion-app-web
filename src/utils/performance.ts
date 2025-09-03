@@ -1,17 +1,5 @@
-import { lazy, Suspense } from 'react';
-
-// Lazy loading dos componentes não-críticos
-const SpaceBackground = lazy(() => import('@/components/SpaceBackground'));
-const LanternEffect = lazy(() => import('@/components/LanternEffect'));
-
 // Performance optimizations
 export const performanceOptimizations = {
-  // Lazy loading para componentes pesados
-  lazyComponents: {
-    SpaceBackground,
-    LanternEffect,
-  },
-
   // Configurações de debounce para eventos
   debounceSettings: {
     mouseMove: 16, // ~60fps

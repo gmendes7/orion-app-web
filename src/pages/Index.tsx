@@ -1,11 +1,7 @@
 import EyeAnimation from "@/components/EyeAnimation";
 import OrionChatOptimized from "@/components/OrionChatOptimized";
 import performanceOptimizations from "@/utils/performance";
-import { lazy, Suspense, useEffect, useState } from "react";
-
-// Lazy load heavy components
-const SpaceBackground = lazy(() => import("@/components/SpaceBackground"));
-const LanternEffect = lazy(() => import("@/components/LanternEffect"));
+import { useEffect, useState } from "react";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
@@ -30,18 +26,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <Suspense fallback={<div className="bg-orion-void min-h-screen" />}>
-        {/* Fundo espacial */}
-        <SpaceBackground />
-
-        {/* Efeito lanterna */}
-        <LanternEffect />
-      </Suspense>
-
-      <div className="relative z-10">
-        <OrionChatOptimized />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 relative">
+      <OrionChatOptimized />
     </div>
   );
 };

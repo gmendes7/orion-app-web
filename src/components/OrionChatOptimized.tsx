@@ -13,7 +13,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatInput } from "./ChatInput";
 import CodeBlockRenderer from "./CodeBlockRenderer";
-import { HexagonBackground } from "./HexagonBackground";
+
 import { OrionSidebar } from "./OrionSidebar";
 
 const OrionChat = () => {
@@ -80,8 +80,7 @@ const OrionChat = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground relative overflow-hidden">
-      <HexagonBackground />
+    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
 
       {/* Sidebar */}
       <OrionSidebar handleLogout={handleLogout} />

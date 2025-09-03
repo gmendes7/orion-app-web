@@ -108,64 +108,20 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground overflow-hidden;
-    font-family: 'Inter', 'Orbitron', monospace;
-    background: var(--gradient-cosmic);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted) / 0.2));
     background-attachment: fixed;
   }
 
-  /* O.R.I.Ö.N Animations */
-  @keyframes orion-constellation {
-    0%, 100% {
-      transform: translateY(0) rotate(0deg);
-      opacity: 0.6;
-    }
-    50% {
-      transform: translateY(-10px) rotate(180deg);
-      opacity: 1;
-    }
-  }
-
-  @keyframes cosmic-glow {
-    0%, 100% {
-      box-shadow: var(--glow-neon);
-      filter: brightness(1);
-    }
-    50% {
-      box-shadow: var(--glow-strong);
-      filter: brightness(1.2);
-    }
-  }
-
-  @keyframes nebula-drift {
-    0% {
-      transform: translateX(-10px) rotate(0deg);
-      opacity: 0.3;
-    }
-    50% {
-      transform: translateX(10px) rotate(180deg);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translateX(-10px) rotate(360deg);
-      opacity: 0.3;
-    }
-  }
-
-  @keyframes stellar-text {
-    0%, 100% {
-      text-shadow: 0 0 10px hsl(var(--orion-cosmic-blue) / 0.5);
-    }
-    50% {
-      text-shadow: 0 0 20px hsl(var(--orion-cosmic-blue) / 0.8), 0 0 30px hsl(var(--orion-accretion-disk) / 0.4);
-    }
-  }
-
-  @keyframes saturn-spin {
+  /* O.R.I.Ö.N Animations - Simplified */
+  @keyframes fade-in {
     from {
-      transform: rotate(0deg);
+      opacity: 0;
+      transform: translateY(10px);
     }
     to {
-      transform: rotate(360deg);
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -174,108 +130,20 @@ All colors MUST be HSL.
     51%, 100% { opacity: 0; }
   }
 
-  /* O.R.I.Ö.N Component Classes */
-  .orion-constellation {
-    animation: orion-constellation 8s ease-in-out infinite;
-  }
-
-  .cosmic-glow {
-    animation: cosmic-glow 4s ease-in-out infinite;
-  }
-
-  .nebula-drift {
-    animation: nebula-drift 12s linear infinite;
-  }
-
-  .stellar-text {
-    animation: stellar-text 3s ease-in-out infinite;
-  }
-
-  .saturn-spin {
-    animation: saturn-spin 20s linear infinite;
-  }
-
+  /* Simplified Component Classes */
   .typing-cursor {
     animation: typing-cursor 1s step-end infinite;
   }
 
-  .orion-lantern {
-    background: var(--lantern-gradient);
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    transition: all 0.2s ease-out;
-    mix-blend-mode: screen;
-  }
-
-  /* Black Hole Effect */
-  .black-hole-bg {
-    background: var(--black-hole-gradient);
-    animation: accretion-spin 60s linear infinite;
-  }
-
-  @keyframes accretion-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes robotic-eye-open {
-    0% {
-      clip-path: circle(0% at 50% 50%);
-      opacity: 0;
-    }
-    50% {
-      clip-path: circle(30% at 50% 50%);
-      opacity: 0.8;
-    }
-    100% {
-      clip-path: circle(50% at 50% 50%);
-      opacity: 1;
-    }
-  }
-
-  @keyframes hud-appear {
-    0% {
-      opacity: 0;
-      transform: scale(0.8) translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  .robotic-eye {
-    animation: robotic-eye-open 2s ease-out forwards;
-  }
-
-  .hud-element {
-    animation: hud-appear 1s ease-out forwards;
-  }
-
   .chat-message-orion {
-    background: var(--gradient-orion);
-    border: 1px solid hsl(var(--orion-cosmic-blue) / 0.3);
-    transition: var(--transition-cosmic);
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card) / 0.8));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s ease;
     backdrop-filter: blur(10px);
   }
 
   .chat-message-orion:hover {
-    border-color: hsl(var(--orion-cosmic-blue) / 0.6);
-    box-shadow: var(--glow-gold);
+    border-color: hsl(var(--orion-cosmic-blue) / 0.4);
     transform: translateY(-1px);
-  }
-
-  .orion-button {
-    background: linear-gradient(135deg, hsl(var(--orion-cosmic-blue) / 0.8), hsl(var(--orion-accretion-disk) / 0.6));
-    border: 1px solid hsl(var(--orion-cosmic-blue) / 0.4);
-    transition: var(--transition-glow);
-  }
-
-  .orion-button:hover {
-    box-shadow: var(--glow-gold);
-    transform: scale(1.02);
-    border-color: hsl(var(--orion-cosmic-blue));
   }
 }
