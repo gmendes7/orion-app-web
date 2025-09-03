@@ -1,17 +1,14 @@
 /**
- * Obtém a URL base do site, priorizando variáveis de ambiente de produção.
- * Ideal para construir URLs de callback para autenticação.
+ * Retorna a URL base do site no cliente (browser) de forma segura
+ * Ex.: "http://localhost:3000/" ou "https://seu-dominio.com/"
  */
 export const getSiteURL = () => {
-  // Vercel define NEXT_PUBLIC_VERCEL_URL. Outras plataformas podem usar NEXT_PUBLIC_SITE_URL.
-  let url =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_VERCEL_URL ??
-    'http://localhost:3000/';
-
-  // Garante que a URL comece com https:// em ambientes que não sejam localhost
-  url = url.includes('http') ? url : `https://${url}`;
-  // Garante que a URL termine com uma barra
-  url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-  return url;
+  try {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      const origin = window.location.origin;
+      return origin.endsWith('/') ? origin : `${origin}/`;
+    }
+  } catch (_) {}
+  // Fallback para dev
+  return 'http://localhost:3000/';
 };
