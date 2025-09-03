@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 // 1. Get the environment variables specific to Vite
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // 2. Check if the variables are defined, and throw an error if not
 if (!supabaseUrl || !supabaseAnonKey) {

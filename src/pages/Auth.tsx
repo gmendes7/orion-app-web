@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/integrations/hooks/use-toast';
-import { HexagonBackground } from '@/components/HexagonBackground';
+
 import { cn } from '@/lib/utils';
 import { 
   Mail, 
@@ -35,8 +35,7 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-        <HexagonBackground />
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden">
 
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -123,8 +122,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      <HexagonBackground />
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 text-foreground relative overflow-hidden">
       
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <motion.div

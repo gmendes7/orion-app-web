@@ -9,8 +9,8 @@ interface ChatInputProps {
   isTyping: boolean;
   isListening: boolean;
   startListening: () => void;
+  conversationId: string | null;
 }
-conversationId: string | null;
 
 const quickActions = [
   {
