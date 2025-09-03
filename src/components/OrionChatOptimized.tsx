@@ -1,19 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useChatCommands } from "@/hooks/useChatCommands";
-import {
-  useConversations,
-  type Message as DBMessage,
-} from "@/hooks/useConversations";
+import { useChatStore } from "@/hooks/useChatStore";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
 import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { ORION_LOGO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { formatNeonResponse } from "@/utils/safeCommandExecution";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Square, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Loader2, Menu, Square, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatInput } from "./ChatInput";
@@ -21,80 +16,29 @@ import CodeBlockRenderer from "./CodeBlockRenderer";
 import { HexagonBackground } from "./HexagonBackground";
 import { OrionSidebar } from "./OrionSidebar";
 
-interface DisplayMessage {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
-
 const OrionChat = () => {
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const {
-    conversations,
-    currentConversationId,
-    setCurrentConversationId,
-    loading: conversationsLoading,
-    loadMessages,
-    createConversation,
-    updateConversationTitle,
-    deleteConversation,
-    saveMessage,
-  } = useConversations();
+    initialize,
+    messages,
+    isTyping,
+    isStreaming,
+    conversationsLoading,
+    stopStreaming,
+  } = useChatStore();
 
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const audioEnabled = useChatStore((s) => s.audioEnabled);
+  const setAudioEnabled = useChatStore((s) => s.setAudioEnabled);
+  const sidebarOpen = useChatStore((s) => s.sidebarOpen);
+  const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
+  const sendMessage = useChatStore((s) => s.sendMessage);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { detectAndExecuteCommands } = useChatCommands();
 
-  // Carregar mensagens quando a conversa muda
   useEffect(() => {
-    const loadConversationMessages = async () => {
-      try {
-        if (currentConversationId) {
-          const dbMessages = await loadMessages(currentConversationId);
-          const displayMessages: DisplayMessage[] = dbMessages.map(
-            (msg: DBMessage) => ({
-              id: msg.id,
-              text: msg.content,
-              isUser: msg.is_user,
-              timestamp: new Date(msg.created_at),
-            })
-          );
-
-          // Se não há mensagens, adicionar mensagem de boas-vindas
-          if (displayMessages.length === 0) {
-            displayMessages.push({
-              id: "welcome",
-              text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
-              isUser: false,
-              timestamp: new Date(),
-            });
-          }
-
-          setMessages(displayMessages);
-        } else {
-          // Limpa as mensagens se nenhuma conversa estiver selecionada
-          setMessages([]);
-        }
-      } catch (error) {
-        console.error("Failed to load messages:", error);
-        toast({
-          title: "Erro ao Carregar Conversa",
-          description:
-            "Não foi possível carregar as mensagens. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    loadConversationMessages();
-  }, [currentConversationId, loadMessages]);
+    initialize();
+  }, [initialize]);
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
@@ -131,176 +75,8 @@ const OrionChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Criar nova conversa
-  const createNewConversation = async () => {
-    const newConv = await createConversation("Nova Conversa");
-    if (newConv) {
-      setSidebarOpen(false);
-    }
-  };
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const handleStopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsStreaming(false);
-      toast({ title: "Geração de resposta interrompida." });
-    }
-  };
-
-  const sendMessage = async (messageContent: string) => {
-    if (!messageContent.trim() || isTyping || !currentConversationId) return;
-
-    // refactor: Use a more robust ID generation like uuid
-    const userMessage: DisplayMessage = {
-      id: Date.now().toString(),
-      text: messageContent,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    const updatedMessages = [...messages, userMessage];
-
-    // Atualizar UI imediatamente
-    setMessages(updatedMessages);
-    setIsStreaming(true);
-    setIsTyping(true);
-
-    try {
-      // Salvar mensagem do usuário no banco
-      await saveMessage(currentConversationId, messageContent, true);
-
-      // Detectar e executar comandos especiais primeiro
-      const commandResult = await detectAndExecuteCommands(messageContent);
-
-      if (commandResult) {
-        const commandResponse: DisplayMessage = {
-          // refactor: Use a more robust ID generation like uuid
-          id: (Date.now() + 1).toString(),
-          text: commandResult,
-          isUser: false,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, commandResponse]); // This will be rendered with markdown
-        setTypingMessageId(commandResponse.id);
-        setIsTyping(false);
-
-        // Salvar resposta no banco
-        await saveMessage(currentConversationId, commandResult, false);
-
-        // Auto-falar resposta se áudio estiver habilitado
-        if (audioEnabled) {
-          speak(commandResult.replace(/\*\*/g, "").replace(/\[.*?\]/g, ""));
-        }
-        setIsStreaming(false);
-
-        return;
-      }
-
-      // Preparar contexto da conversa para o chat AI
-      const conversation = updatedMessages.map((msg) => ({
-        role: msg.isUser ? "user" : "assistant",
-        content: msg.text,
-      }));
-
-      // **NOVA LÓGICA DE STREAMING**
-      setIsTyping(false); // A API de streaming assume o controle
-      abortControllerRef.current = new AbortController();
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: conversation }),
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error(response.statusText || "Falha ao conectar com a API.");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantResponseText = "";
-      const assistantMessageId = (Date.now() + 1).toString();
-
-      // Adiciona um placeholder para a mensagem da IA
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          text: "",
-          isUser: false,
-          timestamp: new Date(),
-        },
-      ]);
-
-      // Lê o stream
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        assistantResponseText += decoder.decode(value);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, text: assistantResponseText }
-              : msg
-          )
-        );
-      }
-
-      // Finaliza o streaming
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-      await saveMessage(currentConversationId, assistantResponseText, false);
-      if (audioEnabled) {
-        speak(assistantResponseText);
-      }
-    } catch (error: any) {
-      if (error.name === "AbortError") return; // Ignora erro de abortar
-
-      console.error("Erro ao enviar mensagem:", error);
-      setIsTyping(false);
-      setIsStreaming(false);
-
-      const errorMessage: DisplayMessage = {
-        id: (Date.now() + 1).toString(),
-        text: formatNeonResponse(
-          "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
-          true
-        ),
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
-
-      // Tentar salvar mensagem de erro
-      try {
-        if (currentConversationId) {
-          await saveMessage(currentConversationId, errorMessage.text, false);
-        }
-      } catch (saveError) {
-        console.error("Erro ao salvar mensagem de erro:", saveError);
-      }
-
-      toast({
-        title: "Erro de Comunicação",
-        description:
-          error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleLogout = async () => {
     await signOut();
-  };
-
-  const handleRenameConversation = async (id: string, title: string) => {
-    await updateConversationTitle(id, title);
-    toast({ title: "Conversa renomeada com sucesso!" });
   };
 
   return (
@@ -308,18 +84,7 @@ const OrionChat = () => {
       <HexagonBackground />
 
       {/* Sidebar */}
-      <OrionSidebar
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        conversations={conversations || []}
-        currentConversationId={currentConversationId}
-        setCurrentConversationId={setCurrentConversationId}
-        loading={conversationsLoading}
-        createNewConversation={createNewConversation}
-        deleteConversation={deleteConversation}
-        renameConversation={handleRenameConversation}
-        handleLogout={handleLogout}
-      />
+      <OrionSidebar handleLogout={handleLogout} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10">
@@ -391,7 +156,7 @@ const OrionChat = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleStopGeneration}
+                  onClick={stopStreaming}
                   className="flex items-center gap-2 border-orion-accretion-disk text-orion-accretion-disk hover:bg-orion-accretion-disk/10 hover:text-orion-accretion-disk"
                 >
                   <Square className="w-3 h-3" />
@@ -404,80 +169,90 @@ const OrionChat = () => {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 sm:space-y-6 max-w-4xl mx-auto w-full">
-          <AnimatePresence>
-            {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className={cn(
-                  "flex gap-4",
-                  message.isUser ? "justify-end" : "justify-start"
-                )}
-              >
-                {!message.isUser && (
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
-                      <img
-                        src={ORION_LOGO_URL}
-                        alt="O.R.I.Ö.N"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div
+          {conversationsLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <Loader2 className="w-8 h-8 text-orion-stellar-gold animate-spin" />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {messages.map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
                   className={cn(
-                    "max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
-                    message.isUser
-                      ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
-                      : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                    "flex gap-4",
+                    message.isUser ? "justify-end" : "justify-start"
                   )}
                 >
-                  <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        code({
-                          node,
-                          inline,
-                          className,
-                          children,
-                          ...props
-                        }: any) {
-                          const match = /language-(\w+)/.exec(className || "");
-                          const codeText = String(children).replace(/\n$/, "");
-                          return !inline && match ? (
-                            <CodeBlockRenderer
-                              language={match[1]}
-                              codeText={codeText}
-                              {...props}
-                            />
-                          ) : (
-                            <code
-                              className={cn(
-                                className,
-                                "bg-orion-event-horizon/50 text-orion-accretion-disk px-1 py-0.5 rounded-sm"
-                              )}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        },
-                      }}
-                    >
-                      {message.text || "▍"}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  {!message.isUser && (
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
+                        <img
+                          src={ORION_LOGO_URL}
+                          alt="O.R.I.Ö.N"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
 
+                  <div
+                    className={cn(
+                      "max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
+                      message.isUser
+                        ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
+                        : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                    )}
+                  >
+                    <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          code({
+                            node,
+                            inline,
+                            className,
+                            children,
+                            ...props
+                          }: any) {
+                            const match = /language-(\w+)/.exec(
+                              className || ""
+                            );
+                            const codeText = String(children).replace(
+                              /\n$/,
+                              ""
+                            );
+                            return !inline && match ? (
+                              <CodeBlockRenderer
+                                language={match[1]}
+                                codeText={codeText}
+                                {...props}
+                              />
+                            ) : (
+                              <code
+                                className={cn(
+                                  className,
+                                  "bg-orion-event-horizon/50 text-orion-accretion-disk px-1 py-0.5 rounded-sm"
+                                )}
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                        }}
+                      >
+                        {message.text || "▍"}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
           {isTyping && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -518,13 +293,7 @@ const OrionChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <ChatInput
-          onSendMessage={sendMessage}
-          isTyping={isTyping || isStreaming}
-          isListening={isListening}
-          startListening={startListening}
-          conversationId={currentConversationId}
-        />
+        <ChatInput isListening={isListening} startListening={startListening} />
       </div>
     </div>
   );

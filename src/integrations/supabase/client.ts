@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 2. Verifique se as variáveis estão definidas para evitar erros silenciosos
+// 2. Verifique se as variáveis estão definidas. Isso evita a tela branca
+//    e mostra um erro claro no console se o .env.local estiver faltando.
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
     "Supabase URL and Anon Key must be defined in your .env.local file with the VITE_ prefix."
