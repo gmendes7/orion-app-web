@@ -83,7 +83,18 @@ const OrionChat = () => {
     <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
 
       {/* Sidebar */}
-      <OrionSidebar handleLogout={handleLogout} />
+      <OrionSidebar 
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        conversations={useChatStore((s) => s.conversations)}
+        currentConversationId={useChatStore((s) => s.currentConversationId)}
+        loading={conversationsLoading}
+        setCurrentConversationId={useChatStore((s) => s.setCurrentConversationId)}
+        createNewConversation={() => useChatStore.getState().createConversation("Nova Conversa")}
+        deleteConversation={useChatStore((s) => s.deleteConversation)}
+        renameConversation={useChatStore((s) => s.renameConversation)}
+        handleLogout={handleLogout}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10">
@@ -292,7 +303,13 @@ const OrionChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <ChatInput isListening={isListening} startListening={startListening} />
+        <ChatInput 
+          onSendMessage={sendMessage}
+          isTyping={isTyping}
+          isListening={isListening}
+          startListening={startListening}
+          conversationId={useChatStore((s) => s.currentConversationId)}
+        />
       </div>
     </div>
   );

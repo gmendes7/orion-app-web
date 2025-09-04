@@ -27,7 +27,12 @@ interface ChatState {
   isTyping: boolean;
   conversationsLoading: boolean;
   error: Error | null;
+<<<<<<< HEAD
   abortController: AbortController | null; // Controlador para parar o streaming
+=======
+  audioEnabled: boolean;
+  sidebarOpen: boolean;
+>>>>>>> f608cb6b50ee09f13f1ecae903c479861aa0ed64
 }
 
 // Define a interface para as ações do chat
@@ -39,6 +44,8 @@ interface ChatActions {
   createConversation: (title: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, newTitle: string) => Promise<void>;
+  setAudioEnabled: (enabled: boolean) => void;
+  setSidebarOpen: (open: boolean) => void;
 }
 
 export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
@@ -50,7 +57,12 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   isTyping: false,
   conversationsLoading: true,
   error: null,
+<<<<<<< HEAD
   abortController: null,
+=======
+  audioEnabled: true,
+  sidebarOpen: false,
+>>>>>>> f608cb6b50ee09f13f1ecae903c479861aa0ed64
 
   // --- Ações ---
 
@@ -313,6 +325,14 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       set({ error });
       console.error("Erro ao renomear conversa:", error);
     }
+  },
+
+  // UI State Actions
+  setAudioEnabled: (enabled: boolean) => {
+    set({ audioEnabled: enabled });
+  },
+  setSidebarOpen: (open: boolean) => {
+    set({ sidebarOpen: open });
   },
 }));
 
