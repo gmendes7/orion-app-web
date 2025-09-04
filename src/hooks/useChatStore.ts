@@ -17,6 +17,8 @@ interface ChatState {
   isTyping: boolean;
   conversationsLoading: boolean;
   error: Error | null;
+  audioEnabled: boolean;
+  sidebarOpen: boolean;
 }
 
 interface ChatActions {
@@ -27,6 +29,8 @@ interface ChatActions {
   createConversation: (title: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, newTitle: string) => Promise<void>;
+  setAudioEnabled: (enabled: boolean) => void;
+  setSidebarOpen: (open: boolean) => void;
 }
 
 const abortController = new AbortController();
@@ -40,6 +44,8 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   isTyping: false,
   conversationsLoading: true,
   error: null,
+  audioEnabled: true,
+  sidebarOpen: false,
 
   // Actions
   initialize: async () => {
@@ -190,5 +196,13 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
   renameConversation: async (id: string, newTitle: string) => {
     console.log("renameConversation", id, newTitle);
+  },
+
+  // UI State Actions
+  setAudioEnabled: (enabled: boolean) => {
+    set({ audioEnabled: enabled });
+  },
+  setSidebarOpen: (open: boolean) => {
+    set({ sidebarOpen: open });
   },
 }));
