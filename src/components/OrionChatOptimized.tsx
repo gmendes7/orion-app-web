@@ -38,7 +38,7 @@ const OrionChat = () => {
 
   useEffect(() => {
     initialize();
-  }, [initialize]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
