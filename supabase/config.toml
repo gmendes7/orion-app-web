@@ -13,7 +13,13 @@ verify_jwt = false
 [functions.analyze-image]
 verify_jwt = false
 
-[functions.api-integrations]
+[functions.process-document]
+verify_jwt = false
+
+[functions.semantic-search]
+verify_jwt = false
+
+[functions.rag-chat]
 verify_jwt = false
 
 [functions.web-search]
