@@ -12,10 +12,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-<<<<<<< HEAD
+
 // 3. Crie e exporte o cliente Supabase para uma aplicação client-side (SPA)
 // Esta é a forma correta para um projeto Vite + React.
-=======
+
 // 3. Create and export the Supabase client for a client-side app
->>>>>>> f608cb6b50ee09f13f1ecae903c479861aa0ed64
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

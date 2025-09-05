@@ -1,8 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Database, LogOut, User } from "lucide-react";
 import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface Conversation {
   id: string;
@@ -36,6 +37,7 @@ export const OrionSidebar = ({
   handleLogout,
 }: OrionSidebarProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <AnimatePresence>
@@ -64,6 +66,15 @@ export const OrionSidebar = ({
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Conversa
+              </Button>
+
+              <Button
+                onClick={() => navigate('/dashboard')}
+                variant="outline"
+                className="w-full mt-2 border-orion-cosmic-blue/30 text-orion-cosmic-blue hover:bg-orion-cosmic-blue/10"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                Dashboard
               </Button>
             </div>
 
@@ -97,7 +108,27 @@ export const OrionSidebar = ({
 
             {/* User Info and Logout */}
             <div className="p-4 border-t border-orion-cosmic-blue/20">
-              {/* ... (conteúdo do rodapé do usuário) ... */}
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold flex items-center justify-center">
+                  <User className="w-4 h-4 text-orion-void" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {user?.email}
+                  </p>
+                  <p className="text-xs text-orion-space-dust">
+                    O.R.I.Ö.N Assistant
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
             </div>
           </div>
         </div>
