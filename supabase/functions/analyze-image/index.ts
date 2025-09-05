@@ -1,39 +1,45 @@
-// If running in Deno, ensure your editor supports Deno types (e.g., enable Deno extension in VSCode).
-// If running in Node.js, use a compatible HTTP server like Express:
-import bodyParser from "body-parser";
-import express from "express";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
-// analyze-image/index.ts
-// Função para analisar imagens usando OpenAI GPT-4 Vision
+// analyze-image/index.ts (Deno Edge Function)
+// Analisa imagens usando OpenAI Vision via Chat Completions
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Express version of the handler
-const app = express();
-app.use(bodyParser.json());
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-app.options("*", (req, res) => {
-  res.set(corsHeaders).sendStatus(204);
-});
-
-app.post("/", async (req, res) => {
   try {
-    const { image, filename } = req.body;
+    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openAIApiKey) {
+      console.error("OPENAI_API_KEY is not set");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "OpenAI API key não configurada",
+          analysis:
+            "Desculpe, não foi possível analisar esta imagem no momento. Tente novamente.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { image, filename } = await req.json();
 
     if (!image) {
-      throw new Error("Imagem não fornecida");
+      return new Response(
+        JSON.stringify({ success: false, error: "Imagem não fornecida" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const openAIApiKey = process.env.OPENAI_API_KEY;
-    if (!openAIApiKey) {
-      throw new Error("OpenAI API key não configurada");
-    }
-
-    console.log("Analyzing image:", filename);
+    console.log("Analyzing image", { filename: filename || "(sem nome)", size: (image?.length || 0) });
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -42,7 +48,7 @@ app.post("/", async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini", // modelo com suporte a visão; usa max_tokens
         max_tokens: 500,
         messages: [
           {
@@ -50,7 +56,8 @@ app.post("/", async (req, res) => {
             content: [
               {
                 type: "text",
-                text: "Analise esta imagem e descreva o que você vê de forma clara e objetiva. Se houver texto, transcreva-o. Se for um gráfico ou diagrama, explique os dados principais. Responda em português brasileiro.",
+                text:
+                  "Analise esta imagem e descreva o que você vê de forma clara e objetiva. Se houver texto, transcreva-o. Se for um gráfico ou diagrama, explique os dados principais. Responda em português brasileiro.",
               },
               {
                 type: "image_url",
@@ -65,38 +72,42 @@ app.post("/", async (req, res) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(
-        `OpenAI API error: ${error.error?.message || "Erro desconhecido"}`
+      const errorText = await response.text();
+      console.error("OpenAI API error", response.status, errorText);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `OpenAI API error: ${response.status}`,
+          details: errorText,
+          analysis:
+            "Desculpe, não foi possível analisar esta imagem no momento. Tente novamente.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
     const analysis =
-      data.choices[0]?.message?.content || "Não foi possível analisar a imagem";
+      data?.choices?.[0]?.message?.content ||
+      "Não foi possível analisar a imagem";
 
     console.log("Image analysis completed successfully");
 
-    res.set(corsHeaders).json({
-      analysis,
-      filename,
-      success: true,
-    });
-  } catch (error: unknown) {
+    return new Response(
+      JSON.stringify({ success: true, analysis, filename }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
     console.error("Error in analyze-image function:", error);
-
     const message = error instanceof Error ? error.message : String(error);
-
-    res.status(500).set(corsHeaders).json({
-      error: message,
-      analysis:
-        "Desculpe, não foi possível analisar esta imagem no momento. Tente novamente.",
-      success: false,
-    });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: message,
+        analysis:
+          "Desculpe, não foi possível analisar esta imagem no momento. Tente novamente.",
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });

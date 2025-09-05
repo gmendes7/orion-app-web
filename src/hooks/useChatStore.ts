@@ -27,12 +27,9 @@ interface ChatState {
   isTyping: boolean;
   conversationsLoading: boolean;
   error: Error | null;
-<<<<<<< HEAD
   abortController: AbortController | null; // Controlador para parar o streaming
-=======
   audioEnabled: boolean;
   sidebarOpen: boolean;
->>>>>>> f608cb6b50ee09f13f1ecae903c479861aa0ed64
 }
 
 // Define a interface para as ações do chat
@@ -57,12 +54,12 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   isTyping: false,
   conversationsLoading: true,
   error: null,
-<<<<<<< HEAD
+
   abortController: null,
-=======
+
   audioEnabled: true,
   sidebarOpen: false,
->>>>>>> f608cb6b50ee09f13f1ecae903c479861aa0ed64
+
 
   // --- Ações ---
 
