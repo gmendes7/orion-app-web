@@ -135,6 +135,10 @@ All colors MUST be HSL.
     animation: typing-cursor 1s step-end infinite;
   }
 
+  .stellar-text {
+    text-shadow: 0 0 20px hsl(var(--orion-stellar-gold) / 0.5);
+  }
+
   .chat-message-orion {
     background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card) / 0.8));
     border: 1px solid hsl(var(--border));
@@ -145,5 +149,19 @@ All colors MUST be HSL.
   .chat-message-orion:hover {
     border-color: hsl(var(--orion-cosmic-blue) / 0.4);
     transform: translateY(-1px);
+  }
+
+  /* Fallback styles for critical elements */
+  .orion-fallback {
+    background-color: #1a1a2e !important;
+    color: #ffd700 !important;
+  }
+  
+  .orion-text-fallback {
+    color: #ffd700 !important;
+  }
+
+  .orion-bg-fallback {
+    background: linear-gradient(135deg, #0f0f23, #16213e) !important;
   }
 }

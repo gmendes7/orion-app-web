@@ -11,9 +11,12 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
+  console.log('🛡️ ProtectedRoute - user:', user?.email || 'Não autenticado', 'loading:', loading);
+
   if (loading) {
+    console.log('🛡️ ProtectedRoute - Mostrando tela de loading...');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden orion-bg-fallback">
 
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -25,6 +28,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
               src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
               alt="O.R.I.Ö.N Logo"
               className="w-full h-full object-cover animate-pulse"
+              onError={(e) => {
+                console.log('❌ Erro ao carregar logo:', e);
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
         </motion.div>
@@ -33,8 +40,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
+    console.log('🛡️ ProtectedRoute - Usuário não autenticado, redirecionando para /auth');
     return <Navigate to="/auth" replace />;
   }
 
+  console.log('🛡️ ProtectedRoute - Usuário autenticado, renderizando conteúdo protegido');
   return <>{children}</>;
 };
