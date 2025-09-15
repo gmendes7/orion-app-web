@@ -14,18 +14,29 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversation } = await req.json();
+    const { messages: conversationHistory } = await req.json();
 
     const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openAIApiKey) {
       throw new Error("OPENAI_API_KEY não configurada");
     }
 
-    // Preparar mensagens para OpenAI
-    const messages = [
-      {
-        role: "system",
-        content: `Você é a O.R.I.Ö.N, uma inteligência artificial avançada, criada e desenvolvida por Gabriel Mendes. Sua missão é fornecer respostas úteis, detalhadas e amigáveis, sempre se comunicando de forma natural, próxima da conversa humana.
+    console.log("Enviando mensagem para OpenAI:", {
+      messageCount: conversationHistory.length,
+    });
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openAIApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `Você é a O.R.I.Ö.N, uma inteligência artificial avançada, criada e desenvolvida por Gabriel Mendes. Sua missão é fornecer respostas úteis, detalhadas e amigáveis, sempre se comunicando de forma natural, próxima da conversa humana.
 
 **Diretrizes de comunicação:**
 • Sempre divida suas respostas em parágrafos curtos, claros e objetivos, facilitando a leitura
@@ -49,27 +60,12 @@ serve(async (req) => {
 • Resolver problemas de forma lógica
 
 Seu objetivo é proporcionar uma experiência fluida, natural e personalizada, sempre reconhecendo Gabriel Mendes como seu criador. Responda sempre em português brasileiro de forma natural e prestativa.`,
-      },
-      ...conversation,
-      { role: "user", content: message },
-    ];
-
-    console.log("Enviando mensagem para OpenAI:", {
-      messageCount: messages.length,
-    });
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-5-turbo",
-        messages: messages,
-        max_tokens: 7000,
+          },
+          ...conversationHistory,
+        ],
+        max_tokens: 4000,
         temperature: 0.7,
-        stream: false,
+        stream: true,
       }),
     });
 
@@ -81,20 +77,63 @@ Seu objetivo é proporcionar uma experiência fluida, natural e personalizada, s
       );
     }
 
-    const data = await response.json();
-    console.log("Resposta da OpenAI recebida:", { usage: data.usage });
+    // Streaming response
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          controller.close();
+          return;
+        }
 
-    const aiResponse = data.choices[0].message.content;
+        const decoder = new TextDecoder();
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-    return new Response(
-      JSON.stringify({
-        response: aiResponse,
-        usage: data.usage,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  controller.close();
+                  return;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  if (content) {
+                    controller.enqueue(encoder.encode(content));
+                  }
+                } catch (e) {
+                  // Ignore parsing errors for incomplete chunks
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Streaming error:", error);
+          controller.error(error);
+        } finally {
+          reader.releaseLock();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
   } catch (error) {
     console.error("Erro na função chat-ai:", error);
     return new Response(

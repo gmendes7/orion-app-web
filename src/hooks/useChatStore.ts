@@ -68,22 +68,34 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
    * Se não houver conversas, cria uma nova.
    */
   initialize: async () => {
+    console.log('🗃️ ChatStore - Inicializando...');
+    
     try {
-      const { data: conversations } = await supabase
+      console.log('🗃️ ChatStore - Buscando conversas no Supabase...');
+      const { data: conversations, error } = await supabase
         .from("conversations")
         .select("*")
         .order("updated_at", { ascending: false });
 
+      if (error) {
+        console.error('❌ ChatStore - Erro ao buscar conversas:', error);
+        throw error;
+      }
+
+      console.log('🗃️ ChatStore - Conversas encontradas:', conversations?.length || 0);
+
       if (conversations && conversations.length > 0) {
+        console.log('🗃️ ChatStore - Definindo primeira conversa como ativa:', conversations[0].id);
         set({ conversations, conversationsLoading: false });
         get().setCurrentConversationId(conversations[0].id);
       } else {
         // Se não há conversas, cria uma nova e a define como ativa
+        console.log('🗃️ ChatStore - Nenhuma conversa encontrada, criando nova...');
         await get().createConversation("Nova Conversa");
       }
     } catch (error: any) {
+      console.error('❌ ChatStore - Erro crítico na inicialização:', error);
       set({ error, conversationsLoading: false });
-      console.error("Erro ao inicializar conversas:", error);
     }
   },
 
@@ -166,14 +178,14 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Constrói a URL da API dinamicamente com base no ambiente
       const apiUrl = import.meta.env.DEV
         ? "/api/chat-ai" // Usa o proxy no desenvolvimento
-        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`; // Usa a URL absoluta em produção
+        : `https://wcwwqfiolxcluyuhmxxf.supabase.co/functions/v1/chat-ai`; // Usa a URL absoluta em produção
 
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           // A chave anon do Supabase é necessária para chamar a função diretamente em produção
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc`,
         },
         body: JSON.stringify({ messages: conversationHistory }),
         signal: abortController.signal,

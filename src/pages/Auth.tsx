@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 
 const Auth = () => {
+  console.log('🔐 Auth component renderizando...');
+  
   const { user, loading, signIn, signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -28,27 +30,29 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  console.log('🔐 Auth - user:', user?.email || 'Não autenticado', 'loading:', loading);
+
   // Redirect if already authenticated
   if (user && !loading) {
+    console.log('🔐 Auth - Usuário autenticado, redirecionando...');
     return <Navigate to="/" replace />;
   }
 
   if (loading) {
+    console.log('🔐 Auth - Mostrando tela de loading...');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden">
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10"
-        >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-2xl shadow-orion-stellar-gold/20">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center relative overflow-hidden orion-bg-fallback">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-2xl shadow-orion-stellar-gold/20 mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-orion-void animate-pulse" />
           </div>
-        </motion.div>
+          <p className="text-orion-stellar-gold orion-text-fallback">Carregando...</p>
+        </div>
       </div>
     );
   }
+
+  console.log('🔐 Auth - Renderizando formulário de autenticação...');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,31 +126,25 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 text-foreground relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 text-foreground relative overflow-hidden orion-bg-fallback">
       
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
-        >
+        <div className="w-full max-w-md">
           {/* Logo and Header */}
           <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-2xl shadow-orion-stellar-gold/30 mb-6 overflow-hidden"
-            >
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-2xl shadow-orion-stellar-gold/30 mb-6 overflow-hidden">
               <img 
                 src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
                 alt="O.R.I.Ö.N Logo"
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.log('❌ Erro ao carregar logo na Auth:', e);
+                  e.currentTarget.style.display = 'none';
+                }}
               />
-            </motion.div>
+            </div>
             
-            <h1 className="text-3xl font-bold text-orion-stellar-gold stellar-text mb-2">
+            <h1 className="text-3xl font-bold text-orion-stellar-gold stellar-text mb-2 orion-text-fallback">
               O.R.I.Ö.N
             </h1>
             <p className="text-orion-space-dust">
@@ -155,17 +153,15 @@ const Auth = () => {
           </div>
 
           {/* Auth Form */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="chat-message-orion rounded-3xl p-8 backdrop-blur-sm border border-orion-cosmic-blue/30 shadow-2xl"
-          >
+          <div className="chat-message-orion rounded-3xl p-8 backdrop-blur-sm border border-orion-cosmic-blue/30 shadow-2xl orion-fallback">
             <div className="flex items-center justify-center mb-6">
               <div className="flex rounded-xl bg-orion-event-horizon p-1">
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(false)}
+                  onClick={() => {
+                    console.log('🔐 Auth - Mudando para login');
+                    setIsSignUp(false);
+                  }}
                   className={cn(
                     "px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300",
                     !isSignUp
@@ -177,7 +173,10 @@ const Auth = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(true)}
+                  onClick={() => {
+                    console.log('🔐 Auth - Mudando para cadastro');
+                    setIsSignUp(true);
+                  }}
                   className={cn(
                     "px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300",
                     isSignUp
@@ -191,30 +190,22 @@ const Auth = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <AnimatePresence mode="wait">
-                {isSignUp && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="relative"
-                  >
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
-                      <Input
-                        type="text"
-                        placeholder="Nome completo"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
-                        disabled={isLoading}
-                        required={isSignUp}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {isSignUp && (
+                <div className="relative">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
+                    <Input
+                      type="text"
+                      placeholder="Nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
+                      disabled={isLoading}
+                      required={isSignUp}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
@@ -258,13 +249,9 @@ const Auth = () => {
                 type="submit"
                 disabled={isLoading}
                 className="w-full h-12 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold text-orion-void font-semibold rounded-xl hover:opacity-90 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg border border-white/20"
+                onClick={() => console.log('🔐 Auth - Botão de submit clicado')}
               >
-                <motion.span
-                  animate={isLoading ? { opacity: [1, 0.5, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  {isLoading ? "Processando..." : isSignUp ? "Criar Conta" : "Entrar"}
-                </motion.span>
+                {isLoading ? "Processando..." : isSignUp ? "Criar Conta" : "Entrar"}
               </Button>
             </form>
 
@@ -315,8 +302,8 @@ const Auth = () => {
                 </>
               )}
             </p>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

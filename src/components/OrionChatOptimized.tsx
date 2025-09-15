@@ -17,8 +17,13 @@ import CodeBlockRenderer from "./CodeBlockRenderer";
 import { OrionSidebar } from "./OrionSidebar";
 
 const OrionChat = () => {
+  console.log('💬 OrionChat component renderizando...');
+  
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  
+  console.log('💬 OrionChat - Usuário:', user?.email || 'Não identificado');
+  
   const {
     initialize,
     messages,
@@ -27,6 +32,13 @@ const OrionChat = () => {
     conversationsLoading,
     stopStreaming,
   } = useChatStore();
+
+  console.log('💬 OrionChat - Estado do chat:', {
+    messagesCount: messages.length,
+    isTyping,
+    isStreaming,
+    conversationsLoading
+  });
 
   const audioEnabled = useChatStore((s) => s.audioEnabled);
   const setAudioEnabled = useChatStore((s) => s.setAudioEnabled);
@@ -37,7 +49,13 @@ const OrionChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    initialize();
+    console.log('💬 OrionChat - Inicializando chat store...');
+    try {
+      initialize();
+      console.log('✅ Chat store inicializado');
+    } catch (error) {
+      console.error('❌ Erro ao inicializar chat store:', error);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Voice input hook
