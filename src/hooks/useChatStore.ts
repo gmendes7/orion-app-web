@@ -60,7 +60,6 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   audioEnabled: true,
   sidebarOpen: false,
 
-
   // --- Ações ---
 
   /**
@@ -68,34 +67,45 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
    * Se não houver conversas, cria uma nova.
    */
   initialize: async () => {
-    console.log('🗃️ ChatStore - Inicializando...');
-    
+    console.log("🗃️ ChatStore - Inicializando...");
+
     try {
-      console.log('🗃️ ChatStore - Buscando conversas no Supabase...');
+      console.log("🗃️ ChatStore - Buscando conversas no Supabase...");
       const { data: conversations, error } = await supabase
         .from("conversations")
         .select("*")
         .order("updated_at", { ascending: false });
 
       if (error) {
-        console.error('❌ ChatStore - Erro ao buscar conversas:', error);
+        console.error("❌ ChatStore - Erro ao buscar conversas:", error);
         throw error;
       }
 
-      console.log('🗃️ ChatStore - Conversas encontradas:', conversations?.length || 0);
+      console.log(
+        "🗃️ ChatStore - Conversas encontradas:",
+        conversations?.length || 0
+      );
 
       if (conversations && conversations.length > 0) {
-        console.log('🗃️ ChatStore - Definindo primeira conversa como ativa:', conversations[0].id);
+        console.log(
+          "🗃️ ChatStore - Definindo primeira conversa como ativa:",
+          conversations[0].id
+        );
         set({ conversations, conversationsLoading: false });
         get().setCurrentConversationId(conversations[0].id);
       } else {
         // Se não há conversas, cria uma nova e a define como ativa
-        console.log('🗃️ ChatStore - Nenhuma conversa encontrada, criando nova...');
+        console.log(
+          "🗃️ ChatStore - Nenhuma conversa encontrada, criando nova..."
+        );
         await get().createConversation("Nova Conversa");
       }
-    } catch (error: any) {
-      console.error('❌ ChatStore - Erro crítico na inicialização:', error);
-      set({ error, conversationsLoading: false });
+    } catch (error: unknown) {
+      console.error("❌ ChatStore - Erro crítico na inicialização:", error);
+      set({
+        error: error instanceof Error ? error : new Error(String(error)),
+        conversationsLoading: false,
+      });
     }
   },
 
@@ -103,7 +113,11 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
    * Define a conversa ativa e busca suas mensagens.
    */
   setCurrentConversationId: async (id: string | null) => {
-    set({ currentConversationId: id, messages: [], conversationsLoading: id !== null });
+    set({
+      currentConversationId: id,
+      messages: [],
+      conversationsLoading: id !== null,
+    });
 
     if (id) {
       try {
@@ -132,12 +146,13 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           });
         }
         set({ messages: displayMessages, conversationsLoading: false });
-      } catch (error: any) {
-        set({ error, conversationsLoading: false });
-        console.error("Erro ao buscar mensagens:", error);
+      } catch (error: unknown) {
+        const e = error instanceof Error ? error : new Error(String(error));
+        set({ error: e, conversationsLoading: false });
+        console.error("Erro ao buscar mensagens:", e);
       }
     } else {
-        set({ conversationsLoading: false });
+      set({ conversationsLoading: false });
     }
   },
 
@@ -176,20 +191,36 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }));
 
       // Constrói a URL da API dinamicamente com base no ambiente
-      const apiUrl = import.meta.env.DEV
-        ? "/api/chat-ai" // Usa o proxy no desenvolvimento
-        : `https://wcwwqfiolxcluyuhmxxf.supabase.co/functions/v1/chat-ai`; // Usa a URL absoluta em produção
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // A chave anon do Supabase é necessária para chamar a função diretamente em produção
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc`,
-        },
-        body: JSON.stringify({ messages: conversationHistory }),
-        signal: abortController.signal,
-      });
+      let response;
+      if (import.meta.env.DEV) {
+        const apiUrl = "/api/chat-ai"; // proxy in dev
+        response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: conversationHistory }),
+          signal: abortController.signal,
+        });
+      } else {
+        // In production use the Supabase client which will not embed the anon key in the built bundle
+        // This uses the Supabase JS client's invoke which reads auth from the running client
+        response = (await supabase.functions.invoke("chat-ai", {
+          body: { messages: conversationHistory },
+        })) as any;
+        // supabase.functions.invoke returns an object in the client SDK; to unify, create a minimal response shim
+        if (response?.error) throw response.error;
+        // We need a Response-like object for the streaming code below; if the function returned 'data' as string,
+        // we create a simple ReadableStream from it. For now, if response.data exists and is a string, wrap it.
+        if (response?.data && typeof response.data === "string") {
+          const encoder = new TextEncoder();
+          const uint8 = encoder.encode(response.data);
+          response = new Response(uint8);
+        } else if (response?.data?.body) {
+          // If the SDK returned a body stream, attempt to use it
+          response = response.data;
+        } else {
+          throw new Error("Unsupported response from chat function");
+        }
+      }
 
       if (!response.ok || !response.body) {
         throw new Error(response.statusText || "Falha ao conectar com a API.");
@@ -234,12 +265,13 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         content: assistantResponseText,
         is_user: false,
       });
-    } catch (error: any) {
-      if (error.name === "AbortError") {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {
         console.log("Streaming foi abortado.");
       } else {
-        set({ error });
-        console.error("Erro no streaming da mensagem:", error);
+        const e = error instanceof Error ? error : new Error(String(error));
+        set({ error: e });
+        console.error("Erro no streaming da mensagem:", e);
       }
     } finally {
       set({ isStreaming: false, isTyping: false, abortController: null });
@@ -287,7 +319,10 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
    */
   deleteConversation: async (id: string) => {
     try {
-      const { error } = await supabase.from("conversations").delete().eq("id", id);
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
 
       set((state) => ({
@@ -344,4 +379,3 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set({ sidebarOpen: open });
   },
 }));
-

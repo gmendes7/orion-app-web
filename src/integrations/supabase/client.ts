@@ -1,13 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Lovable: Use Supabase project constants (env-less)
-const supabaseUrl = "https://wcwwqfiolxcluyuhmxxf.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
+// Use environment variables injected at build time (Vite uses import.meta.env)
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
+const supabaseAnonKey =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "";
 
-
-// 3. Crie e exporte o cliente Supabase para uma aplicação client-side (SPA)
-// Esta é a forma correta para um projeto Vite + React.
-
-// 3. Create and export the Supabase client for a client-side app
+if (!supabaseUrl || !supabaseAnonKey) {
+  // In development the .env may not be set — log a friendly warning
+  // Do NOT hardcode secrets in source.
+  // The app will still attempt to create the client (empty values will fail at runtime).
+  // If you see this message in production, add the necessary VITE_SUPABASE_* variables.
+  console.warn(
+    "Supabase client: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set."
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

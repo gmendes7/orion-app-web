@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Mic, Settings, Satellite, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import TypingEffect from "./TypingEffect";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Mic, Send, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import TypingEffect from "./TypingEffect";
 
 interface Message {
   id: string;
@@ -20,7 +20,7 @@ const OrionChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Conexão estabelecida com O.R.I.Ö.N. Sistema orbital online e operacional. Como posso auxiliar em sua missão, comandante?",
+      text: "Olá! Sou o O.R.I.Ö.N — pronto para ajudar.",
       isUser: false,
       timestamp: new Date(),
     },
@@ -30,87 +30,112 @@ const OrionChat = () => {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleTypingComplete = (messageId: string) => {
+    if (typingMessageId === messageId) setTypingMessageId(null);
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       text: input,
       isUser: true,
       timestamp: new Date(),
     };
-
-    const currentInput = input;
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
 
     try {
-      // Preparar conversa para contexto
-      const conversation = messages.map(msg => ({
-        role: msg.isUser ? 'user' : 'assistant',
-        content: msg.text
+      const conversation = [...messages, userMessage].map((m) => ({
+        role: m.isUser ? "user" : "assistant",
+        content: m.text,
       }));
 
-      console.log('Enviando mensagem para O.R.I.Ö.N AI...');
-      
-      const { data, error } = await supabase.functions.invoke('chat-ai', {
-        body: {
-          message: currentInput,
-          conversation: conversation
+      // PoC: call intent extraction function first
+      const { data: intentData, error: intentError } =
+        await supabase.functions.invoke("chat-intent", {
+          body: { messages: conversation },
+        });
+      if (intentError) throw intentError;
+      if (intentData?.error) throw new Error(intentData.error);
+
+      const replyText = intentData?.reply_text || intentData?.reply || "";
+      const assistantId = (Date.now() + 1).toString();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
+          text: replyText,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
+      setTypingMessageId(assistantId);
+
+      const actions = Array.isArray(intentData.actions)
+        ? intentData.actions
+        : [];
+      for (const action of actions) {
+        if (action.requires_confirmation) {
+          if (
+            !window.confirm(
+              `Confirmar ação: ${action.command} em ${action.target}?`
+            )
+          ) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `not-confirmed-${action.id}`,
+                text: `Ação ${action.command} em ${action.target} não confirmada.`,
+                isUser: false,
+                timestamp: new Date(),
+              },
+            ]);
+            continue;
+          }
         }
-      });
 
-      if (error) {
-        console.error('Erro ao chamar função:', error);
-        throw new Error(error.message || 'Erro ao comunicar com O.R.I.Ö.N');
+        const { data: execData, error: execError } =
+          await supabase.functions.invoke("execute-action", {
+            body: { action },
+          });
+        if (execError) throw execError;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `action-result-${action.id}`,
+            text:
+              execData?.output?.message || `Ação ${action.command} executada.`,
+            isUser: false,
+            timestamp: new Date(),
+          },
+        ]);
       }
 
-      if (data.error) {
-        console.error('Erro retornado pela função:', data.error);
-        throw new Error(data.error);
-      }
-
-      // Criar mensagem do O.R.I.Ö.N com efeito de digitação
-      const orionMessageId = (Date.now() + 1).toString();
-      const orionResponse: Message = {
-        id: orionMessageId,
-        text: data.response,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, orionResponse]);
-      setTypingMessageId(orionMessageId);
+      setTypingMessageId(null);
       setIsTyping(false);
-
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+    } catch (error: unknown) {
+      console.error("Erro ao enviar mensagem:", error);
       setIsTyping(false);
-      
-      // Mostrar mensagem de erro amigável
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Falha na comunicação orbital. Executando protocolos de reconexão... Por favor, tente novamente, comandante.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      
-      toast({
-        title: "Falha na Comunicação Orbital",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: "Falha na comunicação com O.R.I.Ö.N.",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
+      const errMsg =
+        error instanceof Error
+          ? error.message
+          : String(error ?? "Erro desconhecido");
+      toast({ title: "Erro", description: errMsg, variant: "destructive" });
     }
   };
 
@@ -121,16 +146,9 @@ const OrionChat = () => {
     }
   };
 
-  const handleTypingComplete = (messageId: string) => {
-    if (typingMessageId === messageId) {
-      setTypingMessageId(null);
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen relative">
-      {/* Minimalist Header - ChatGPT Style */}
-      <motion.header 
+      <motion.header
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
@@ -140,33 +158,39 @@ const OrionChat = () => {
           <div className="flex items-center space-x-3">
             <div className="relative group">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <div className="w-3 h-3 bg-background rounded-full" 
-                     style={{ boxShadow: 'var(--glow-gold)' }} />
+                <div
+                  className="w-3 h-3 bg-background rounded-full"
+                  style={{ boxShadow: "var(--glow-gold)" }}
+                />
               </div>
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground tracking-wide" 
-                  style={{ fontFamily: "'Orbitron', monospace" }}>
+              <h1
+                className="text-lg font-bold text-foreground tracking-wide"
+                style={{ fontFamily: "'Orbitron', monospace" }}
+              >
                 O.R.I.Ö.N
               </h1>
-              <span className="text-xs text-muted-foreground">Sistema Inteligente</span>
+              <span className="text-xs text-muted-foreground">
+                Sistema Inteligente
+              </span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+          >
             <Settings className="w-4 h-4" />
           </Button>
         </div>
       </motion.header>
 
-      {/* Messages Area - ChatGPT Style */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
-        {messages.map((message, index) => (
-          <motion.div
+        {messages.map((message) => (
+          <div
             key={message.id}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
             className={cn(
               "flex gap-3",
               message.isUser ? "justify-end" : "justify-start"
@@ -175,21 +199,24 @@ const OrionChat = () => {
             {!message.isUser && (
               <div className="flex-shrink-0 mt-1">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <div className="w-3 h-3 bg-background rounded-full" 
-                       style={{ boxShadow: 'var(--glow-gold)' }} />
+                  <div
+                    className="w-3 h-3 bg-background rounded-full"
+                    style={{ boxShadow: "var(--glow-gold)" }}
+                  />
                 </div>
               </div>
             )}
-            
-            <div className={cn(
-              "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
-              message.isUser
-                ? "bg-primary text-primary-foreground ml-auto"
-                : "bg-card/80 text-card-foreground border border-border/20"
-            )}>
+            <div
+              className={cn(
+                "max-w-[70%] md:max-w-[60%] rounded-2xl px-4 py-3 backdrop-blur-sm",
+                message.isUser
+                  ? "bg-primary text-primary-foreground ml-auto"
+                  : "bg-card/80 text-card-foreground border border-border/20"
+              )}
+            >
               <p className="text-sm leading-relaxed">
                 {!message.isUser && typingMessageId === message.id ? (
-                  <TypingEffect 
+                  <TypingEffect
                     text={message.text}
                     speed={15}
                     onComplete={() => handleTypingComplete(message.id)}
@@ -199,21 +226,17 @@ const OrionChat = () => {
                 )}
               </p>
               <span className="text-xs opacity-50 mt-1 block">
-                {message.timestamp.toLocaleTimeString('pt-BR', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                {message.timestamp.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </span>
             </div>
-          </motion.div>
+          </div>
         ))}
 
         {isTyping && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex gap-3 justify-start"
-          >
+          <div className="flex gap-3 justify-start">
             <div className="flex-shrink-0 mt-1">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
                 <div className="w-3 h-3 bg-background rounded-full" />
@@ -222,16 +245,21 @@ const OrionChat = () => {
             <div className="bg-card/80 border border-border/20 rounded-2xl px-4 py-3 backdrop-blur-sm">
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                />
+                <div
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                />
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed Bottom */}
       <div className="border-t border-border/10 p-4 backdrop-blur-xl bg-card/50">
         <div className="max-w-4xl mx-auto">
           <div className="relative flex items-center gap-3">
@@ -257,14 +285,12 @@ const OrionChat = () => {
               disabled={!input.trim() || isTyping}
               size="icon"
               className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-200"
-              style={{ boxShadow: 'var(--glow-gold)' }}
+              style={{ boxShadow: "var(--glow-gold)" }}
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          
-          {/* Footer Credits */}
-          <motion.div 
+          <motion.div
             className="text-center mt-4 text-xs text-muted-foreground/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -272,7 +298,10 @@ const OrionChat = () => {
           >
             <p>
               Desenvolvido por{" "}
-              <span className="text-accent font-medium">Gabriel Mendes Lorenz Schjneider Sanhes</span>, 18 anos
+              <span className="text-accent font-medium">
+                Gabriel Mendes Lorenz Schjneider Sanhes
+              </span>
+              , 18 anos
             </p>
           </motion.div>
         </div>

@@ -17,13 +17,13 @@ import CodeBlockRenderer from "./CodeBlockRenderer";
 import { OrionSidebar } from "./OrionSidebar";
 
 const OrionChat = () => {
-  console.log('💬 OrionChat component renderizando...');
-  
+  console.log("💬 OrionChat component carregando...");
+
   const { toast } = useToast();
   const { user, signOut } = useAuth();
-  
-  console.log('💬 OrionChat - Usuário:', user?.email || 'Não identificado');
-  
+
+  console.log("💬 OrionChat - Usuário:", user?.email || "Não identificado");
+
   const {
     initialize,
     messages,
@@ -33,11 +33,11 @@ const OrionChat = () => {
     stopStreaming,
   } = useChatStore();
 
-  console.log('💬 OrionChat - Estado do chat:', {
+  console.log("💬 OrionChat - Estado do chat:", {
     messagesCount: messages.length,
     isTyping,
     isStreaming,
-    conversationsLoading
+    conversationsLoading,
   });
 
   const audioEnabled = useChatStore((s) => s.audioEnabled);
@@ -49,12 +49,12 @@ const OrionChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log('💬 OrionChat - Inicializando chat store...');
+    console.log("💬 OrionChat - Inicializando chat store...");
     try {
       initialize();
-      console.log('✅ Chat store inicializado');
+      console.log("✅ Chat store inicializado");
     } catch (error) {
-      console.error('❌ Erro ao inicializar chat store:', error);
+      console.error("❌ Erro ao inicializar chat store:", error);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -66,7 +66,7 @@ const OrionChat = () => {
     },
     onError: (error) =>
       toast({
-        title: "Erro no Reconhecimento de Voz",
+        title: "Erro no Reconhecimento de Voz do usuario",
         description: error,
         variant: "destructive",
       }),
@@ -99,16 +99,19 @@ const OrionChat = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
-
       {/* Sidebar */}
-      <OrionSidebar 
+      <OrionSidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
         conversations={useChatStore((s) => s.conversations)}
         currentConversationId={useChatStore((s) => s.currentConversationId)}
         loading={conversationsLoading}
-        setCurrentConversationId={useChatStore((s) => s.setCurrentConversationId)}
-        createNewConversation={() => useChatStore.getState().createConversation("Nova Conversa")}
+        setCurrentConversationId={useChatStore(
+          (s) => s.setCurrentConversationId
+        )}
+        createNewConversation={() =>
+          useChatStore.getState().createConversation("Nova Conversa")
+        }
         deleteConversation={useChatStore((s) => s.deleteConversation)}
         renameConversation={useChatStore((s) => s.renameConversation)}
         handleLogout={handleLogout}
@@ -138,7 +141,7 @@ const OrionChat = () => {
                 <div className="w-10 h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
                   <img
                     src={ORION_LOGO_URL}
-                    alt="O.R.I.Ö.N Logo"
+                    alt="O.R.I.O.N Logo"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -147,10 +150,10 @@ const OrionChat = () => {
 
               <div>
                 <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
-                  O.R.I.Ö.N
+                  O.R.I.O.N
                 </h1>
                 <span className="text-sm text-orion-space-dust">
-                  Assistente Inteligente Futurista
+                  Assistente de Inteligência Artificial
                 </span>
               </div>
             </div>
@@ -245,7 +248,7 @@ const OrionChat = () => {
                             className,
                             children,
                             ...props
-                          }: any) {
+                          }: any) { {
                             const match = /language-(\w+)/.exec(
                               className || ""
                             );
@@ -270,7 +273,7 @@ const OrionChat = () => {
                                 {children}
                               </code>
                             );
-                          },
+                          },  
                         }}
                       >
                         {message.text || "▍"}
@@ -321,7 +324,7 @@ const OrionChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <ChatInput 
+        <ChatInput
           onSendMessage={sendMessage}
           isTyping={isTyping}
           isListening={isListening}
