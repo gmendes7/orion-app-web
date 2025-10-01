@@ -1,0 +1,6 @@
+# Ignorar builds e arquivos binários que não são TypeScript/JS
+libs/cpp/validation/build/
+libs/cpp/validation/build/**
+**/build/**
+dist/
+node_modules/

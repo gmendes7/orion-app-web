@@ -9,7 +9,7 @@ export const performanceOptimizations = {
 
   // Configurações de intersection observer para lazy loading
   intersectionObserver: {
-    rootMargin: '50px',
+    rootMargin: "50px",
     threshold: 0.1,
   },
 
@@ -17,20 +17,17 @@ export const performanceOptimizations = {
   preloadCriticalResources: () => {
     // Preload fonts
     const orbitronFont = new FontFace(
-      'Orbitron',
-      'url(https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap)'
-    );
-    
-    const interFont = new FontFace(
-      'Inter',
-      'url(https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)'
+      "Orbitron",
+      "url(https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap)"
     );
 
-    Promise.all([
-      orbitronFont.load(),
-      interFont.load()
-    ]).then((fonts) => {
-      fonts.forEach(font => document.fonts.add(font));
+    const interFont = new FontFace(
+      "Inter",
+      "url(https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)"
+    );
+
+    Promise.all([orbitronFont.load(), interFont.load()]).then((fonts) => {
+      fonts.forEach((font) => document.fonts.add(font));
     });
   },
 
@@ -38,10 +35,12 @@ export const performanceOptimizations = {
   imageOptimizations: {
     // Lazy loading automático para imagens
     setupLazyImages: () => {
-      if ('loading' in HTMLImageElement.prototype) {
-        const images = document.querySelectorAll('img[data-src]');
-        images.forEach(img => {
-          (img as HTMLImageElement).src = (img as HTMLImageElement).dataset.src!;
+      if ("loading" in HTMLImageElement.prototype) {
+        const images = document.querySelectorAll("img[data-src]");
+        images.forEach((img) => {
+          (img as HTMLImageElement).src = (
+            img as HTMLImageElement
+          ).dataset.src!;
         });
       }
     },
@@ -49,17 +48,17 @@ export const performanceOptimizations = {
     // Compressão de imagens via canvas
     compressImage: (file: File, quality: number = 0.7): Promise<Blob> => {
       return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d")!;
         const img = new Image();
-        
+
         img.onload = () => {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
-          canvas.toBlob(resolve as BlobCallback, 'image/jpeg', quality);
+          canvas.toBlob(resolve as BlobCallback, "image/jpeg", quality);
         };
-        
+
         img.src = URL.createObjectURL(file);
       });
     },
@@ -69,24 +68,32 @@ export const performanceOptimizations = {
   cssOptimizations: {
     // Configurar will-change apenas quando necessário
     setupWillChange: () => {
-      const animatedElements = document.querySelectorAll('[data-animated]');
-      animatedElements.forEach(el => {
-        el.addEventListener('animationstart', () => {
-          (el as HTMLElement).style.willChange = 'transform, opacity';
+      const animatedElements = document.querySelectorAll("[data-animated]");
+      animatedElements.forEach((el) => {
+        el.addEventListener("animationstart", () => {
+          (el as HTMLElement).style.willChange = "transform, opacity";
         });
-        el.addEventListener('animationend', () => {
-          (el as HTMLElement).style.willChange = 'auto';
+        el.addEventListener("animationend", () => {
+          (el as HTMLElement).style.willChange = "auto";
         });
       });
     },
 
     // Reduzir motion para usuários que preferem menos animações
     respectReducedMotion: () => {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-      
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+
       if (prefersReducedMotion.matches) {
-        document.documentElement.style.setProperty('--animation-duration', '0.01s');
-        document.documentElement.style.setProperty('--transition-duration', '0.01s');
+        document.documentElement.style.setProperty(
+          "--animation-duration",
+          "0.01s"
+        );
+        document.documentElement.style.setProperty(
+          "--transition-duration",
+          "0.01s"
+        );
       }
     },
   },
@@ -95,7 +102,9 @@ export const performanceOptimizations = {
   webWorkers: {
     // Worker para processamento de dados
     createDataWorker: () => {
-      const workerBlob = new Blob([`
+      const workerBlob = new Blob(
+        [
+          `
         self.onmessage = function(e) {
           const { type, data } = e.data;
           
@@ -121,8 +130,11 @@ export const performanceOptimizations = {
               break;
           }
         };
-      `], { type: 'application/javascript' });
-      
+      `,
+        ],
+        { type: "application/javascript" }
+      );
+
       return new Worker(URL.createObjectURL(workerBlob));
     },
   },
@@ -130,10 +142,10 @@ export const performanceOptimizations = {
   // Service Worker para cache
   serviceWorker: {
     register: async () => {
-      if ('serviceWorker' in navigator) {
+      if ("serviceWorker" in navigator) {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('Service Worker registrado:', registration);
+          const registration = await navigator.serviceWorker.register("/sw.js");
+          console.log("Service Worker registrado:", registration);
           return registration;
         } catch (error) {
           // Service Worker não disponível no ambiente de desenvolvimento
@@ -151,39 +163,57 @@ export const performanceOptimizations = {
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         const lastEntry = entries[entries.length - 1];
-        console.log('LCP:', lastEntry.startTime);
-      }).observe({ type: 'largest-contentful-paint', buffered: true });
+        console.log("LCP:", lastEntry.startTime);
+      }).observe({ type: "largest-contentful-paint", buffered: true });
 
       // FID (First Input Delay)
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         entries.forEach((entry) => {
-          console.log('FID:', (entry as any).processingStart - entry.startTime);
+          // some PerformanceEntry subtypes may have processingStart
+          const processingStart = (
+            entry as unknown as { processingStart?: number }
+          ).processingStart;
+          if (typeof processingStart === "number") {
+            console.log("FID:", processingStart - entry.startTime);
+          }
         });
-      }).observe({ type: 'first-input', buffered: true });
+      }).observe({ type: "first-input", buffered: true });
 
       // CLS (Cumulative Layout Shift)
       let clsValue = 0;
       new PerformanceObserver((entryList) => {
         const entries = entryList.getEntries();
         entries.forEach((entry) => {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const hadRecentInput = (
+            entry as unknown as { hadRecentInput?: boolean }
+          ).hadRecentInput;
+          const value = (entry as unknown as { value?: number }).value;
+          if (!hadRecentInput) {
+            clsValue += value || 0;
           }
         });
-        console.log('CLS:', clsValue);
-      }).observe({ type: 'layout-shift', buffered: true });
+        console.log("CLS:", clsValue);
+      }).observe({ type: "layout-shift", buffered: true });
     },
 
     // Monitorar uso de memória
     monitorMemory: () => {
-      if ('memory' in performance) {
+      if ("memory" in performance) {
         setInterval(() => {
-          const memory = (performance as any).memory;
-          console.log('Memory usage:', {
-            used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
-            total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
-            limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB'
+          const memory = (
+            performance as unknown as {
+              memory?: {
+                usedJSHeapSize?: number;
+                totalJSHeapSize?: number;
+                jsHeapSizeLimit?: number;
+              };
+            }
+          ).memory;
+          console.log("Memory usage:", {
+            used: Math.round((memory?.usedJSHeapSize || 0) / 1048576) + " MB",
+            total: Math.round((memory?.totalJSHeapSize || 0) / 1048576) + " MB",
+            limit: Math.round((memory?.jsHeapSizeLimit || 0) / 1048576) + " MB",
           });
         }, 30000); // A cada 30 segundos
       }
@@ -197,12 +227,12 @@ export const performanceOptimizations = {
     performanceOptimizations.cssOptimizations.respectReducedMotion();
     performanceOptimizations.cssOptimizations.setupWillChange();
     performanceOptimizations.imageOptimizations.setupLazyImages();
-    
+
     // Registrar service worker
     performanceOptimizations.serviceWorker.register();
-    
+
     // Iniciar métricas (apenas em produção)
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       performanceOptimizations.metrics.measureWebVitals();
       performanceOptimizations.metrics.monitorMemory();
     }

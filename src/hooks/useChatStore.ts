@@ -19,8 +19,14 @@ interface DisplayMessage {
 }
 
 // Define a interface para o estado do chat
+interface Conversation {
+  id: string;
+  title?: string;
+  [key: string]: unknown;
+}
+
 interface ChatState {
-  conversations: any[]; // Idealmente, teria uma interface Conversation
+  conversations: Conversation[];
   currentConversationId: string | null;
   messages: DisplayMessage[];
   isStreaming: boolean;
@@ -86,13 +92,16 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         conversations?.length || 0
       );
 
-      if (conversations && conversations.length > 0) {
+      if (conversations && (conversations as Conversation[]).length > 0) {
         console.log(
           "🗃️ ChatStore - Definindo primeira conversa como ativa:",
-          conversations[0].id
+          (conversations as Conversation[])[0].id
         );
-        set({ conversations, conversationsLoading: false });
-        get().setCurrentConversationId(conversations[0].id);
+        set({
+          conversations: conversations as Conversation[],
+          conversationsLoading: false,
+        });
+        get().setCurrentConversationId((conversations as Conversation[])[0].id);
       } else {
         // Se não há conversas, cria uma nova e a define como ativa
         console.log(
@@ -191,7 +200,8 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }));
 
       // Constrói a URL da API dinamicamente com base no ambiente
-      let response;
+      let response: Response | { data?: unknown; error?: unknown } | null =
+        null;
       if (import.meta.env.DEV) {
         const apiUrl = "/api/chat-ai"; // proxy in dev
         response = await fetch(apiUrl, {
@@ -202,28 +212,41 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         });
       } else {
         // In production use the Supabase client which will not embed the anon key in the built bundle
-        // This uses the Supabase JS client's invoke which reads auth from the running client
-        response = (await supabase.functions.invoke("chat-ai", {
+        const invoked: unknown = await supabase.functions.invoke("chat-ai", {
           body: { messages: conversationHistory },
-        })) as any;
-        // supabase.functions.invoke returns an object in the client SDK; to unify, create a minimal response shim
-        if (response?.error) throw response.error;
-        // We need a Response-like object for the streaming code below; if the function returned 'data' as string,
-        // we create a simple ReadableStream from it. For now, if response.data exists and is a string, wrap it.
-        if (response?.data && typeof response.data === "string") {
+        });
+        const invokedResult = invoked as { data?: unknown; error?: unknown };
+        if (invokedResult?.error) throw invokedResult.error;
+
+        // Normalize possible return shapes
+        if (typeof invokedResult.data === "string") {
           const encoder = new TextEncoder();
-          const uint8 = encoder.encode(response.data);
+          const uint8 = encoder.encode(invokedResult.data as string);
           response = new Response(uint8);
-        } else if (response?.data?.body) {
+        } else if (
+          invokedResult.data &&
+          typeof invokedResult.data === "object" &&
+          // guard: check for a 'body' property that is likely a ReadableStream
+          Object.prototype.hasOwnProperty.call(invokedResult.data, "body")
+        ) {
           // If the SDK returned a body stream, attempt to use it
-          response = response.data;
+          const dataObj = invokedResult.data as { body?: unknown };
+          const body = dataObj.body;
+          if (body instanceof Response) {
+            response = body;
+          } else if (body && typeof (body as any).getReader === "function") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            response = new Response(body as any);
+          } else {
+            throw new Error("Unsupported body type from chat function");
+          }
         } else {
           throw new Error("Unsupported response from chat function");
         }
       }
 
       if (!response.ok || !response.body) {
-        throw new Error(response.statusText || "Falha ao conectar com a API.");
+        throw new Error("Falha ao conectar com a API.");
       }
 
       const reader = response.body.getReader();
@@ -308,9 +331,10 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         }));
         get().setCurrentConversationId(data.id);
       }
-    } catch (error: any) {
-      set({ error });
-      console.error("Erro ao criar conversa:", error);
+    } catch (error: unknown) {
+      const e = error instanceof Error ? error : new Error(String(error));
+      set({ error: e });
+      console.error("Erro ao criar conversa:", e);
     }
   },
 
@@ -338,9 +362,10 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           await get().createConversation("Nova Conversa");
         }
       }
-    } catch (error: any) {
-      set({ error });
-      console.error("Erro ao deletar conversa:", error);
+    } catch (error: unknown) {
+      const e = error instanceof Error ? error : new Error(String(error));
+      set({ error: e });
+      console.error("Erro ao deletar conversa:", e);
     }
   },
 
@@ -365,9 +390,10 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           ),
         }));
       }
-    } catch (error: any) {
-      set({ error });
-      console.error("Erro ao renomear conversa:", error);
+    } catch (error: unknown) {
+      const e = error instanceof Error ? error : new Error(String(error));
+      set({ error: e });
+      console.error("Erro ao renomear conversa:", e);
     }
   },
 

@@ -11,10 +11,9 @@ const LazySyntaxHighlighter = React.lazy(() =>
   }))
 );
 
-interface CodeBlockRendererProps {
+interface CodeBlockRendererProps extends React.ComponentPropsWithoutRef<"pre"> {
   language: string;
   codeText: string;
-  [key: string]: any;
 }
 
 const CodeBlockRenderer: React.FC<CodeBlockRendererProps> = ({

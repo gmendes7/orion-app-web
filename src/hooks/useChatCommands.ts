@@ -68,17 +68,35 @@ export const useChatCommands = () => {
           },
         });
         if (error) throw error;
-        const articles = data.articles.slice(0, 5);
+        const maybeData: unknown = data;
+        let articles: unknown[] = [];
+        if (
+          maybeData &&
+          typeof maybeData === "object" &&
+          Object.prototype.hasOwnProperty.call(maybeData, "articles")
+        ) {
+          // @ts-expect-error runtime check above
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          articles = (maybeData as any).articles?.slice(0, 5) || [];
+        }
+        interface Article {
+          title?: string;
+          description?: string;
+          source?: { name?: string };
+          publishedAt?: string;
+        }
         return (
           `📰 **${
             query ? `Notícias sobre "${query}"` : "Principais Notícias"
           }** ✨\n\n` +
-          articles
+          (articles as Article[])
             .map(
-              (article: any, index: number) =>
-                `**${index + 1}. ${article.title}**\n` +
-                `${article.description}\n` +
-                `*Fonte: ${article.source.name} • ${article.publishedAt}*\n` +
+              (article, index) =>
+                `**${index + 1}. ${article.title || "(sem título)"}**\n` +
+                `${article.description || "(sem descrição)"}\n` +
+                `*Fonte: ${article.source?.name || "desconhecida"} • ${
+                  article.publishedAt || ""
+                }*\n` +
                 `Ler mais`
             )
             .join("\n\n")

@@ -248,7 +248,7 @@ const OrionChat = () => {
                             className,
                             children,
                             ...props
-                          }: any) { {
+                          }: any) {
                             const match = /language-(\w+)/.exec(
                               className || ""
                             );
@@ -256,13 +256,16 @@ const OrionChat = () => {
                               /\n$/,
                               ""
                             );
-                            return !inline && match ? (
-                              <CodeBlockRenderer
-                                language={match[1]}
-                                codeText={codeText}
-                                {...props}
-                              />
-                            ) : (
+                            if (!inline && match) {
+                              return (
+                                <CodeBlockRenderer
+                                  language={match[1]}
+                                  codeText={codeText}
+                                  {...props}
+                                />
+                              );
+                            }
+                            return (
                               <code
                                 className={cn(
                                   className,
@@ -273,7 +276,7 @@ const OrionChat = () => {
                                 {children}
                               </code>
                             );
-                          },  
+                          },
                         }}
                       >
                         {message.text || "▍"}
