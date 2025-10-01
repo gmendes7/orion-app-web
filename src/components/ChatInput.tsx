@@ -1,8 +1,10 @@
 import { useDraft } from "@/hooks/useDraft";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Cloud, Mic, Newspaper, Search, Send } from "lucide-react";
+import { Cloud, Mic, Newspaper, Search, Send, Image, Paperclip } from "lucide-react";
 import { Button } from "./ui/button";
+import { ImageAnalysisInChat } from "./ImageAnalysisInChat";
+import { useState } from "react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -41,6 +43,13 @@ export const ChatInput = ({
   conversationId,
 }: ChatInputProps) => {
   const { draft, setDraft } = useDraft(conversationId);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+
+  const handleImageAnalysis = (analysis: string) => {
+    // Adiciona a análise como mensagem automaticamente
+    onSendMessage(`🖼️ Análise de Imagem:\n\n${analysis}`);
+    setShowImageUpload(false);
+  };
 
   const handleSend = () => {
     if (!draft.trim()) return;
@@ -72,6 +81,15 @@ export const ChatInput = ({
 
   return (
     <>
+      {/* Image Upload Section */}
+      {showImageUpload && (
+        <div className="px-2 sm:px-4 py-3 border-t border-orion-cosmic-blue/20 bg-card/50">
+          <div className="max-w-4xl mx-auto">
+            <ImageAnalysisInChat onAnalysisComplete={handleImageAnalysis} />
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className="px-2 sm:px-4 py-2">
         <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-4xl mx-auto">
@@ -127,6 +145,24 @@ export const ChatInput = ({
                 style={{ minHeight: "48px", maxHeight: "120px" }}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                {/* Image Upload Toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowImageUpload(!showImageUpload)}
+                  disabled={isTyping}
+                  className={cn(
+                    "w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300",
+                    showImageUpload 
+                      ? "text-orion-stellar-gold scale-110" 
+                      : "text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                  )}
+                  title="Analisar imagem"
+                >
+                  <Image className="w-3 h-3 sm:w-4 sm:h-4" />
+                </Button>
+
+                {/* Voice Input */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -137,6 +173,7 @@ export const ChatInput = ({
                     isListening &&
                       "text-orion-accretion-disk animate-pulse scale-110"
                   )}
+                  title="Entrada de voz"
                 >
                   <Mic className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>

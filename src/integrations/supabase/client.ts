@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_CONFIG } from "@/lib/supabaseConfig";
 
+<<<<<<< HEAD
 // Use environment variables injected at build time (Vite uses import.meta.env)
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
 const supabaseAnonKey =
@@ -16,3 +18,32 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+=======
+/**
+ * 🔐 Cliente Supabase Configurado
+ * 
+ * Cliente singleton do Supabase para toda a aplicação.
+ * Usa configurações centralizadas de supabaseConfig.ts
+ * 
+ * Características:
+ * - Autenticação automática via localStorage
+ * - Persistência de sessão
+ * - Auto-refresh de tokens
+ * - Configuração otimizada para SPA (Single Page Application)
+ * 
+ * @see https://supabase.com/docs/reference/javascript/initializing
+ */
+export const supabase = createClient(
+  SUPABASE_CONFIG.url,
+  SUPABASE_CONFIG.anonKey,
+  {
+    auth: {
+      // Configurações de autenticação otimizadas
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+    },
+  }
+);
+>>>>>>> b31039c6d1458bd03a714a75579f77202a6ce713
