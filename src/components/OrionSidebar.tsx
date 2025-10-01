@@ -1,9 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
-import { Plus, X, Database, LogOut, User } from "lucide-react";
+import { Plus, X, Database, LogOut, User, Shield } from "lucide-react";
 import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
+import { PrivacyPolicy } from "./PrivacyPolicy";
+import { useState } from "react";
 
 interface Conversation {
   id: string;
@@ -38,6 +40,7 @@ export const OrionSidebar = ({
 }: OrionSidebarProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   return (
     <AnimatePresence>
@@ -107,7 +110,7 @@ export const OrionSidebar = ({
             </div>
 
             {/* User Info and Logout */}
-            <div className="p-4 border-t border-orion-cosmic-blue/20">
+            <div className="p-4 border-t border-orion-cosmic-blue/20 space-y-2">
               <div className="flex items-center space-x-3 mb-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold flex items-center justify-center">
                   <User className="w-4 h-4 text-orion-void" />
@@ -121,6 +124,19 @@ export const OrionSidebar = ({
                   </p>
                 </div>
               </div>
+              
+              {/* Privacy Button */}
+              <Button
+                onClick={() => setShowPrivacyPolicy(true)}
+                variant="outline"
+                className="w-full border-orion-cosmic-blue/30 text-orion-space-dust hover:bg-orion-cosmic-blue/10 hover:text-orion-stellar-gold"
+                size="sm"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                <span className="text-xs">Privacidade e LGPD</span>
+              </Button>
+
+              {/* Logout Button */}
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -133,6 +149,12 @@ export const OrionSidebar = ({
           </div>
         </div>
       )}
+      
+      {/* Privacy Policy Dialog */}
+      <PrivacyPolicy 
+        open={showPrivacyPolicy} 
+        onOpenChange={setShowPrivacyPolicy} 
+      />
     </AnimatePresence>
   );
 };

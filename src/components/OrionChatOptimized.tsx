@@ -15,6 +15,7 @@ import { ChatInput } from "./ChatInput";
 import CodeBlockRenderer from "./CodeBlockRenderer";
 
 import { OrionSidebar } from "./OrionSidebar";
+import { ConsentBanner } from "./ConsentBanner";
 
 const OrionChat = () => {
   console.log('💬 OrionChat component renderizando...');
@@ -98,7 +99,8 @@ const OrionChat = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
+    <>
+      <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
 
       {/* Sidebar */}
       <OrionSidebar 
@@ -330,6 +332,10 @@ const OrionChat = () => {
         />
       </div>
     </div>
+
+    {/* LGPD Consent Banner */}
+    <ConsentBanner />
+    </>
   );
 };
 
