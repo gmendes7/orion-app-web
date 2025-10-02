@@ -74,10 +74,21 @@ export const useConversations = () => {
   };
 
   // Criar nova conversa
+  // ✅ CORRIGIDO: Validação melhorada e tratamento de erros
   const createConversation = async (title: string = 'Nova Conversa') => {
-    if (!user) return null;
+    if (!user) {
+      console.error('❌ useConversations - Usuário não autenticado');
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para criar conversas.",
+        variant: "destructive",
+      });
+      return null;
+    }
 
     try {
+      console.log('✅ useConversations - Criando conversa para:', user.id);
+
       const { data, error } = await supabase
         .from('conversations')
         .insert([

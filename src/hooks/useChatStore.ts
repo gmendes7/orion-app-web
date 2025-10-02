@@ -349,12 +349,26 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   /**
    * Cria uma nova conversa no banco de dados e a define como ativa.
+   * ✅ CORRIGIDO: Adiciona user_id explicitamente e valida autenticação
    */
   createConversation: async (title: string) => {
     try {
+      // ✅ CRÍTICO: Verificar se usuário está autenticado
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('❌ ChatStore - Usuário não autenticado ao criar conversa');
+        throw new Error('Usuário não autenticado. Faça login para criar conversas.');
+      }
+
+      console.log('✅ ChatStore - Criando conversa para usuário:', userData.user.id);
+
       const { data, error } = await supabase
         .from("conversations")
-        .insert({ title })
+        .insert({ 
+          title,
+          user_id: userData.user.id // ✅ CRÍTICO: Incluir user_id explicitamente
+        })
         .select()
         .single();
 
