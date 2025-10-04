@@ -1,3 +1,4 @@
+import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
@@ -14,7 +15,11 @@ try {
   const root = createRoot(rootElement);
   
   console.log('✅ React root criado, renderizando App...');
-  root.render(<App />);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
   
   console.log('✅ Aplicação renderizada com sucesso!');
 } catch (error) {
