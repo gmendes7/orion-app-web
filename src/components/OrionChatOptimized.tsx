@@ -99,14 +99,9 @@ const OrionChat = () => {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
-=======
     <>
       <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
-
->>>>>>> b31039c6d1458bd03a714a75579f77202a6ce713
-      {/* Sidebar */}
+        {/* Sidebar */}
       <OrionSidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
@@ -342,10 +337,10 @@ const OrionChat = () => {
           conversationId={useChatStore((s) => s.currentConversationId)}
         />
       </div>
-    </div>
+      </div>
 
-    {/* LGPD Consent Banner */}
-    <ConsentBanner />
+      {/* LGPD Consent Banner */}
+      <ConsentBanner />
     </>
   );
 };

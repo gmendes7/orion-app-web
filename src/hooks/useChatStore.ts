@@ -38,6 +38,7 @@ interface DisplayMessage {
 interface Conversation {
   id: string;
   title?: string;
+  updated_at?: string;
   [key: string]: unknown;
 }
 
@@ -215,7 +216,6 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         content: msg.text,
       }));
 
-<<<<<<< HEAD
       // Constrói a URL da API dinamicamente com base no ambiente
       let response: Response | { data?: unknown; error?: unknown } | null =
         null;
@@ -261,24 +261,6 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           throw new Error("Unsupported response from chat function");
         }
       }
-=======
-      // ⚡ Chama a edge function do Supabase para processar a mensagem
-      console.log('📤 Enviando mensagem para edge function chat-ai...');
-      
-      // 🔄 Usa streaming direto da edge function para resposta em tempo real
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const response = await fetch(EDGE_FUNCTIONS.chatAI, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token || SUPABASE_CONFIG.anonKey}`,
-        },
-        body: JSON.stringify({ messages: conversationHistory }),
-        signal: abortController.signal,
-      });
->>>>>>> b31039c6d1458bd03a714a75579f77202a6ce713
 
       if (!response.ok || !response.body) {
         throw new Error("Falha ao conectar com a API.");

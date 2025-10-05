@@ -10,8 +10,8 @@ import {
 
 interface Conversation {
   id: string;
-  title: string;
-  updated_at: string;
+  title?: string;
+  updated_at?: string;
 }
 
 interface ConversationItemProps {
@@ -43,10 +43,10 @@ export const ConversationItem = ({
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-orion-stellar-gold truncate">
-          {conversation.title}
+          {conversation.title || 'Nova Conversa'}
         </p>
         <p className="text-xs text-orion-space-dust mt-1">
-          {new Date(conversation.updated_at).toLocaleDateString("pt-BR")}
+          {conversation.updated_at ? new Date(conversation.updated_at).toLocaleDateString("pt-BR") : 'Agora'}
         </p>
       </div>
 

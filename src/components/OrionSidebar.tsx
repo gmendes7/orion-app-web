@@ -9,8 +9,8 @@ import { useState } from "react";
 
 interface Conversation {
   id: string;
-  title: string;
-  updated_at: string;
+  title?: string;
+  updated_at?: string;
 }
 
 interface OrionSidebarProps {

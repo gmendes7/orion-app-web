@@ -75,7 +75,6 @@ export const useChatCommands = () => {
           typeof maybeData === "object" &&
           Object.prototype.hasOwnProperty.call(maybeData, "articles")
         ) {
-          // @ts-expect-error runtime check above
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           articles = (maybeData as any).articles?.slice(0, 5) || [];
         }
