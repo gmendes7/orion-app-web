@@ -5,7 +5,8 @@ import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { PrivacyPolicy } from "./PrivacyPolicy";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
   id: string;
@@ -41,6 +42,25 @@ export const OrionSidebar = ({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [username, setUsername] = useState<string>('');
+
+  // Busca o username do perfil do usuário
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+        
+        if (data?.username) {
+          setUsername(data.username);
+        }
+      }
+    };
+    fetchUsername();
+  }, [user?.id]);
 
   return (
     <AnimatePresence>
@@ -117,7 +137,7 @@ export const OrionSidebar = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {user?.email}
+                    {username || user?.email}
                   </p>
                   <p className="text-xs text-orion-space-dust">
                     O.R.I.Ö.N Assistant

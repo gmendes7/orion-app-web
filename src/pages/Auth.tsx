@@ -27,6 +27,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,7 +71,15 @@ const Auth = () => {
           });
           return;
         }
-        result = await signUp(email, password, fullName);
+        if (!username.trim()) {
+          toast({
+            title: "Campo obrigatório",
+            description: "Por favor, escolha um nome de usuário",
+            variant: "destructive",
+          });
+          return;
+        }
+        result = await signUp(email, password, fullName, username);
       } else {
         result = await signIn(email, password);
       }
@@ -191,7 +200,7 @@ const Auth = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {isSignUp && (
-                <div className="relative">
+                <>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
                     <Input
@@ -204,7 +213,25 @@ const Auth = () => {
                       required={isSignUp}
                     />
                   </div>
-                </div>
+                  
+                  <div className="relative">
+                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
+                    <Input
+                      type="text"
+                      placeholder="Nome de usuário (ex: astronauta123)"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                      className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
+                      disabled={isLoading}
+                      required={isSignUp}
+                      minLength={3}
+                      maxLength={20}
+                    />
+                    <p className="text-xs text-orion-space-dust mt-1 ml-1">
+                      Será exibido ao invés do seu email por segurança
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className="relative">
