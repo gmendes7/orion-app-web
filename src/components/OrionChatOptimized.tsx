@@ -336,6 +336,18 @@ const OrionChat = () => {
           startListening={startListening}
           conversationId={useChatStore((s) => s.currentConversationId)}
         />
+
+        {/* Footer */}
+        <footer className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/30 py-3 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="text-xs text-orion-space-dust">
+              Desenvolvido por{" "}
+              <span className="text-orion-stellar-gold font-medium stellar-text">
+                Gabriel Mendes
+              </span>
+            </p>
+          </div>
+        </footer>
       </div>
       </div>
 
