@@ -30,3 +30,9 @@ verify_jwt = false
 
 [functions.news-api]
 verify_jwt = false
+
+[functions.generate-api-key]
+verify_jwt = true
+
+[functions.validate-api-key]
+verify_jwt = false

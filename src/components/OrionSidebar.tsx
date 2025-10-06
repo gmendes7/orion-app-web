@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
-import { Plus, X, Database, LogOut, User, Shield } from "lucide-react";
+import { Plus, X, Database, LogOut, User, Shield, Key } from "lucide-react";
 import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
@@ -98,6 +98,15 @@ export const OrionSidebar = ({
               >
                 <Database className="w-4 h-4 mr-2" />
                 Dashboard
+              </Button>
+
+              <Button
+                onClick={() => navigate('/api-dashboard')}
+                variant="outline"
+                className="w-full mt-2 border-orion-stellar-gold/30 text-orion-stellar-gold hover:bg-orion-stellar-gold/10"
+              >
+                <Key className="w-4 h-4 mr-2" />
+                API Keys
               </Button>
             </div>
 
