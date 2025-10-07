@@ -14,10 +14,13 @@ import remarkGfm from "remark-gfm";
 import { ChatInput } from "./ChatInput";
 import CodeBlockRenderer from "./CodeBlockRenderer";
 
-import { OrionSidebar } from "./OrionSidebar";
+import { useIsMobile } from "@/integrations/hooks/use-mobile";
 import { ConsentBanner } from "./ConsentBanner";
+import { OrionSidebar } from "./OrionSidebar";
 
 const OrionChat = () => {
+  const isMobile = useIsMobile();
+
   console.log("💬 OrionChat component carregando...");
 
   const { toast } = useToast();
@@ -102,253 +105,255 @@ const OrionChat = () => {
     <>
       <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground relative overflow-hidden">
         {/* Sidebar */}
-      <OrionSidebar
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        conversations={useChatStore((s) => s.conversations)}
-        currentConversationId={useChatStore((s) => s.currentConversationId)}
-        loading={conversationsLoading}
-        setCurrentConversationId={useChatStore(
-          (s) => s.setCurrentConversationId
-        )}
-        createNewConversation={() =>
-          useChatStore.getState().createConversation("Nova Conversa")
-        }
-        deleteConversation={useChatStore((s) => s.deleteConversation)}
-        renameConversation={useChatStore((s) => s.renameConversation)}
-        handleLogout={handleLogout}
-      />
+        <OrionSidebar
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+          conversations={useChatStore((s) => s.conversations)}
+          currentConversationId={useChatStore((s) => s.currentConversationId)}
+          loading={conversationsLoading}
+          setCurrentConversationId={useChatStore(
+            (s) => s.setCurrentConversationId
+          )}
+          createNewConversation={() =>
+            useChatStore.getState().createConversation("Nova Conversa")
+          }
+          deleteConversation={useChatStore((s) => s.deleteConversation)}
+          renameConversation={useChatStore((s) => s.renameConversation)}
+          handleLogout={handleLogout}
+        />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col relative z-10">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4 }}
-          className="border-b border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 shadow-lg"
-        >
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(true)}
-                className="text-orion-cosmic-blue hover:text-orion-stellar-gold"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-
-              <div className="relative group">
-                <div className="w-10 h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
-                  <img
-                    src={ORION_LOGO_URL}
-                    alt="O.R.I.O.N Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
-              </div>
-
-              <div>
-                <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
-                  O.R.I.O.N
-                </h1>
-                <span className="text-sm text-orion-space-dust">
-                  Assistente de Inteligência Artificial
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setAudioEnabled(!audioEnabled)}
-                className="text-orion-cosmic-blue hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
-              >
-                {audioEnabled ? (
-                  <Volume2 className="w-5 h-5" />
-                ) : (
-                  <VolumeX className="w-5 h-5" />
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col relative z-10">
+          {/* Header */}
+          <motion.header
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="border-b border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 shadow-lg"
+          >
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center space-x-3">
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSidebarOpen(true)}
+                    className="text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </Button>
                 )}
-              </Button>
 
-              {isSpeaking && (
+                <div className="relative group">
+                  <div className="w-10 h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
+                    <img
+                      src={ORION_LOGO_URL}
+                      alt="O.R.I.O.N Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
+                </div>
+
+                <div>
+                  <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
+                    O.R.I.O.N
+                  </h1>
+                  <span className="text-sm text-orion-space-dust">
+                    Assistente de Inteligência Artificial
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={stopSpeaking}
-                  className="text-orion-accretion-disk hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
+                  onClick={() => setAudioEnabled(!audioEnabled)}
+                  className="text-orion-cosmic-blue hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
                 >
-                  <VolumeX className="w-5 h-5 animate-pulse" />
-                </Button>
-              )}
-
-              {isStreaming && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={stopStreaming}
-                  className="flex items-center gap-2 border-orion-accretion-disk text-orion-accretion-disk hover:bg-orion-accretion-disk/10 hover:text-orion-accretion-disk"
-                >
-                  <Square className="w-3 h-3" />
-                  <span className="hidden sm:inline">Parar Geração</span>
-                </Button>
-              )}
-            </div>
-          </div>
-        </motion.header>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 sm:space-y-6 max-w-4xl mx-auto w-full">
-          {conversationsLoading ? (
-            <div className="flex justify-center items-center h-full">
-              <Loader2 className="w-8 h-8 text-orion-stellar-gold animate-spin" />
-            </div>
-          ) : (
-            <AnimatePresence>
-              {messages.map((message, index) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                  className={cn(
-                    "flex gap-4",
-                    message.isUser ? "justify-end" : "justify-start"
+                  {audioEnabled ? (
+                    <Volume2 className="w-5 h-5" />
+                  ) : (
+                    <VolumeX className="w-5 h-5" />
                   )}
-                >
-                  {!message.isUser && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
-                        <img
-                          src={ORION_LOGO_URL}
-                          alt="O.R.I.Ö.N"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
+                </Button>
 
-                  <div
+                {isSpeaking && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={stopSpeaking}
+                    className="text-orion-accretion-disk hover:text-orion-stellar-gold hover:bg-orion-stellar-gold/10 transition-all duration-300"
+                  >
+                    <VolumeX className="w-5 h-5 animate-pulse" />
+                  </Button>
+                )}
+
+                {isStreaming && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={stopStreaming}
+                    className="flex items-center gap-2 border-orion-accretion-disk text-orion-accretion-disk hover:bg-orion-accretion-disk/10 hover:text-orion-accretion-disk"
+                  >
+                    <Square className="w-3 h-3" />
+                    <span className="hidden sm:inline">Parar Geração</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.header>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 sm:space-y-6 max-w-4xl mx-auto w-full">
+            {conversationsLoading ? (
+              <div className="flex justify-center items-center h-full">
+                <Loader2 className="w-8 h-8 text-orion-stellar-gold animate-spin" />
+              </div>
+            ) : (
+              <AnimatePresence>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
                     className={cn(
-                      "max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
-                      message.isUser
-                        ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
-                        : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                      "flex gap-4",
+                      message.isUser ? "justify-end" : "justify-start"
                     )}
                   >
-                    <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({
-                            node,
-                            inline,
-                            className,
-                            children,
-                            ...props
-                          }: any) {
-                            const match = /language-(\w+)/.exec(
-                              className || ""
-                            );
-                            const codeText = String(children).replace(
-                              /\n$/,
-                              ""
-                            );
-                            if (!inline && match) {
-                              return (
-                                <CodeBlockRenderer
-                                  language={match[1]}
-                                  codeText={codeText}
-                                  {...props}
-                                />
+                    {!message.isUser && (
+                      <div className="flex-shrink-0 mt-1">
+                        <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
+                          <img
+                            src={ORION_LOGO_URL}
+                            alt="O.R.I.Ö.N"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      className={cn(
+                        "max-w-[95%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
+                        message.isUser
+                          ? "bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
+                          : "chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                      )}
+                    >
+                      <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({
+                              node,
+                              inline,
+                              className,
+                              children,
+                              ...props
+                            }: any) {
+                              const match = /language-(\w+)/.exec(
+                                className || ""
                               );
-                            }
-                            return (
-                              <code
-                                className={cn(
-                                  className,
-                                  "bg-orion-event-horizon/50 text-orion-accretion-disk px-1 py-0.5 rounded-sm"
-                                )}
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            );
-                          },
-                        }}
-                      >
-                        {message.text || "▍"}
-                      </ReactMarkdown>
+                              const codeText = String(children).replace(
+                                /\n$/,
+                                ""
+                              );
+                              if (!inline && match) {
+                                return (
+                                  <CodeBlockRenderer
+                                    language={match[1]}
+                                    codeText={codeText}
+                                    {...props}
+                                  />
+                                );
+                              }
+                              return (
+                                <code
+                                  className={cn(
+                                    className,
+                                    "bg-orion-event-horizon/50 text-orion-accretion-disk px-1 py-0.5 rounded-sm"
+                                  )}
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              );
+                            },
+                          }}
+                        >
+                          {message.text || "▍"}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="flex gap-4">
+                  <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
+                    <img
+                      src={ORION_LOGO_URL}
+                      alt="O.R.I.Ö.N"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="chat-message-orion rounded-2xl px-5 py-4 backdrop-blur-sm">
+                    <div className="flex space-x-1">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-orion-stellar-gold rounded-full"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-xl shadow-lg shadow-orion-stellar-gold/30 overflow-hidden">
-                  <img
-                    src={ORION_LOGO_URL}
-                    alt="O.R.I.Ö.N"
-                    className="w-full h-full object-cover"
-                  />
                 </div>
-                <div className="chat-message-orion rounded-2xl px-5 py-4 backdrop-blur-sm">
-                  <div className="flex space-x-1">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="w-2 h-2 bg-orion-stellar-gold rounded-full"
-                        animate={{
-                          scale: [1, 1.5, 1],
-                          opacity: [0.5, 1, 0.5],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: i * 0.2,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          <div ref={messagesEndRef} />
-        </div>
-
-        <ChatInput
-          onSendMessage={sendMessage}
-          isTyping={isTyping}
-          isListening={isListening}
-          startListening={startListening}
-          conversationId={useChatStore((s) => s.currentConversationId)}
-        />
-
-        {/* Footer */}
-        <footer className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/30 py-3 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <p className="text-xs text-orion-space-dust">
-              Desenvolvido por{" "}
-              <span className="text-orion-stellar-gold font-medium stellar-text">
-                Gabriel Mendes
-              </span>
-            </p>
+            <div ref={messagesEndRef} />
           </div>
-        </footer>
-      </div>
+
+          <ChatInput
+            onSendMessage={sendMessage}
+            isTyping={isTyping}
+            isListening={isListening}
+            startListening={startListening}
+            conversationId={useChatStore((s) => s.currentConversationId)}
+          />
+
+          {/* Footer */}
+          <footer className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/30 py-3 px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <p className="text-xs text-orion-space-dust">
+                Desenvolvido por{" "}
+                <span className="text-orion-stellar-gold font-medium stellar-text">
+                  Gabriel Mendes
+                </span>
+              </p>
+            </div>
+          </footer>
+        </div>
       </div>
 
       {/* LGPD Consent Banner */}

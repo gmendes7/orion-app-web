@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { env } from "../../../env";
 // Define um tipo para a resposta de erro esperada
 type ErrorResponse = {
   error: {
@@ -31,7 +32,7 @@ export default async function handler(
   }
 
   // 2. Verificar a Chave de API no servidor
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error(
       "[API CHAT] CRÍTICO: A variável de ambiente OPENAI_API_KEY não está configurada no servidor."

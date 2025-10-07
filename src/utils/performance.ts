@@ -1,3 +1,5 @@
+import { viteEnv } from "@/viteEnv";
+
 // Performance optimizations
 export const performanceOptimizations = {
   // Configurações de debounce para eventos
@@ -232,7 +234,7 @@ export const performanceOptimizations = {
     performanceOptimizations.serviceWorker.register();
 
     // Iniciar métricas (apenas em produção)
-    if (process.env.NODE_ENV === "production") {
+    if (viteEnv.VITE_NODE_ENV === "production") {
       performanceOptimizations.metrics.measureWebVitals();
       performanceOptimizations.metrics.monitorMemory();
     }

@@ -1,9 +1,10 @@
 import { OpenAIStream, StreamingTextResponse } from "ai";
 import OpenAI from "openai";
+import { env } from "./env";
 
 // Crie um cliente OpenAI (compatível com Edge)
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 });
 
 // Defina o runtime para 'edge' para performance máxima

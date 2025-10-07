@@ -43,10 +43,12 @@ export const ConversationItem = ({
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-orion-stellar-gold truncate">
-          {conversation.title || 'Nova Conversa'}
+          {conversation.title || "Nova Conversa"}
         </p>
-        <p className="text-xs text-orion-space-dust mt-1">
-          {conversation.updated_at ? new Date(conversation.updated_at).toLocaleDateString("pt-BR") : 'Agora'}
+        <p className="text-xs text-yellow-500 mt-1">
+          {conversation.updated_at
+            ? new Date(conversation.updated_at).toLocaleDateString("pt-BR")
+            : "Agora"}
         </p>
       </div>
 
