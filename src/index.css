@@ -8,85 +8,87 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Black Hole Theme - Base Colors */
-    --background: 230 15% 2%;
-    --foreground: 45 100% 95%;
+    /* Neon Purple Theme - Base Colors */
+    --background: 270 50% 5%;           /* Deep purple-black */
+    --foreground: 280 30% 95%;          /* Light lilac/white */
 
-    --card: 230 15% 4%;
-    --card-foreground: 45 100% 95%;
+    --card: 270 40% 8%;                 /* Dark purple card */
+    --card-foreground: 280 30% 95%;     /* Light text */
 
-    --popover: 230 15% 4%;
-    --popover-foreground: 45 100% 95%;
+    --popover: 270 40% 8%;
+    --popover-foreground: 280 30% 95%;
 
-    --primary: 45 100% 50%;
-    --primary-foreground: 230 15% 2%;
+    --primary: 270 100% 65%;            /* Bright neon purple */
+    --primary-foreground: 280 30% 98%;  /* Pure white */
 
-    --secondary: 25 80% 15%;
-    --secondary-foreground: 45 100% 95%;
+    --secondary: 260 60% 25%;           /* Dark purple */
+    --secondary-foreground: 280 30% 95%;
 
-    --muted: 230 15% 8%;
-    --muted-foreground: 45 30% 70%;
+    --muted: 270 35% 12%;               /* Muted purple */
+    --muted-foreground: 270 15% 65%;    /* Mid lilac */
 
-    --accent: 25 95% 53%;
-    --accent-foreground: 230 15% 2%;
+    --accent: 285 100% 70%;             /* Vibrant purple/magenta */
+    --accent-foreground: 280 30% 98%;
 
     --destructive: 0 75% 50%;
-    --destructive-foreground: 45 100% 95%;
+    --destructive-foreground: 280 30% 98%;
 
-    --border: 230 15% 12%;
-    --input: 230 15% 8%;
-    --ring: 45 100% 50%;
+    --border: 270 40% 18%;              /* Purple border */
+    --input: 270 35% 12%;               /* Dark input bg */
+    --ring: 270 100% 65%;               /* Neon purple ring */
 
     --radius: 0.75rem;
 
-    /* Black Hole Theme Colors */
-    --orion-void: 230 15% 1%;           /* Deep void black */
-    --orion-event-horizon: 230 15% 3%;  /* Event horizon */
-    --orion-accretion-disk: 25 95% 53%; /* Orange accretion disk */
-    --orion-stellar-gold: 45 100% 50%;  /* Golden stellar matter */
-    --orion-energy-burst: 30 100% 60%;  /* Bright energy */
-    --orion-plasma-glow: 20 85% 45%;    /* Plasma glow */
-    --orion-space-dust: 45 20% 25%;     /* Space particles */
-    --orion-cosmic-blue: 200 100% 50%;  /* Cosmic accent */
+    /* Neon Purple Theme Colors */
+    --orion-void: 270 50% 3%;           /* Deep void purple-black */
+    --orion-event-horizon: 270 45% 8%;  /* Event horizon purple */
+    --orion-accretion-disk: 285 100% 70%; /* Neon magenta */
+    --orion-stellar-gold: 270 100% 65%; /* Neon purple */
+    --orion-energy-burst: 280 95% 75%;  /* Bright neon lilac */
+    --orion-plasma-glow: 275 100% 68%;  /* Plasma purple */
+    --orion-space-dust: 270 20% 40%;    /* Muted purple dust */
+    --orion-cosmic-blue: 265 100% 65%;  /* Cosmic blue-purple */
     
     /* Advanced Gradients */
     --black-hole-gradient: radial-gradient(ellipse at center, 
-      hsl(var(--orion-stellar-gold) / 0.8) 0%, 
-      hsl(var(--orion-accretion-disk) / 0.6) 25%, 
-      hsl(var(--orion-plasma-glow) / 0.4) 50%, 
-      hsl(var(--orion-event-horizon)) 75%, 
-      hsl(var(--orion-void)) 100%);
+      hsl(270 100% 65% / 0.8) 0%, 
+      hsl(285 100% 70% / 0.6) 25%, 
+      hsl(275 100% 68% / 0.4) 50%, 
+      hsl(270 45% 8%) 75%, 
+      hsl(270 50% 3%) 100%);
     
     --accretion-gradient: conic-gradient(from 0deg, 
-      hsl(var(--orion-stellar-gold)), 
-      hsl(var(--orion-accretion-disk)), 
-      hsl(var(--orion-energy-burst)), 
-      hsl(var(--orion-accretion-disk)), 
-      hsl(var(--orion-stellar-gold)));
+      hsl(270 100% 65%), 
+      hsl(285 100% 70%), 
+      hsl(280 95% 75%), 
+      hsl(285 100% 70%), 
+      hsl(270 100% 65%));
 
     --lantern-gradient: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-      hsl(var(--orion-stellar-gold) / 0.25) 0%, 
-      hsl(var(--orion-accretion-disk) / 0.15) 20%, 
-      hsl(var(--orion-plasma-glow) / 0.08) 40%, 
+      hsl(270 100% 65% / 0.25) 0%, 
+      hsl(285 100% 70% / 0.15) 20%, 
+      hsl(275 100% 68% / 0.08) 40%, 
       transparent 60%);
 
     --gradient-cosmic: var(--black-hole-gradient);
-    --gradient-orion: linear-gradient(135deg, hsl(var(--orion-stellar-gold) / 0.1), hsl(var(--orion-accretion-disk) / 0.1));
-    --gradient-nebula: radial-gradient(ellipse at center, hsl(var(--orion-accretion-disk) / 0.2), transparent 60%);
+    --gradient-orion: linear-gradient(135deg, hsl(270 100% 65% / 0.15), hsl(285 100% 70% / 0.15));
+    --gradient-nebula: radial-gradient(ellipse at center, hsl(285 100% 70% / 0.2), transparent 60%);
     
-    /* Enhanced Glow Effects */
-    --glow-gold: 0 0 30px hsl(var(--orion-stellar-gold) / 0.6), 
-                 0 0 60px hsl(var(--orion-stellar-gold) / 0.3);
-    --glow-orange: 0 0 25px hsl(var(--orion-accretion-disk) / 0.6), 
-                   0 0 50px hsl(var(--orion-accretion-disk) / 0.3);
-    --glow-energy: 0 0 20px hsl(var(--orion-energy-burst) / 0.7);
-    --glow-plasma: 0 0 15px hsl(var(--orion-plasma-glow) / 0.8);
+    /* Enhanced Glow Effects - Neon Purple */
+    --glow-purple: 0 0 30px hsl(270 100% 65% / 0.7), 
+                   0 0 60px hsl(270 100% 65% / 0.4),
+                   0 0 90px hsl(270 100% 65% / 0.2);
+    --glow-magenta: 0 0 25px hsl(285 100% 70% / 0.7), 
+                    0 0 50px hsl(285 100% 70% / 0.4);
+    --glow-energy: 0 0 20px hsl(280 95% 75% / 0.8);
+    --glow-plasma: 0 0 15px hsl(275 100% 68% / 0.8);
     
     /* Legacy compatibility */
-    --glow-neon: var(--glow-gold);
-    --glow-cosmic: var(--glow-orange);
-    --glow-purple: var(--glow-energy);
-    --glow-strong: var(--glow-gold);
+    --glow-neon: var(--glow-purple);
+    --glow-cosmic: var(--glow-magenta);
+    --glow-gold: var(--glow-purple);
+    --glow-orange: var(--glow-magenta);
+    --glow-strong: var(--glow-purple);
     
     /* Transitions */
     --transition-cosmic: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -108,8 +110,11 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground overflow-hidden;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted) / 0.2));
+    font-family: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, 
+      hsl(270 50% 5%), 
+      hsl(270 45% 8%), 
+      hsl(270 50% 5%));
     background-attachment: fixed;
   }
 
@@ -136,7 +141,9 @@ All colors MUST be HSL.
   }
 
   .stellar-text {
-    text-shadow: 0 0 20px hsl(var(--orion-stellar-gold) / 0.5);
+    text-shadow: 0 0 20px hsl(270 100% 65% / 0.8),
+                 0 0 40px hsl(270 100% 65% / 0.4),
+                 0 0 60px hsl(270 100% 65% / 0.2);
   }
 
   .chat-message-orion {
@@ -153,15 +160,15 @@ All colors MUST be HSL.
 
   /* Fallback styles for critical elements */
   .orion-fallback {
-    background-color: #1a1a2e !important;
-    color: #ffd700 !important;
+    background-color: #0d0a1f !important;
+    color: #c084fc !important;
   }
   
   .orion-text-fallback {
-    color: #ffd700 !important;
+    color: #c084fc !important;
   }
 
   .orion-bg-fallback {
-    background: linear-gradient(135deg, #0f0f23, #16213e) !important;
+    background: linear-gradient(135deg, #0b0818, #0d0a1f, #0b0818) !important;
   }
 }

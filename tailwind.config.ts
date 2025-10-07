@@ -60,6 +60,9 @@ export default {
 				'orion-plasma-glow': 'hsl(var(--orion-plasma-glow))',
 				'orion-space-dust': 'hsl(var(--orion-space-dust))',
 				'orion-cosmic-blue': 'hsl(var(--orion-cosmic-blue))',
+				'neon-purple': 'hsl(270 100% 65%)',
+				'neon-magenta': 'hsl(285 100% 70%)',
+				'neon-lilac': 'hsl(280 95% 75%)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

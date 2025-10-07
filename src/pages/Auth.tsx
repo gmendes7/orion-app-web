@@ -135,13 +135,18 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 text-foreground relative overflow-hidden orion-bg-fallback">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background text-foreground relative overflow-hidden orion-bg-fallback">
       
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-md lg:max-w-lg">
           {/* Logo and Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-2xl shadow-orion-stellar-gold/30 mb-6 overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8 sm:mb-10"
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl shadow-2xl shadow-primary/40 mb-6 overflow-hidden ring-2 ring-primary/30">
               <img 
                 src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
                 alt="O.R.I.Ö.N Logo"
@@ -153,18 +158,23 @@ const Auth = () => {
               />
             </div>
             
-            <h1 className="text-3xl font-bold text-orion-stellar-gold stellar-text mb-2 orion-text-fallback">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary stellar-text mb-2 orion-text-fallback">
               O.R.I.Ö.N
             </h1>
-            <p className="text-orion-space-dust">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Seu Assistente de IA Futurista
             </p>
-          </div>
+          </motion.div>
 
           {/* Auth Form */}
-          <div className="chat-message-orion rounded-3xl p-8 backdrop-blur-sm border border-orion-cosmic-blue/30 shadow-2xl orion-fallback">
-            <div className="flex items-center justify-center mb-6">
-              <div className="flex rounded-xl bg-orion-event-horizon p-1">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="chat-message-orion rounded-3xl p-6 sm:p-8 lg:p-10 backdrop-blur-xl border border-primary/30 shadow-2xl shadow-primary/20 orion-fallback"
+          >
+            <div className="flex items-center justify-center mb-8">
+              <div className="flex rounded-2xl bg-orion-event-horizon p-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -172,10 +182,10 @@ const Auth = () => {
                     setIsSignUp(false);
                   }}
                   className={cn(
-                    "px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                    "px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300",
                     !isSignUp
-                      ? "bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-lg"
-                      : "text-orion-space-dust hover:text-orion-stellar-gold"
+                      ? "bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:text-primary"
                   )}
                 >
                   Entrar
@@ -187,10 +197,10 @@ const Auth = () => {
                     setIsSignUp(true);
                   }}
                   className={cn(
-                    "px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                    "px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300",
                     isSignUp
-                      ? "bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-lg"
-                      : "text-orion-space-dust hover:text-orion-stellar-gold"
+                      ? "bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:text-primary"
                   )}
                 >
                   Criar Conta
@@ -275,7 +285,7 @@ const Auth = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold text-orion-void font-semibold rounded-xl hover:opacity-90 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg border border-white/20"
+                className="w-full h-12 sm:h-14 bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl shadow-primary/40 border border-primary/50 text-base sm:text-lg"
                 onClick={() => console.log('🔐 Auth - Botão de submit clicado')}
               >
                 {isLoading ? "Processando..." : isSignUp ? "Criar Conta" : "Entrar"}
@@ -297,21 +307,21 @@ const Auth = () => {
                 variant="outline"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full mt-4 h-12 border-orion-cosmic-blue/30 text-foreground hover:bg-orion-cosmic-blue/10 hover:border-orion-stellar-gold/50 transition-all duration-300 rounded-xl"
+                className="w-full mt-4 h-12 sm:h-14 border-primary/40 text-foreground hover:bg-primary/10 hover:border-primary transition-all duration-300 rounded-2xl text-base font-medium"
               >
                 <Chrome className="w-5 h-5 mr-3" />
                 Continuar com Google
               </Button>
             </div>
 
-            <p className="text-center text-sm text-orion-space-dust mt-6">
+            <p className="text-center text-sm sm:text-base text-muted-foreground mt-6">
               {isSignUp ? (
                 <>
                   Já tem uma conta?{" "}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
-                    className="text-orion-stellar-gold hover:text-orion-accretion-disk transition-colors font-medium"
+                    className="text-primary hover:text-accent transition-colors font-semibold"
                   >
                     Faça login
                   </button>
@@ -322,14 +332,14 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
-                    className="text-orion-stellar-gold hover:text-orion-accretion-disk transition-colors font-medium"
+                    className="text-primary hover:text-accent transition-colors font-semibold"
                   >
                     Criar conta
                   </button>
                 </>
               )}
             </p>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

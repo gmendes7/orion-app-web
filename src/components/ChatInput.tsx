@@ -1,7 +1,7 @@
 import { useDraft } from "@/hooks/useDraft";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Cloud, Mic, Newspaper, Search, Send, Image, Paperclip } from "lucide-react";
+import { Mic, Send, Image } from "lucide-react";
 import { Button } from "./ui/button";
 import { ImageAnalysisInChat } from "./ImageAnalysisInChat";
 import { useState } from "react";
@@ -13,27 +13,6 @@ interface ChatInputProps {
   startListening: () => void;
   conversationId: string | null;
 }
-
-const quickActions = [
-  {
-    icon: Search,
-    label: "Pesquisar",
-    action: (setInput: (text: string) => void) => setInput("Pesquisar sobre "),
-    color: "from-orion-cosmic-blue to-orion-stellar-gold",
-  },
-  {
-    icon: Cloud,
-    label: "Clima",
-    action: (setInput: (text: string) => void) => setInput("Clima em "),
-    color: "from-orion-energy-burst to-orion-accretion-disk",
-  },
-  {
-    icon: Newspaper,
-    label: "Notícias",
-    action: (setInput: (text: string) => void) => setInput("Notícias sobre "),
-    color: "from-orion-plasma-glow to-orion-stellar-gold",
-  },
-];
 
 export const ChatInput = ({
   onSendMessage,
@@ -83,46 +62,24 @@ export const ChatInput = ({
     <>
       {/* Image Upload Section */}
       {showImageUpload && (
-        <div className="px-2 sm:px-4 py-3 border-t border-orion-cosmic-blue/20 bg-card/50">
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="px-2 sm:px-4 lg:px-6 py-3 border-t border-primary/20 bg-card/50"
+        >
           <div className="max-w-4xl mx-auto">
             <ImageAnalysisInChat onAnalysisComplete={handleImageAnalysis} />
           </div>
-        </div>
+        </motion.div>
       )}
-
-      {/* Quick Actions */}
-      <div className="px-2 sm:px-4 py-2">
-        <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-4xl mx-auto">
-          {quickActions.map((action, index) => (
-            <motion.button
-              key={action.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              onClick={() => action.action(setDraft)}
-              className={cn(
-                "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-300",
-                "bg-gradient-to-r",
-                action.color,
-                "text-orion-void hover:scale-105 hover:shadow-lg active:scale-95",
-                "border border-white/20 backdrop-blur-sm"
-              )}
-            >
-              <action.icon className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline sm:inline text-xs sm:text-sm">
-                {action.label}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-      </div>
 
       {/* Input Area */}
       <motion.div
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-2 sm:p-4"
+        className="border-t border-primary/30 backdrop-blur-xl bg-card/60 p-3 sm:p-4 lg:p-6"
       >
         <div className="max-w-4xl mx-auto">
           <div className="relative flex items-end gap-2 sm:gap-3">
@@ -135,16 +92,17 @@ export const ChatInput = ({
                 disabled={isTyping}
                 rows={Math.min(Math.max(draft.split("\n").length, 1), 4)}
                 className={cn(
-                  "w-full resize-none rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-sm",
-                  "bg-orion-event-horizon/50 border-2 border-orion-cosmic-blue/30",
-                  "text-foreground placeholder-orion-space-dust",
-                  "focus:border-orion-stellar-gold/60 focus:ring-2 focus:ring-orion-stellar-gold/20",
+                  "w-full resize-none rounded-2xl px-4 sm:px-5 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base",
+                  "bg-orion-event-horizon/70 border-2 border-primary/30",
+                  "text-foreground placeholder:text-muted-foreground",
+                  "focus:border-primary focus:ring-4 focus:ring-primary/20",
                   "transition-all duration-300 backdrop-blur-sm",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "shadow-lg shadow-primary/5"
                 )}
-                style={{ minHeight: "48px", maxHeight: "120px" }}
+                style={{ minHeight: "56px", maxHeight: "140px" }}
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1.5">
                 {/* Image Upload Toggle */}
                 <Button
                   variant="ghost"
@@ -152,14 +110,14 @@ export const ChatInput = ({
                   onClick={() => setShowImageUpload(!showImageUpload)}
                   disabled={isTyping}
                   className={cn(
-                    "w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300",
+                    "w-8 h-8 sm:w-9 sm:h-9 transition-all duration-300 rounded-xl",
                     showImageUpload 
-                      ? "text-orion-stellar-gold scale-110" 
-                      : "text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                      ? "text-primary bg-primary/10 scale-110 shadow-lg shadow-primary/30" 
+                      : "text-primary/70 hover:text-primary hover:bg-primary/10"
                   )}
                   title="Analisar imagem"
                 >
-                  <Image className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <Image className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
 
                 {/* Voice Input */}
@@ -169,13 +127,14 @@ export const ChatInput = ({
                   onClick={startListening}
                   disabled={isListening || isTyping}
                   className={cn(
-                    "w-6 h-6 sm:w-8 sm:h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
-                    isListening &&
-                      "text-orion-accretion-disk animate-pulse scale-110"
+                    "w-8 h-8 sm:w-9 sm:h-9 transition-all duration-300 rounded-xl",
+                    isListening
+                      ? "text-accent bg-accent/10 animate-pulse scale-110 shadow-lg shadow-accent/30"
+                      : "text-primary/70 hover:text-primary hover:bg-primary/10"
                   )}
                   title="Entrada de voz"
                 >
-                  <Mic className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
             </div>
@@ -183,14 +142,18 @@ export const ChatInput = ({
               onClick={handleSend}
               disabled={!draft.trim() || isTyping}
               className={cn(
-                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
-                "text-orion-void font-medium shadow-lg transition-all duration-300",
-                "hover:scale-105 hover:shadow-xl active:scale-95",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
-                "border border-white/20"
+                "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl",
+                "bg-gradient-to-br from-primary via-accent to-primary",
+                "text-primary-foreground font-semibold",
+                "shadow-2xl shadow-primary/40",
+                "transition-all duration-300",
+                "hover:scale-110 hover:shadow-primary/60 hover:rotate-12",
+                "active:scale-95 active:rotate-0",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:rotate-0",
+                "border border-primary/50"
               )}
             >
-              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Send className="w-5 h-5 sm:w-6 sm:h-6" />
             </Button>
           </div>
         </div>
