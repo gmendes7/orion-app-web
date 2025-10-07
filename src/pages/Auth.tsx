@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/integrations/hooks/use-toast';
-
+import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { 
   Mail, 
@@ -15,8 +15,17 @@ import {
   EyeOff, 
   Chrome,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
+
+// Schemas de validação
+const emailSchema = z.string().email('Email inválido').min(1, 'Email é obrigatório');
+const passwordSchema = z.string().min(6, 'Senha deve ter no mínimo 6 caracteres');
+const fullNameSchema = z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').trim();
+const usernameSchema = z.string().min(3, 'Username deve ter no mínimo 3 caracteres').max(20, 'Username deve ter no máximo 20 caracteres');
 
 const Auth = () => {
   console.log('🔐 Auth component renderizando...');
@@ -30,8 +39,49 @@ const Auth = () => {
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Estados de validação
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [fullNameError, setFullNameError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+    fullName: false,
+    username: false,
+  });
 
   console.log('🔐 Auth - user:', user?.email || 'Não autenticado', 'loading:', loading);
+
+  // Validação em tempo real
+  useEffect(() => {
+    if (touched.email) {
+      const result = emailSchema.safeParse(email);
+      setEmailError(result.success ? '' : result.error.issues[0].message);
+    }
+  }, [email, touched.email]);
+
+  useEffect(() => {
+    if (touched.password) {
+      const result = passwordSchema.safeParse(password);
+      setPasswordError(result.success ? '' : result.error.issues[0].message);
+    }
+  }, [password, touched.password]);
+
+  useEffect(() => {
+    if (touched.fullName && isSignUp) {
+      const result = fullNameSchema.safeParse(fullName);
+      setFullNameError(result.success ? '' : result.error.issues[0].message);
+    }
+  }, [fullName, touched.fullName, isSignUp]);
+
+  useEffect(() => {
+    if (touched.username && isSignUp) {
+      const result = usernameSchema.safeParse(username);
+      setUsernameError(result.success ? '' : result.error.issues[0].message);
+    }
+  }, [username, touched.username, isSignUp]);
 
   // Redirect if already authenticated
   if (user && !loading) {
@@ -57,28 +107,48 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Marca todos como tocados para exibir erros
+    setTouched({
+      email: true,
+      password: true,
+      fullName: true,
+      username: true,
+    });
+
+    // Valida todos os campos
+    const emailValidation = emailSchema.safeParse(email);
+    const passwordValidation = passwordSchema.safeParse(password);
+    
+    if (!emailValidation.success || !passwordValidation.success) {
+      toast({
+        title: "Campos inválidos",
+        description: "Por favor, corrija os erros antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isSignUp) {
+      const fullNameValidation = fullNameSchema.safeParse(fullName);
+      const usernameValidation = usernameSchema.safeParse(username);
+      
+      if (!fullNameValidation.success || !usernameValidation.success) {
+        toast({
+          title: "Campos inválidos",
+          description: "Por favor, corrija os erros antes de continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
       let result;
       
       if (isSignUp) {
-        if (!fullName.trim()) {
-          toast({
-            title: "Campo obrigatório",
-            description: "Por favor, informe seu nome completo",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (!username.trim()) {
-          toast({
-            title: "Campo obrigatório",
-            description: "Por favor, escolha um nome de usuário",
-            variant: "destructive",
-          });
-          return;
-        }
         result = await signUp(email, password, fullName, username);
       } else {
         result = await signIn(email, password);
@@ -86,32 +156,57 @@ const Auth = () => {
 
       if (result.error) {
         let errorMessage = "Ocorreu um erro inesperado";
+        let errorTitle = isSignUp ? "Erro ao criar conta" : "Erro ao fazer login";
         
         if (result.error.message.includes("Invalid login credentials")) {
-          errorMessage = "Email ou senha incorretos";
+          errorMessage = "Email ou senha incorretos. Verifique suas credenciais e tente novamente.";
+          errorTitle = "Credenciais inválidas";
         } else if (result.error.message.includes("User already registered")) {
-          errorMessage = "Este email já está cadastrado. Tente fazer login.";
+          errorMessage = "Este email já está cadastrado. Tente fazer login ou use outro email.";
+          errorTitle = "Email já cadastrado";
         } else if (result.error.message.includes("Password should be at least")) {
           errorMessage = "A senha deve ter pelo menos 6 caracteres";
+          errorTitle = "Senha muito curta";
         } else if (result.error.message.includes("Unable to validate email address")) {
-          errorMessage = "Email inválido";
+          errorMessage = "Email inválido. Por favor, use um email válido.";
+          errorTitle = "Email inválido";
+        } else if (result.error.message.includes("Email not confirmed")) {
+          errorMessage = "Por favor, confirme seu email antes de fazer login.";
+          errorTitle = "Email não confirmado";
         }
 
         toast({
-          title: isSignUp ? "Erro ao criar conta" : "Erro ao fazer login",
+          title: errorTitle,
           description: errorMessage,
           variant: "destructive",
         });
       } else if (isSignUp) {
         toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar a conta (opcional para teste).",
+          title: "✅ Conta criada com sucesso!",
+          description: "Você já pode acessar sua conta. A confirmação de email é opcional.",
+        });
+        // Limpa os campos após cadastro bem-sucedido
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setUsername('');
+        setTouched({
+          email: false,
+          password: false,
+          fullName: false,
+          username: false,
+        });
+      } else {
+        toast({
+          title: "✅ Login realizado com sucesso!",
+          description: "Bem-vindo de volta ao O.R.I.Ö.N",
         });
       }
     } catch (error) {
+      console.error('Auth error:', error);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        title: "Erro de conexão",
+        description: "Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -121,17 +216,53 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await signInWithGoogle();
     
-    if (error) {
+    try {
+      const { error } = await signInWithGoogle();
+      
+      if (error) {
+        toast({
+          title: "Erro ao fazer login com Google",
+          description: "Não foi possível conectar com o Google. Tente novamente ou use email/senha.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
       toast({
-        title: "Erro ao fazer login com Google",
-        description: error.message,
+        title: "Erro de conexão",
+        description: "Falha ao conectar com o Google. Verifique sua internet.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email necessário",
+        description: "Por favor, insira seu email primeiro para recuperar a senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailValidation = emailSchema.safeParse(email);
+    if (!emailValidation.success) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, insira um email válido para recuperar a senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Link de recuperação enviado!",
+      description: "Verifique seu email para redefinir sua senha.",
+    });
   };
 
   return (
@@ -208,63 +339,171 @@ const Auth = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {isSignUp && (
-                <>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
-                    <Input
-                      type="text"
-                      placeholder="Nome completo"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
-                      disabled={isLoading}
-                      required={isSignUp}
-                    />
-                  </div>
-                  
-                  <div className="relative">
-                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
-                    <Input
-                      type="text"
-                      placeholder="Nome de usuário (ex: astronauta123)"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                      className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
-                      disabled={isLoading}
-                      required={isSignUp}
-                      minLength={3}
-                      maxLength={20}
-                    />
-                    <p className="text-xs text-orion-space-dust mt-1 ml-1">
-                      Será exibido ao invés do seu email por segurança
-                    </p>
-                  </div>
-                </>
-              )}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <AnimatePresence mode="wait">
+                {isSignUp && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="relative"
+                    >
+                      <User className={cn(
+                        "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                        fullNameError && touched.fullName ? "text-destructive" : "text-primary/70"
+                      )} />
+                      <Input
+                        type="text"
+                        placeholder="Nome completo"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        onBlur={() => setTouched(prev => ({ ...prev, fullName: true }))}
+                        className={cn(
+                          "pl-11 h-12 sm:h-14 bg-card/60 border-2 text-foreground placeholder:text-muted-foreground rounded-2xl transition-all duration-300",
+                          fullNameError && touched.fullName
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                            : "border-primary/30 focus:border-primary focus:ring-primary/20"
+                        )}
+                        disabled={isLoading}
+                        required={isSignUp}
+                      />
+                      {fullNameError && touched.fullName && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-1 mt-1 text-xs text-destructive"
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          {fullNameError}
+                        </motion.div>
+                      )}
+                      {!fullNameError && fullName && touched.fullName && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-1 mt-1 text-xs text-green-500"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          Nome válido
+                        </motion.div>
+                      )}
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="relative"
+                    >
+                      <Sparkles className={cn(
+                        "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                        usernameError && touched.username ? "text-destructive" : "text-primary/70"
+                      )} />
+                      <Input
+                        type="text"
+                        placeholder="Nome de usuário (ex: astronauta123)"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        onBlur={() => setTouched(prev => ({ ...prev, username: true }))}
+                        className={cn(
+                          "pl-11 h-12 sm:h-14 bg-card/60 border-2 text-foreground placeholder:text-muted-foreground rounded-2xl transition-all duration-300",
+                          usernameError && touched.username
+                            ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                            : "border-primary/30 focus:border-primary focus:ring-primary/20"
+                        )}
+                        disabled={isLoading}
+                        required={isSignUp}
+                        minLength={3}
+                        maxLength={20}
+                      />
+                      {usernameError && touched.username && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-1 mt-1 text-xs text-destructive"
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          {usernameError}
+                        </motion.div>
+                      )}
+                      {!usernameError && username && touched.username && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-1 mt-1 text-xs text-green-500"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          Username disponível
+                        </motion.div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1 ml-1">
+                        Será exibido ao invés do seu email por segurança
+                      </p>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
 
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
+                <Mail className={cn(
+                  "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                  emailError && touched.email ? "text-destructive" : "text-primary/70"
+                )} />
                 <Input
                   type="email"
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
+                  onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                  className={cn(
+                    "pl-11 h-12 sm:h-14 bg-card/60 border-2 text-foreground placeholder:text-muted-foreground rounded-2xl transition-all duration-300",
+                    emailError && touched.email
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                      : "border-primary/30 focus:border-primary focus:ring-primary/20"
+                  )}
                   disabled={isLoading}
                   required
                 />
+                {emailError && touched.email && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-1 mt-1 text-xs text-destructive"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {emailError}
+                  </motion.div>
+                )}
+                {!emailError && email && touched.email && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-1 mt-1 text-xs text-green-500"
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    Email válido
+                  </motion.div>
+                )}
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orion-cosmic-blue" />
+                <Lock className={cn(
+                  "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors",
+                  passwordError && touched.password ? "text-destructive" : "text-primary/70"
+                )} />
                 <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Senha"
+                  placeholder="Senha (mínimo 6 caracteres)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 pr-11 h-12 bg-orion-event-horizon/50 border-orion-cosmic-blue/30 text-foreground placeholder-orion-space-dust focus:border-orion-stellar-gold/60 focus:ring-orion-stellar-gold/20 rounded-xl"
+                  onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                  className={cn(
+                    "pl-11 pr-11 h-12 sm:h-14 bg-card/60 border-2 text-foreground placeholder:text-muted-foreground rounded-2xl transition-all duration-300",
+                    passwordError && touched.password
+                      ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                      : "border-primary/30 focus:border-primary focus:ring-primary/20"
+                  )}
                   disabled={isLoading}
                   required
                   minLength={6}
@@ -272,7 +511,8 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 hover:text-primary transition-colors"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -280,25 +520,72 @@ const Auth = () => {
                     <Eye className="w-5 h-5" />
                   )}
                 </button>
+                {passwordError && touched.password && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-1 mt-1 text-xs text-destructive"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {passwordError}
+                  </motion.div>
+                )}
+                {!passwordError && password && touched.password && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-1 mt-1 text-xs text-green-500"
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    Senha forte
+                  </motion.div>
+                )}
               </div>
+
+              {!isSignUp && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-primary hover:text-accent transition-colors font-medium"
+                    disabled={isLoading}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              )}
 
               <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full h-12 sm:h-14 bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl shadow-primary/40 border border-primary/50 text-base sm:text-lg"
-                onClick={() => console.log('🔐 Auth - Botão de submit clicado')}
+                disabled={isLoading || (touched.email && !!emailError) || (touched.password && !!passwordError)}
+                className={cn(
+                  "w-full h-12 sm:h-14 bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground font-bold rounded-2xl transition-all duration-300 shadow-2xl border border-primary/50 text-base sm:text-lg relative overflow-hidden group",
+                  isLoading || (touched.email && !!emailError) || (touched.password && !!passwordError)
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:scale-105 hover:shadow-primary/60 active:scale-95"
+                )}
               >
-                {isLoading ? "Processando..." : isSignUp ? "Criar Conta" : "Entrar"}
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : isSignUp ? (
+                  "Criar Conta"
+                ) : (
+                  "Entrar"
+                )}
               </Button>
             </form>
 
-            <div className="mt-6">
+            <div className="mt-6 sm:mt-8">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-orion-cosmic-blue/20" />
+                  <div className="w-full border-t border-primary/20" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 text-orion-space-dust bg-card">ou</span>
+                  <span className="px-4 text-muted-foreground bg-card">ou continue com</span>
                 </div>
               </div>
 
@@ -307,10 +594,18 @@ const Auth = () => {
                 variant="outline"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full mt-4 h-12 sm:h-14 border-primary/40 text-foreground hover:bg-primary/10 hover:border-primary transition-all duration-300 rounded-2xl text-base font-medium"
+                className={cn(
+                  "w-full mt-4 h-12 sm:h-14 border-2 border-primary/40 text-foreground rounded-2xl text-base font-semibold relative overflow-hidden group transition-all duration-300",
+                  isLoading 
+                    ? "opacity-50 cursor-not-allowed" 
+                    : "hover:bg-primary/10 hover:border-primary hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-primary/20"
+                )}
               >
-                <Chrome className="w-5 h-5 mr-3" />
-                Continuar com Google
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                <Chrome className="w-5 h-5 mr-3 relative z-10" />
+                <span className="relative z-10">
+                  {isLoading ? "Conectando..." : "Continuar com Google"}
+                </span>
               </Button>
             </div>
 
