@@ -1,10 +1,10 @@
 import { useDraft } from "@/hooks/useDraft";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Cloud, Mic, Newspaper, Search, Send, Image, Paperclip } from "lucide-react";
-import { Button } from "./ui/button";
-import { ImageAnalysisInChat } from "./ImageAnalysisInChat";
+import { Cloud, Image, Mic, Newspaper, Search, Send } from "lucide-react";
 import { useState } from "react";
+import { ImageAnalysisInChat } from "./ImageAnalysisInChat";
+import { Button } from "./ui/button";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -122,9 +122,9 @@ export const ChatInput = ({
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-2 sm:p-4"
+        className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-2 sm:p-4 "
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto border border-red-500 items-center ">
           <div className="relative flex items-end gap-2 sm:gap-3">
             <div className="flex-1 relative">
               <textarea
@@ -153,8 +153,8 @@ export const ChatInput = ({
                   disabled={isTyping}
                   className={cn(
                     "w-6 h-6 sm:w-8 sm:h-8 transition-all duration-300",
-                    showImageUpload 
-                      ? "text-orion-stellar-gold scale-110" 
+                    showImageUpload
+                      ? "text-orion-stellar-gold scale-110"
                       : "text-orion-cosmic-blue hover:text-orion-stellar-gold"
                   )}
                   title="Analisar imagem"
