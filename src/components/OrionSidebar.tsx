@@ -65,47 +65,47 @@ export const OrionSidebar = ({
   return (
     <AnimatePresence>
       {(isOpen || window.innerWidth >= 768) && (
-        <div className="fixed inset-y-0 left-0 z-50 w-80 md:relative md:translate-x-0 md:w-64 lg:w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:flex md:flex-col">
-          <div className="flex flex-col h-full">
+        <div className="fixed inset-y-0 left-0 z-50 w-[280px] xs:w-[300px] sm:w-80 md:relative md:translate-x-0 md:w-64 lg:w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:flex md:flex-col">
+          <div className="flex flex-col h-full overflow-hidden">
             {/* Header do Sidebar */}
-            <div className="p-4 border-b border-orion-cosmic-blue/20">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-orion-stellar-gold">
+            <div className="p-3 sm:p-4 border-b border-orion-cosmic-blue/20 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base sm:text-lg font-bold text-orion-stellar-gold">
                   Conversas
                 </h2>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                  className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold h-8 w-8"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
 
               <Button
                 onClick={createNewConversation}
-                className="w-full mt-3 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold hover:opacity-90 text-orion-void font-medium"
+                className="w-full bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold hover:opacity-90 text-orion-void font-medium text-sm h-9"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-3.5 h-3.5 mr-2" />
                 Nova Conversa
               </Button>
 
               <Button
                 onClick={() => navigate('/dashboard')}
                 variant="outline"
-                className="w-full mt-2 border-orion-cosmic-blue/30 text-orion-cosmic-blue hover:bg-orion-cosmic-blue/10"
+                className="w-full mt-2 border-orion-cosmic-blue/30 text-orion-cosmic-blue hover:bg-orion-cosmic-blue/10 text-sm h-9"
               >
-                <Database className="w-4 h-4 mr-2" />
+                <Database className="w-3.5 h-3.5 mr-2" />
                 Dashboard
               </Button>
 
               <Button
                 onClick={() => navigate('/api-dashboard')}
                 variant="outline"
-                className="w-full mt-2 border-orion-stellar-gold/30 text-orion-stellar-gold hover:bg-orion-stellar-gold/10"
+                className="w-full mt-2 border-orion-stellar-gold/30 text-orion-stellar-gold hover:bg-orion-stellar-gold/10 text-sm h-9"
               >
-                <Key className="w-4 h-4 mr-2" />
+                <Key className="w-3.5 h-3.5 mr-2" />
                 API Keys
               </Button>
             </div>
@@ -139,16 +139,16 @@ export const OrionSidebar = ({
             </div>
 
             {/* User Info and Logout */}
-            <div className="p-4 border-t border-orion-cosmic-blue/20 space-y-2">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold flex items-center justify-center">
-                  <User className="w-4 h-4 text-orion-void" />
+            <div className="p-3 sm:p-4 border-t border-orion-cosmic-blue/20 space-y-2 flex-shrink-0">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold flex items-center justify-center flex-shrink-0">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orion-void" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                     {username || user?.email}
                   </p>
-                  <p className="text-xs text-orion-space-dust">
+                  <p className="text-[10px] sm:text-xs text-orion-space-dust truncate">
                     O.R.I.Ö.N Assistant
                   </p>
                 </div>
@@ -158,20 +158,20 @@ export const OrionSidebar = ({
               <Button
                 onClick={() => setShowPrivacyPolicy(true)}
                 variant="outline"
-                className="w-full border-orion-cosmic-blue/30 text-orion-space-dust hover:bg-orion-cosmic-blue/10 hover:text-orion-stellar-gold"
+                className="w-full border-orion-cosmic-blue/30 text-orion-space-dust hover:bg-orion-cosmic-blue/10 hover:text-orion-stellar-gold text-xs h-8"
                 size="sm"
               >
-                <Shield className="w-4 h-4 mr-2" />
-                <span className="text-xs">Privacidade e LGPD</span>
+                <Shield className="w-3.5 h-3.5 mr-2" />
+                <span>Privacidade e LGPD</span>
               </Button>
 
               {/* Logout Button */}
               <Button
                 onClick={handleLogout}
                 variant="outline"
-                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 text-xs h-8"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-3.5 h-3.5 mr-2" />
                 Sair
               </Button>
             </div>
