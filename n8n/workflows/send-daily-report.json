@@ -1,0 +1,19 @@
+{
+  "name": "Daily Report",
+  "nodes": [
+    {
+      "parameters": { "cronExpression": "0 8 * * *" },
+      "name": "Trigger",
+      "type": "n8n-nodes-base.cron"
+    },
+    {
+      "parameters": {
+        "url": "https://api.orionx/app/reports/daily",
+        "options": {}
+      },
+      "name": "SendReport",
+      "type": "n8n-nodes-base.httpRequest"
+    }
+  ],
+  "connections": {}
+}

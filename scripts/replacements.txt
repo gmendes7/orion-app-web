@@ -1,11 +1,5 @@
 # git-filter-repo replacements file
-# Format: exact-string==>replacement
-# Replace the exact leaked OpenAI key and Supabase anon key with placeholders.
-# NOTE: adjust if you have additional leaked values.
-
-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==>[REDACTED_OPENAI_KEY]
-
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc==>[REDACTED_SUPABASE_ANON_KEY]
-
-# Also strip the dist bundle file names that contained the key (optional)
-# If you prefer to remove entire files, we'll run an invert-paths pass for 'dist/' in the script.
+# Format: exact-string-to-replace==>replacement
+# Add your leaked secrets here BEFORE running remove-secrets.sh
+sk-REPLACE_WITH_YOUR_OPENAI_KEY==>OPENAI_KEY_REMOVED_FOR_HISTORY
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVC...REPLACE_SUPABASE_ANON==>SUPABASE_ANON_REMOVED_FOR_HISTORY
