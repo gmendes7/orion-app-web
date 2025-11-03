@@ -257,10 +257,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      handle_ai_chat: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      handle_ai_chat: { Args: never; Returns: undefined }
     }
     Enums: {
       api_key_status: "active" | "revoked" | "expired"

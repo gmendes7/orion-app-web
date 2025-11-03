@@ -64,23 +64,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName?: string, username?: string) => {
     try {
+      console.log("🔐 Iniciando cadastro...");
       const redirectUrl = getSiteURL();
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName,
-            username: username,
+            full_name: fullName || '',
+            username: username || '',
           },
         },
       });
 
-      return { error };
+      if (error) {
+        console.error("❌ Erro no cadastro:", error);
+        return { error };
+      }
+
+      console.log("✅ Cadastro realizado com sucesso:", data.user?.email);
+      
+      // Aguardar um momento para o trigger criar o profile
+      if (data.user) {
+        setTimeout(() => {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+              setSession(session);
+              setUser(session.user);
+            }
+          });
+        }, 500);
+      }
+
+      return { error: null };
     } catch (error) {
-      console.error("Sign up error:", error);
+      console.error("❌ Erro no cadastro:", error);
       return {
         error:
           error instanceof Error ? error : new Error("Erro ao criar conta"),
@@ -90,14 +110,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("🔐 Tentando fazer login...");
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      return { error };
+      if (error) {
+        console.error("❌ Erro no login:", error);
+        return { error };
+      }
+
+      console.log("✅ Login realizado com sucesso:", data.user?.email);
+      return { error: null };
     } catch (error) {
-      console.error("Sign in error:", error);
+      console.error("❌ Erro no login:", error);
       return {
         error:
           error instanceof Error ? error : new Error("Erro ao fazer login"),

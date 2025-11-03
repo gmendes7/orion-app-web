@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/integrations/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { getSiteURL } from '@/lib/helpers';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { 
@@ -243,7 +245,7 @@ const Auth = () => {
     if (!email) {
       toast({
         title: "Email necessário",
-        description: "Por favor, insira seu email primeiro para recuperar a senha.",
+        description: "Digite seu email no campo acima para recuperar sua senha.",
         variant: "destructive",
       });
       return;
@@ -253,35 +255,61 @@ const Auth = () => {
     if (!emailValidation.success) {
       toast({
         title: "Email inválido",
-        description: "Por favor, insira um email válido para recuperar a senha.",
+        description: "Por favor, digite um email válido.",
         variant: "destructive",
       });
       return;
     }
 
-    toast({
-      title: "Link de recuperação enviado!",
-      description: "Verifique seu email para redefinir sua senha.",
-    });
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${getSiteURL()}/reset-password`,
+      });
+      
+      if (error) {
+        toast({
+          title: "Erro ao enviar email",
+          description: "Não foi possível enviar o email de recuperação. Tente novamente.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "✅ Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao processar sua solicitação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background text-foreground relative overflow-hidden orion-bg-fallback">
       
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 xs:p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md lg:max-w-lg">
           {/* Logo and Header */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-8 sm:mb-10"
+            className="text-center mb-6 xs:mb-7 sm:mb-8 md:mb-10"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl shadow-2xl shadow-primary/40 mb-6 overflow-hidden ring-2 ring-primary/30">
+            <div className="inline-flex items-center justify-center w-16 h-16 xs:w-18 xs:h-18 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-3xl shadow-2xl shadow-primary/40 mb-4 xs:mb-5 sm:mb-6 overflow-hidden ring-2 ring-primary/30">
               <img 
                 src="/lovable-uploads/e49c5576-c167-4e3a-bf0c-a88738d86507.png" 
-                alt="O.R.I.Ö.N Logo"
+                alt="O.R.I.O.N Logo"
                 className="w-full h-full object-cover"
+                loading="eager"
                 onError={(e) => {
                   console.log('❌ Erro ao carregar logo na Auth:', e);
                   e.currentTarget.style.display = 'none';
@@ -289,10 +317,10 @@ const Auth = () => {
               />
             </div>
             
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary stellar-text mb-2 orion-text-fallback">
-              O.R.I.Ö.N
+            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-bold text-primary stellar-text mb-2 orion-text-fallback">
+              O.R.I.O.N
             </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
+            <p className="text-muted-foreground text-xs xs:text-sm sm:text-base">
               Seu Assistente de IA Futurista
             </p>
           </motion.div>
@@ -302,10 +330,10 @@ const Auth = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="chat-message-orion rounded-3xl p-6 sm:p-8 lg:p-10 backdrop-blur-xl border border-primary/30 shadow-2xl shadow-primary/20 orion-fallback"
+            className="chat-message-orion rounded-3xl p-4 xs:p-5 sm:p-6 md:p-8 lg:p-10 backdrop-blur-xl border border-primary/30 shadow-2xl shadow-primary/20 orion-fallback"
           >
-            <div className="flex items-center justify-center mb-8">
-              <div className="flex rounded-2xl bg-orion-event-horizon p-1.5">
+            <div className="flex items-center justify-center mb-6 xs:mb-7 sm:mb-8">
+              <div className="flex rounded-2xl bg-orion-event-horizon p-1 xs:p-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -313,7 +341,7 @@ const Auth = () => {
                     setIsSignUp(false);
                   }}
                   className={cn(
-                    "px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300",
+                    "px-4 xs:px-5 sm:px-6 md:px-8 py-2 xs:py-2.5 sm:py-3 rounded-xl text-xs xs:text-sm sm:text-base font-semibold transition-all duration-300",
                     !isSignUp
                       ? "bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/30"
                       : "text-muted-foreground hover:text-primary"
@@ -328,7 +356,7 @@ const Auth = () => {
                     setIsSignUp(true);
                   }}
                   className={cn(
-                    "px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300",
+                    "px-4 xs:px-5 sm:px-6 md:px-8 py-2 xs:py-2.5 sm:py-3 rounded-xl text-xs xs:text-sm sm:text-base font-semibold transition-all duration-300",
                     isSignUp
                       ? "bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/30"
                       : "text-muted-foreground hover:text-primary"
