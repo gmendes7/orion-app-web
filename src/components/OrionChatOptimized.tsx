@@ -128,23 +128,25 @@ const OrionChat = () => {
           transition={{ duration: 0.4 }}
           className="border-b border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 shadow-lg"
         >
-          <div className="flex items-center justify-between p-2 sm:p-4 gap-2">
-            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(true)}
-                className="text-orion-cosmic-blue hover:text-orion-stellar-gold flex-shrink-0"
+                className="text-orion-cosmic-blue hover:text-orion-stellar-gold flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10"
+                aria-label="Abrir menu lateral"
               >
                 <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
 
               <div className="relative group flex-shrink-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
+                <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
                   <img
                     src={ORION_LOGO_URL}
                     alt="O.R.I.O.N Logo"
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />

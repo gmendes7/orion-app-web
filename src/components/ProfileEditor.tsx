@@ -45,18 +45,17 @@ export default function ProfileEditor({
         };
         const { error: dbError, data: updated } = await supabase
           .from("profiles")
-          .upsert(payload, { returning: "representation" });
+          .upsert(payload)
+          .select()
+          .single();
 
         if (dbError) {
           console.error("db update error", dbError);
           throw new Error("Falha ao atualizar perfil");
         }
 
-        // call onSave with updated profile (use updated[0] when upsert returns array)
-        const newProfile = Array.isArray(updated) ? updated[0] : updated;
-        onSave(newProfile ?? { ...user, username, avatar_url: avatarUrl });
-      } else {
-        console.error("profile save failed", await resp.text());
+        // call onSave with updated profile
+        onSave(updated ?? { ...user, username, avatar_url: avatarUrl });
       }
     } catch (err) {
       console.error("profile save failed", err);

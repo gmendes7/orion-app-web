@@ -79,7 +79,7 @@ export const ChatInput = ({
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="border-t border-primary/30 backdrop-blur-xl bg-card/60 p-3 sm:p-4 lg:p-6"
+        className="border-t border-primary/30 backdrop-blur-xl bg-card/60 p-2 xs:p-3 sm:p-4 md:p-5 lg:p-6"
       >
         <div className="max-w-4xl mx-auto">
           <div className="relative flex items-end gap-2 sm:gap-3">
@@ -88,11 +88,12 @@ export const ChatInput = ({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Digite sua mensagem... (Shift+Enter para nova linha)"
+                placeholder="Digite sua mensagem..."
                 disabled={isTyping}
                 rows={Math.min(Math.max(draft.split("\n").length, 1), 4)}
                 className={cn(
-                  "w-full resize-none rounded-2xl px-4 sm:px-5 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base",
+                  "w-full resize-none rounded-2xl px-3 xs:px-4 sm:px-5 py-2.5 xs:py-3 sm:py-4",
+                  "pr-10 xs:pr-12 sm:pr-14 text-xs xs:text-sm sm:text-base",
                   "bg-orion-event-horizon/70 border-2 border-primary/30",
                   "text-foreground placeholder:text-muted-foreground",
                   "focus:border-primary focus:ring-4 focus:ring-primary/20",
@@ -100,7 +101,8 @@ export const ChatInput = ({
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                   "shadow-lg shadow-primary/5"
                 )}
-                style={{ minHeight: "56px", maxHeight: "140px" }}
+                style={{ minHeight: "48px", maxHeight: "140px" }}
+                aria-label="Campo de mensagem"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1.5">
                 {/* Image Upload Toggle */}
@@ -142,7 +144,7 @@ export const ChatInput = ({
               onClick={handleSend}
               disabled={!draft.trim() || isTyping}
               className={cn(
-                "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl",
+                "w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl flex-shrink-0",
                 "bg-gradient-to-br from-primary via-accent to-primary",
                 "text-primary-foreground font-semibold",
                 "shadow-2xl shadow-primary/40",
@@ -152,8 +154,9 @@ export const ChatInput = ({
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:rotate-0",
                 "border border-primary/50"
               )}
+              aria-label="Enviar mensagem"
             >
-              <Send className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Send className="w-4 h-4 xs:w-5 xs:h-5 sm:w-5 sm:h-5 md:w-6 md:h-6" />
             </Button>
           </div>
         </div>
