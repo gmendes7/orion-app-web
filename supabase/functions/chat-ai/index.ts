@@ -16,23 +16,24 @@ serve(async (req) => {
   try {
     const { messages: conversationHistory } = await req.json();
 
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAIApiKey) {
-      throw new Error("OPENAI_API_KEY não configurada");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY não configurada");
     }
 
-    console.log("Enviando mensagem para OpenAI:", {
+    console.log("🚀 Enviando mensagem para Lovable AI Gateway:", {
       messageCount: conversationHistory.length,
+      model: "google/gemini-2.5-flash",
     });
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
+        Authorization: `Bearer ${lovableApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // Modelo otimizado para conversação
+        model: "google/gemini-2.5-flash", // Modelo padrão Lovable AI
         messages: [
           {
             role: "system",
@@ -89,15 +90,41 @@ Responda sempre em português brasileiro (PT-BR) de forma natural, precisa e bem
           },
           ...conversationHistory,
         ],
-        max_tokens: 2000, // Otimizado para respostas mais focadas
-        temperature: 0.8, // Balanceado entre criatividade e precisão
         stream: true,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Erro da OpenAI:", errorText);
+      console.error("❌ Erro do Lovable AI Gateway:", response.status, errorText);
+      
+      // Tratamento específico de rate limiting e créditos
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit excedido",
+            message: "Você atingiu o limite de requisições por minuto. Por favor, aguarde um momento antes de tentar novamente.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: "Créditos insuficientes",
+            message: "Os créditos do Lovable AI foram esgotados. Por favor, adicione créditos ao seu workspace em Settings → Workspace → Usage.",
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
       throw new Error(
         `Falha na comunicação orbital: ${response.status} - ${errorText}`
       );

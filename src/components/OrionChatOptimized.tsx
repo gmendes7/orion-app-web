@@ -32,6 +32,7 @@ const OrionChat = () => {
     isStreaming,
     conversationsLoading,
     stopStreaming,
+    error,
   } = useChatStore();
 
   console.log("💬 OrionChat - Estado do chat:", {
@@ -58,6 +59,34 @@ const OrionChat = () => {
       console.error("❌ Erro ao inicializar chat store:", error);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Monitor errors from chat store and show toasts
+  useEffect(() => {
+    if (error) {
+      const errorMessage = error.message || "Erro desconhecido";
+      
+      // Detectar tipo de erro e exibir toast apropriado
+      if (errorMessage.includes("Limite de requisições") || errorMessage.includes("rate limit")) {
+        toast({
+          title: "⚠️ Limite de Requisições Atingido",
+          description: "Por favor, aguarde um momento antes de enviar outra mensagem.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes("Créditos") || errorMessage.includes("Payment Required")) {
+        toast({
+          title: "⚠️ Créditos Esgotados",
+          description: "Os créditos do Lovable AI foram esgotados. Adicione créditos em Settings → Workspace → Usage.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "❌ Erro na Comunicação",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    }
+  }, [error, toast]);
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({

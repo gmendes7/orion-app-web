@@ -263,6 +263,41 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       if (!response.ok || !response.body) {
+        // Tratamento específico de erros do Lovable AI Gateway
+        if (response.status === 429) {
+          const errorMsg = "⚠️ Limite de requisições atingido. Por favor, aguarde um momento antes de tentar novamente.";
+          set((state) => ({
+            error: new Error(errorMsg),
+            messages: [
+              ...state.messages,
+              {
+                id: crypto.randomUUID(),
+                text: errorMsg,
+                isUser: false,
+                timestamp: new Date(),
+              },
+            ],
+          }));
+          return;
+        }
+        
+        if (response.status === 402) {
+          const errorMsg = "⚠️ Créditos do Lovable AI esgotados. Adicione créditos em Settings → Workspace → Usage.";
+          set((state) => ({
+            error: new Error(errorMsg),
+            messages: [
+              ...state.messages,
+              {
+                id: crypto.randomUUID(),
+                text: errorMsg,
+                isUser: false,
+                timestamp: new Date(),
+              },
+            ],
+          }));
+          return;
+        }
+        
         throw new Error("Falha ao conectar com a API.");
       }
 
