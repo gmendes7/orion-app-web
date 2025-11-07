@@ -6,10 +6,11 @@ import { MessageSquare } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: 'admin' | 'user' | 'premium';
 }
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+  const { user, loading, hasRole } = useAuth();
 
   console.log('🛡️ ProtectedRoute - user:', user?.email || 'Não autenticado', 'loading:', loading);
 
@@ -42,6 +43,26 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!user) {
     console.log('🛡️ ProtectedRoute - Usuário não autenticado, redirecionando para /auth');
     return <Navigate to="/auth" replace />;
+  }
+
+  if (requiredRole && !hasRole(requiredRole)) {
+    console.log('🚫 User does not have required role:', requiredRole);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-4 max-w-md p-8 chat-message-orion rounded-3xl"
+        >
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold stellar-text">Acesso Negado</h1>
+          <p className="text-muted-foreground">
+            Você não tem permissão para acessar esta página.
+            {requiredRole && ` Requer role: ${requiredRole}`}
+          </p>
+        </motion.div>
+      </div>
+    );
   }
 
   console.log('🛡️ ProtectedRoute - Usuário autenticado, renderizando conteúdo protegido');

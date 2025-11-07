@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      api_rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: unknown
+          request_count: number
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address: unknown
+          request_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: unknown
+          request_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           api_key_id: string
@@ -213,6 +243,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           created_at: string
@@ -258,9 +309,17 @@ export type Database = {
     }
     Functions: {
       handle_ai_chat: { Args: never; Returns: undefined }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       api_key_status: "active" | "revoked" | "expired"
+      app_role: "admin" | "user" | "premium"
       subscription_tier: "free" | "pro" | "enterprise"
     }
     CompositeTypes: {
@@ -390,6 +449,7 @@ export const Constants = {
   public: {
     Enums: {
       api_key_status: ["active", "revoked", "expired"],
+      app_role: ["admin", "user", "premium"],
       subscription_tier: ["free", "pro", "enterprise"],
     },
   },
