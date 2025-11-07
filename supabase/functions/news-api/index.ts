@@ -41,7 +41,7 @@ interface NewsRequest {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: c orsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
