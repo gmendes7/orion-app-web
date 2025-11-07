@@ -16,32 +16,32 @@ const MiniSaturn = ({ position }: { position: [number, number, number] }) => {
 
   return (
     <group ref={saturnRef} position={position}>
-      {/* Planeta */}
+      {/* Planeta - Tema Amarelo Neon */}
       <Sphere args={[0.3, 16, 16]}>
         <meshStandardMaterial 
-          color="hsl(25, 95%, 53%)" 
-          emissive="hsl(25, 85%, 45%)" 
-          emissiveIntensity={0.2}
+          color="hsl(54, 100%, 50%)" 
+          emissive="hsl(54, 100%, 45%)" 
+          emissiveIntensity={0.4}
         />
       </Sphere>
       
-      {/* Anéis */}
+      {/* Anéis - Amarelo Neon */}
       <Torus args={[0.5, 0.05, 8, 24]} rotation={[Math.PI / 2, 0, 0]}>
         <meshStandardMaterial 
-          color="hsl(30, 100%, 60%)" 
+          color="hsl(48, 100%, 55%)" 
           transparent 
-          opacity={0.7}
-          emissive="hsl(25, 95%, 53%)"
-          emissiveIntensity={0.1}
+          opacity={0.8}
+          emissive="hsl(54, 100%, 50%)"
+          emissiveIntensity={0.3}
         />
       </Torus>
       <Torus args={[0.7, 0.03, 8, 24]} rotation={[Math.PI / 2, 0, 0]}>
         <meshStandardMaterial 
-          color="hsl(28, 100%, 67%)" 
+          color="hsl(60, 100%, 60%)" 
           transparent 
-          opacity={0.5}
-          emissive="hsl(25, 95%, 53%)"
-          emissiveIntensity={0.1}
+          opacity={0.6}
+          emissive="hsl(54, 100%, 50%)"
+          emissiveIntensity={0.2}
         />
       </Torus>
     </group>
@@ -74,10 +74,10 @@ const StarField = () => {
     <points ref={pointsRef}>
       <bufferGeometry />
       <pointsMaterial 
-        color="hsl(200, 100%, 50%)" 
+        color="hsl(54, 100%, 50%)" 
         size={0.02} 
         transparent 
-        opacity={0.8}
+        opacity={0.9}
         sizeAttenuation={true}
       />
     </points>
@@ -92,10 +92,11 @@ const SpaceBackground = () => {
         style={{ background: 'transparent' }}
         gl={{ alpha: true, antialias: true }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.4} color="hsl(200, 100%, 50%)" />
-        <pointLight position={[10, 10, 10]} intensity={0.5} color="hsl(25, 95%, 53%)" />
-        <pointLight position={[-10, -10, 5]} intensity={0.3} color="hsl(45, 100%, 50%)" />
+        {/* Lighting - Tema Amarelo Neon */}
+        <ambientLight intensity={0.3} color="hsl(54, 100%, 50%)" />
+        <pointLight position={[10, 10, 10]} intensity={0.8} color="hsl(54, 100%, 50%)" />
+        <pointLight position={[-10, -10, 5]} intensity={0.5} color="hsl(48, 100%, 50%)" />
+        <pointLight position={[0, 0, 0]} intensity={0.6} color="hsl(60, 100%, 55%)" />
         
         {/* Componentes espaciais */}
         <StarField />

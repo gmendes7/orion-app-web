@@ -8,87 +8,87 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Neon Purple Theme - Base Colors */
-    --background: 270 50% 5%;           /* Deep purple-black */
-    --foreground: 280 30% 95%;          /* Light lilac/white */
+    /* Neon Yellow Theme - Base Colors */
+    --background: 0 0% 2%;              /* Deep black */
+    --foreground: 45 100% 95%;          /* Light yellow/white */
 
-    --card: 270 40% 8%;                 /* Dark purple card */
-    --card-foreground: 280 30% 95%;     /* Light text */
+    --card: 45 10% 5%;                  /* Dark card with yellow hint */
+    --card-foreground: 45 100% 95%;     /* Light text */
 
-    --popover: 270 40% 8%;
-    --popover-foreground: 280 30% 95%;
+    --popover: 45 15% 6%;
+    --popover-foreground: 45 100% 95%;
 
-    --primary: 270 100% 65%;            /* Bright neon purple */
-    --primary-foreground: 280 30% 98%;  /* Pure white */
+    --primary: 54 100% 50%;             /* Bright neon yellow */
+    --primary-foreground: 0 0% 0%;      /* Pure black */
 
-    --secondary: 260 60% 25%;           /* Dark purple */
-    --secondary-foreground: 280 30% 95%;
+    --secondary: 45 100% 50%;           /* Golden yellow */
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 270 35% 12%;               /* Muted purple */
-    --muted-foreground: 270 15% 65%;    /* Mid lilac */
+    --muted: 0 0% 8%;                   /* Muted dark gray */
+    --muted-foreground: 45 20% 70%;     /* Mid yellow-gray */
 
-    --accent: 285 100% 70%;             /* Vibrant purple/magenta */
-    --accent-foreground: 280 30% 98%;
+    --accent: 60 100% 55%;              /* Vibrant lime yellow */
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 75% 50%;
-    --destructive-foreground: 280 30% 98%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 270 40% 18%;              /* Purple border */
-    --input: 270 35% 12%;               /* Dark input bg */
-    --ring: 270 100% 65%;               /* Neon purple ring */
+    --border: 54 80% 30%;               /* Yellow border */
+    --input: 45 40% 15%;                /* Dark input bg */
+    --ring: 54 100% 50%;                /* Neon yellow ring */
 
     --radius: 0.75rem;
 
-    /* Neon Purple Theme Colors */
-    --orion-void: 270 50% 3%;           /* Deep void purple-black */
-    --orion-event-horizon: 270 45% 8%;  /* Event horizon purple */
-    --orion-accretion-disk: 285 100% 70%; /* Neon magenta */
-    --orion-stellar-gold: 270 100% 65%; /* Neon purple */
-    --orion-energy-burst: 280 95% 75%;  /* Bright neon lilac */
-    --orion-plasma-glow: 275 100% 68%;  /* Plasma purple */
-    --orion-space-dust: 270 20% 40%;    /* Muted purple dust */
-    --orion-cosmic-blue: 265 100% 65%;  /* Cosmic blue-purple */
+    /* Neon Yellow Theme Colors */
+    --orion-void: 0 0% 3%;              /* Deep void black */
+    --orion-event-horizon: 45 30% 10%;  /* Event horizon gold */
+    --orion-accretion-disk: 50 90% 40%; /* Neon yellow-gold */
+    --orion-stellar-gold: 45 100% 50%;  /* Stellar gold */
+    --orion-energy-burst: 54 100% 60%;  /* Bright neon yellow */
+    --orion-plasma-glow: 54 100% 50%;   /* Plasma yellow */
+    --orion-space-dust: 45 15% 20%;     /* Muted gold dust */
+    --orion-cosmic-amber: 40 100% 50%;  /* Cosmic amber */
     
-    /* Advanced Gradients */
+    /* Advanced Gradients - Neon Yellow */
     --black-hole-gradient: radial-gradient(ellipse at center, 
-      hsl(270 100% 65% / 0.8) 0%, 
-      hsl(285 100% 70% / 0.6) 25%, 
-      hsl(275 100% 68% / 0.4) 50%, 
-      hsl(270 45% 8%) 75%, 
-      hsl(270 50% 3%) 100%);
+      hsl(54 100% 50% / 0.8) 0%, 
+      hsl(48 100% 50% / 0.6) 25%, 
+      hsl(42 100% 50% / 0.4) 50%, 
+      hsl(45 30% 10%) 75%, 
+      hsl(0 0% 3%) 100%);
     
     --accretion-gradient: conic-gradient(from 0deg, 
-      hsl(270 100% 65%), 
-      hsl(285 100% 70%), 
-      hsl(280 95% 75%), 
-      hsl(285 100% 70%), 
-      hsl(270 100% 65%));
+      hsl(54 100% 50%), 
+      hsl(48 100% 50%), 
+      hsl(42 100% 55%), 
+      hsl(48 100% 50%), 
+      hsl(54 100% 50%));
 
     --lantern-gradient: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-      hsl(270 100% 65% / 0.25) 0%, 
-      hsl(285 100% 70% / 0.15) 20%, 
-      hsl(275 100% 68% / 0.08) 40%, 
+      hsl(54 100% 50% / 0.25) 0%, 
+      hsl(48 100% 50% / 0.15) 20%, 
+      hsl(42 100% 50% / 0.08) 40%, 
       transparent 60%);
 
     --gradient-cosmic: var(--black-hole-gradient);
-    --gradient-orion: linear-gradient(135deg, hsl(270 100% 65% / 0.15), hsl(285 100% 70% / 0.15));
-    --gradient-nebula: radial-gradient(ellipse at center, hsl(285 100% 70% / 0.2), transparent 60%);
+    --gradient-orion: linear-gradient(135deg, hsl(54 100% 50% / 0.15), hsl(48 100% 50% / 0.15));
+    --gradient-nebula: radial-gradient(ellipse at center, hsl(54 100% 50% / 0.2), transparent 60%);
     
-    /* Enhanced Glow Effects - Neon Purple */
-    --glow-purple: 0 0 30px hsl(270 100% 65% / 0.7), 
-                   0 0 60px hsl(270 100% 65% / 0.4),
-                   0 0 90px hsl(270 100% 65% / 0.2);
-    --glow-magenta: 0 0 25px hsl(285 100% 70% / 0.7), 
-                    0 0 50px hsl(285 100% 70% / 0.4);
-    --glow-energy: 0 0 20px hsl(280 95% 75% / 0.8);
-    --glow-plasma: 0 0 15px hsl(275 100% 68% / 0.8);
+    /* Enhanced Glow Effects - Neon Yellow */
+    --glow-yellow: 0 0 30px hsl(54 100% 50% / 0.7), 
+                   0 0 60px hsl(54 100% 50% / 0.4),
+                   0 0 90px hsl(54 100% 50% / 0.2);
+    --glow-gold: 0 0 25px hsl(45 100% 50% / 0.7), 
+                 0 0 50px hsl(45 100% 50% / 0.4);
+    --glow-energy: 0 0 20px hsl(60 100% 55% / 0.8);
+    --glow-plasma: 0 0 15px hsl(54 100% 50% / 0.8);
     
     /* Legacy compatibility */
-    --glow-neon: var(--glow-purple);
-    --glow-cosmic: var(--glow-magenta);
-    --glow-gold: var(--glow-purple);
-    --glow-orange: var(--glow-magenta);
-    --glow-strong: var(--glow-purple);
+    --glow-neon: var(--glow-yellow);
+    --glow-cosmic: var(--glow-gold);
+    --glow-purple: var(--glow-yellow);
+    --glow-orange: var(--glow-gold);
+    --glow-strong: var(--glow-yellow);
     
     /* Transitions */
     --transition-cosmic: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -98,8 +98,8 @@ All colors MUST be HSL.
 
   .dark {
     /* O.R.I.Ö.N is always dark mode - these are fallbacks */
-    --background: 218 20% 8%;
-    --foreground: 204 100% 94%;
+    --background: 0 0% 2%;
+    --foreground: 45 100% 95%;
   }
 }
 
@@ -112,9 +112,9 @@ All colors MUST be HSL.
     @apply bg-background text-foreground overflow-hidden;
     font-family: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
     background: linear-gradient(135deg, 
-      hsl(270 50% 5%), 
-      hsl(270 45% 8%), 
-      hsl(270 50% 5%));
+      hsl(0 0% 2%), 
+      hsl(45 30% 10%), 
+      hsl(0 0% 2%));
     background-attachment: fixed;
   }
 
@@ -141,9 +141,13 @@ All colors MUST be HSL.
   }
 
   .stellar-text {
-    text-shadow: 0 0 20px hsl(270 100% 65% / 0.8),
-                 0 0 40px hsl(270 100% 65% / 0.4),
-                 0 0 60px hsl(270 100% 65% / 0.2);
+    text-shadow: 0 0 20px hsl(54 100% 50% / 0.8),
+                 0 0 40px hsl(54 100% 50% / 0.4),
+                 0 0 60px hsl(54 100% 50% / 0.2);
+    background: linear-gradient(135deg, hsl(54 100% 50%), hsl(48 100% 50%), hsl(42 100% 55%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .chat-message-orion {
@@ -154,21 +158,54 @@ All colors MUST be HSL.
   }
 
   .chat-message-orion:hover {
-    border-color: hsl(var(--orion-cosmic-blue) / 0.4);
+    border-color: hsl(var(--orion-plasma-glow) / 0.4);
+    box-shadow: 0 0 20px hsl(54 100% 50% / 0.3);
     transform: translateY(-1px);
   }
 
-  /* Fallback styles for critical elements */
+  /* Fallback styles for critical elements - Neon Yellow */
   .orion-fallback {
-    background-color: #0d0a1f !important;
-    color: #c084fc !important;
+    background-color: #0a0a0a !important;
+    color: #FFD700 !important;
   }
   
   .orion-text-fallback {
-    color: #c084fc !important;
+    color: #FFD700 !important;
   }
 
   .orion-bg-fallback {
-    background: linear-gradient(135deg, #0b0818, #0d0a1f, #0b0818) !important;
+    background: linear-gradient(135deg, #000000, #1a1a0a, #000000) !important;
+  }
+
+  /* Neon glow utilities */
+  .neon-text {
+    color: hsl(54 100% 50%);
+    text-shadow: 0 0 20px hsl(54 100% 50% / 0.8),
+                 0 0 40px hsl(54 100% 50% / 0.4);
+  }
+
+  .hover-glow {
+    transition: all 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 40px hsl(54 100% 50% / 0.8),
+                0 0 80px hsl(54 100% 50% / 0.6);
+    transform: translateY(-2px);
+  }
+
+  /* Energy pulse effect */
+  @keyframes energy-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(54 100% 50% / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 40px hsl(54 100% 50% / 0.8),
+                  0 0 80px hsl(54 100% 50% / 0.6);
+    }
+  }
+
+  .energy-pulse {
+    animation: energy-pulse 2s ease-in-out infinite;
   }
 }
