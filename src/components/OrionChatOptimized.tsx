@@ -13,9 +13,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatInput } from "./ChatInput";
 import CodeBlockRenderer from "./CodeBlockRenderer";
-
 import { OrionSidebar } from "./OrionSidebar";
 import { ConsentBanner } from "./ConsentBanner";
+import { RAGMemoryIndicator } from "./RAGMemoryIndicator";
 
 const OrionChat = () => {
   console.log("💬 OrionChat component carregando...");
@@ -188,6 +188,11 @@ const OrionChat = () => {
                 <span className="text-xs sm:text-sm text-orion-space-dust truncate block">
                   Assistente de IA
                 </span>
+              </div>
+
+              {/* RAG Memory Indicator */}
+              <div className="hidden sm:block">
+                <RAGMemoryIndicator isActive={isStreaming} />
               </div>
             </div>
 

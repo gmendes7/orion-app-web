@@ -145,6 +145,48 @@ export type Database = {
         }
         Relationships: []
       }
+      message_embeddings: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_embeddings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_embeddings_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -315,6 +357,23 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_similar_messages: {
+        Args: {
+          exclude_conversation_id?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          user_id_param: string
+        }
+        Returns: {
+          content: string
+          conversation_id: string
+          created_at: string
+          is_user: boolean
+          message_id: string
+          similarity_score: number
+        }[]
       }
     }
     Enums: {

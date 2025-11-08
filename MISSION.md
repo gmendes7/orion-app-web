@@ -175,15 +175,15 @@ O resultado final: **a melhor IA web do mundo** — totalmente funcional, visual
 
 ## 🧩 PLANO DE EXECUÇÃO (Faseado)
 
-### Fase 1: Migração para Lovable AI ✅ (Próximo)
-1. Atualizar `supabase/functions/chat-ai/index.ts`
-2. Remover chamadas diretas ao OpenAI
-3. Integrar `https://ai.gateway.lovable.dev/v1/chat/completions`
-4. Usar `LOVABLE_API_KEY` (já provisionado)
-5. Implementar streaming correto (SSE token-por-token)
-6. Testar com `google/gemini-2.5-flash`
+### ✅ Fase 1: Migração para Lovable AI (CONCLUÍDA)
+1. ✅ Atualizar `supabase/functions/chat-ai/index.ts`
+2. ✅ Remover chamadas diretas ao OpenAI
+3. ✅ Integrar `https://ai.gateway.lovable.dev/v1/chat/completions`
+4. ✅ Usar `LOVABLE_API_KEY` (já provisionado)
+5. ✅ Implementar streaming correto (SSE token-por-token)
+6. ✅ Testar com `google/gemini-2.5-flash`
 
-### Fase 2: Restauração do Design Neon
+### Fase 2: Restauração do Design Neon (Próximo)
 1. Atualizar `src/index.css` com novas variáveis CSS
 2. Modificar `tailwind.config.ts` com tema customizado
 3. Revisar todos os componentes para usar design system
@@ -197,12 +197,14 @@ O resultado final: **a melhor IA web do mundo** — totalmente funcional, visual
 4. Criar migrations versionadas
 5. Otimizar queries e adicionar índices
 
-### Fase 4: IA Avançada (RAG + Memory)
-1. Configurar pgvector no Supabase
-2. Implementar document embeddings
-3. Criar semantic search avançada
-4. Integrar RAG no chat
-5. Sistema de memória contextual
+### ✅ Fase 4: IA Avançada (RAG + Memory) - PARCIALMENTE CONCLUÍDA
+1. ✅ Configurar pgvector no Supabase
+2. ✅ Implementar message embeddings
+3. ✅ Criar semantic search avançada (`search_similar_messages`)
+4. ✅ Integrar RAG no chat
+5. ✅ Sistema de memória contextual funcionando
+6. 🔄 Document embeddings (pendente)
+7. 🔄 Multi-modal RAG (pendente)
 
 ### Fase 5: Painel Administrativo
 1. Criar dashboard de analytics

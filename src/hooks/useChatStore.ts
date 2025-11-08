@@ -216,6 +216,10 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         content: msg.text,
       }));
 
+      // Get current user ID
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+
       // Constrói a URL da API dinamicamente com base no ambiente
       let response: Response | { data?: unknown; error?: unknown } | null =
         null;
@@ -224,13 +228,21 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: conversationHistory }),
+          body: JSON.stringify({ 
+            messages: conversationHistory,
+            userId,
+            conversationId: currentConversationId 
+          }),
           signal: abortController.signal,
         });
       } else {
         // In production use the Supabase client which will not embed the anon key in the built bundle
         const invoked: unknown = await supabase.functions.invoke("chat-ai", {
-          body: { messages: conversationHistory },
+          body: { 
+            messages: conversationHistory,
+            userId,
+            conversationId: currentConversationId 
+          },
         });
         const invokedResult = invoked as { data?: unknown; error?: unknown };
         if (invokedResult?.error) throw invokedResult.error;
@@ -335,11 +347,42 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       // Salva a resposta completa do assistente no banco de dados
-      await supabase.from("messages").insert({
-        conversation_id: currentConversationId,
-        content: assistantResponseText,
-        is_user: false,
-      });
+      const { data: assistantMessageData } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: currentConversationId,
+          content: assistantResponseText,
+          is_user: false,
+        })
+        .select()
+        .single();
+
+      // Generate embeddings for both messages in background (don't await)
+      if (userId && assistantMessageData) {
+        // Generate embedding for user message
+        supabase.functions
+          .invoke("generate-embedding", {
+            body: {
+              text: messageContent,
+              message_id: userMessage.id,
+              conversation_id: currentConversationId,
+              user_id: userId,
+            },
+          })
+          .catch((err) => console.error("Erro ao gerar embedding do usuário:", err));
+
+        // Generate embedding for assistant message
+        supabase.functions
+          .invoke("generate-embedding", {
+            body: {
+              text: assistantResponseText,
+              message_id: assistantMessageData.id,
+              conversation_id: currentConversationId,
+              user_id: userId,
+            },
+          })
+          .catch((err) => console.error("Erro ao gerar embedding do assistente:", err));
+      }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === "AbortError") {
         console.log("Streaming foi abortado.");

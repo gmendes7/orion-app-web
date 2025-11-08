@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,17 +15,81 @@ serve(async (req) => {
   }
 
   try {
-    const { messages: conversationHistory } = await req.json();
+    const { messages: conversationHistory, userId, conversationId } = await req.json();
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
       throw new Error("LOVABLE_API_KEY não configurada");
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     console.log("🚀 Enviando mensagem para Lovable AI Gateway:", {
       messageCount: conversationHistory.length,
       model: "google/gemini-2.5-flash",
     });
+
+    // Get the last user message to generate embedding
+    const lastUserMessage = conversationHistory
+      .slice()
+      .reverse()
+      .find((msg: any) => msg.role === "user");
+
+    let contextualMemory = "";
+
+    if (lastUserMessage && userId) {
+      try {
+        console.log("🔍 Buscando memória contextual...");
+
+        // Generate embedding for the user query
+        const embeddingResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lovableApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: lastUserMessage.content,
+          }),
+        });
+
+        if (embeddingResponse.ok) {
+          const embeddingData = await embeddingResponse.json();
+          const queryEmbedding = embeddingData.data[0].embedding;
+
+          // Search for similar messages
+          const { data: similarMessages, error: searchError } = await supabase.rpc(
+            "search_similar_messages",
+            {
+              query_embedding: queryEmbedding,
+              user_id_param: userId,
+              match_threshold: 0.7,
+              match_count: 3,
+              exclude_conversation_id: conversationId,
+            }
+          );
+
+          if (!searchError && similarMessages && similarMessages.length > 0) {
+            console.log(`✅ Encontradas ${similarMessages.length} mensagens relevantes`);
+            
+            const memoryContext = similarMessages
+              .map((msg: any) => {
+                const role = msg.is_user ? "Usuário" : "Orion";
+                return `[${role}]: ${msg.content}`;
+              })
+              .join("\n\n");
+
+            contextualMemory = `\n\n📚 MEMÓRIA CONTEXTUAL (conversas anteriores relevantes):\n${memoryContext}\n\n`;
+          }
+        }
+      } catch (memoryError) {
+        console.error("⚠️ Erro ao buscar memória contextual:", memoryError);
+        // Continue sem memória contextual se houver erro
+      }
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -37,7 +102,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Você é O.R.I.Ö.N (Observational & Responsive Intelligence Ödyssey Navigator), uma IA avançada.
+            content: `Você é O.R.I.Ö.N (Observational & Responsive Intelligence Ödyssey Navigator), uma IA avançada.${contextualMemory}
 
 🎯 **Missão Principal:**
 Fornecer respostas precisas, úteis e naturais, criando uma experiência conversacional fluida e agradável.
