@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_prompt_versions: {
+        Row: {
+          agent_id: string
+          change_description: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          system_prompt: string
+          version_number: number
+        }
+        Insert: {
+          agent_id: string
+          change_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          system_prompt: string
+          version_number?: number
+        }
+        Update: {
+          agent_id?: string
+          change_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          system_prompt?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_prompt_versions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agents: {
         Row: {
           created_at: string

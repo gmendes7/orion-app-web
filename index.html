@@ -2,10 +2,21 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0b0b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
     <title>O.R.I.O.N - Inteligência Artificial Avançada | IA com Análise de Imagens</title>
     <link rel="icon" href="/lovable-uploads/cde23321-4e0b-4125-adf0-9675781db413.png" type="image/png">
+    <link rel="apple-touch-icon" href="/lovable-uploads/cde23321-4e0b-4125-adf0-9675781db413.png">
     <meta name="description" content="O.R.I.O.N - Assistente de inteligência artificial com análise avançada de imagens, automação e aprendizado contínuo. Interface moderna e segura com LGPD." />
     <meta name="keywords" content="inteligência artificial, IA, chatbot, análise de imagens, automação, machine learning, assistente virtual, LGPD" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +32,37 @@
     <meta name="twitter:title" content="O.R.I.O.N - IA Avançada" />
     <meta name="twitter:description" content="Assistente de inteligência artificial com análise de imagens" />
     <meta name="twitter:image" content="/lovable-uploads/cde23321-4e0b-4125-adf0-9675781db413.png" />
+    
+    <style>
+      /* Critical CSS for mobile */
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        height: 100%; 
+        width: 100%;
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+        -webkit-font-smoothing: antialiased;
+      }
+      body { 
+        background: #0a0a0a; 
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+      }
+      html { height: -webkit-fill-available; }
+      #root { min-height: 100vh; min-height: -webkit-fill-available; }
+      
+      /* Safe area insets for notched devices */
+      @supports (padding: env(safe-area-inset-top)) {
+        body {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+      }
+    </style>
   </head>
 
   <body>
