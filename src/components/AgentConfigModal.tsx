@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles, BarChart3, CheckSquare, Settings, X, Save, Trash2 } from 'lucide-react';
+import { Bot, Sparkles, BarChart3, CheckSquare, Settings, X, Save, Trash2, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,7 @@ import {
 import { useAIAgents, AIAgent } from '@/hooks/useAIAgents';
 import { useToast } from '@/integrations/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PromptVersionHistory } from './PromptVersionHistory';
 
 interface AgentConfigModalProps {
   open: boolean;
@@ -95,6 +96,7 @@ export const AgentConfigModal = ({
   });
   
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   // Load editing agent data
   useEffect(() => {
@@ -210,6 +212,7 @@ export const AgentConfigModal = ({
   const TypeIcon = selectedTypeInfo?.icon || Sparkles;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-primary/20">
         <DialogHeader>
@@ -276,13 +279,26 @@ export const AgentConfigModal = ({
 
           {/* System Prompt */}
           <div className="space-y-2">
-            <Label htmlFor="system_prompt">Prompt de Sistema *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="system_prompt">Prompt de Sistema *</Label>
+              {editingAgent && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVersionHistory(true)}
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-primary"
+                >
+                  <History className="w-3 h-3 mr-1" />
+                  Histórico
+                </Button>
+              )}
+            </div>
             <Textarea
               id="system_prompt"
               placeholder="Defina a personalidade e comportamento do agente..."
               value={formData.system_prompt}
               onChange={(e) => setFormData(prev => ({ ...prev, system_prompt: e.target.value }))}
-              className="min-h-[150px] bg-background/50 border-primary/20 font-mono text-sm"
+              className="min-h-[120px] sm:min-h-[150px] bg-background/50 border-primary/20 font-mono text-xs sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
               Este prompt define como o agente se comporta e responde. Seja específico e detalhado.
@@ -395,5 +411,21 @@ export const AgentConfigModal = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Version History Modal */}
+    <PromptVersionHistory
+      agentId={editingAgent?.id || null}
+      agentName={editingAgent?.name || formData.name}
+      open={showVersionHistory}
+      onOpenChange={setShowVersionHistory}
+      onRevert={() => {
+        // Refresh form data after revert
+        if (editingAgent) {
+          // Refetch agent data
+          onSuccess?.();
+        }
+      }}
+    />
+  </>
   );
 };
