@@ -1,12 +1,15 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
-import { Plus, X, Database, LogOut, User, Shield, Key } from "lucide-react";
+import { Plus, X, Database, LogOut, User, Shield, Key, Bot } from "lucide-react";
 import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { PrivacyPolicy } from "./PrivacyPolicy";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AgentSelector } from "./AgentSelector";
+import { useChatStore } from "@/hooks/useChatStore";
+import { useAIAgents, AIAgent } from "@/hooks/useAIAgents";
 
 interface Conversation {
   id: string;
@@ -43,6 +46,15 @@ export const OrionSidebar = ({
   const navigate = useNavigate();
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [username, setUsername] = useState<string>('');
+  
+  // Agent selection for mobile
+  const { selectedAgentId, setSelectedAgentId } = useChatStore();
+  const { agents } = useAIAgents();
+  const selectedAgent = agents.find(a => a.id === selectedAgentId) || null;
+  
+  const handleSelectAgent = (agent: AIAgent | null) => {
+    setSelectedAgentId(agent?.id || null);
+  };
 
   // Busca o username do perfil do usuário
   useEffect(() => {
@@ -108,6 +120,19 @@ export const OrionSidebar = ({
                 <Key className="w-3.5 h-3.5 mr-2" />
                 API Keys
               </Button>
+
+              {/* Mobile Agent Selector */}
+              <div className="mt-3 sm:hidden">
+                <p className="text-xs text-orion-space-dust mb-2 flex items-center gap-1">
+                  <Bot className="w-3 h-3" />
+                  Agente IA
+                </p>
+                <AgentSelector
+                  selectedAgent={selectedAgent}
+                  onSelectAgent={handleSelectAgent}
+                  className="w-full justify-start"
+                />
+              </div>
             </div>
 
             {/* Lista de Conversas */}
