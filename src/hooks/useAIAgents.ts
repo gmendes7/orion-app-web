@@ -24,6 +24,7 @@ export interface UseAIAgentsReturn {
   loading: boolean;
   error: string | null;
   fetchAgents: () => Promise<void>;
+  refetch: () => Promise<void>;
   getAgentById: (id: string) => AIAgent | undefined;
   getAgentsByType: (type: AIAgent['type']) => AIAgent[];
   createAgent: (agent: Partial<AIAgent>) => Promise<AIAgent | null>;
@@ -146,6 +147,7 @@ export const useAIAgents = (): UseAIAgentsReturn => {
     loading,
     error,
     fetchAgents,
+    refetch: fetchAgents,
     getAgentById,
     getAgentsByType,
     createAgent,
