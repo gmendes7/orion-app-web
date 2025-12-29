@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatStore } from "@/hooks/useChatStore";
+import { useAIAgents, AIAgent } from "@/hooks/useAIAgents";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
 import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
@@ -16,6 +17,7 @@ import CodeBlockRenderer from "./CodeBlockRenderer";
 import { OrionSidebar } from "./OrionSidebar";
 import { ConsentBanner } from "./ConsentBanner";
 import { RAGMemoryIndicator } from "./RAGMemoryIndicator";
+import { AgentSelector } from "./AgentSelector";
 
 const OrionChat = () => {
   console.log("💬 OrionChat component carregando...");
@@ -33,7 +35,17 @@ const OrionChat = () => {
     conversationsLoading,
     stopStreaming,
     error,
+    selectedAgentId,
+    setSelectedAgentId,
   } = useChatStore();
+
+  // Load AI agents
+  const { agents } = useAIAgents();
+  const selectedAgent = agents.find(a => a.id === selectedAgentId) || null;
+
+  const handleSelectAgent = (agent: AIAgent | null) => {
+    setSelectedAgentId(agent?.id || null);
+  };
 
   console.log("💬 OrionChat - Estado do chat:", {
     messagesCount: messages.length,
@@ -186,8 +198,16 @@ const OrionChat = () => {
                   O.R.I.O.N
                 </h1>
                 <span className="text-xs sm:text-sm text-orion-space-dust truncate block">
-                  Assistente de IA
+                  {selectedAgent ? selectedAgent.name : "Assistente de IA"}
                 </span>
+              </div>
+
+              {/* Agent Selector */}
+              <div className="hidden sm:block">
+                <AgentSelector
+                  selectedAgent={selectedAgent}
+                  onSelectAgent={handleSelectAgent}
+                />
               </div>
 
               {/* RAG Memory Indicator */}

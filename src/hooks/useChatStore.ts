@@ -53,6 +53,7 @@ interface ChatState {
   abortController: AbortController | null; // Controlador para parar o streaming
   audioEnabled: boolean;
   sidebarOpen: boolean;
+  selectedAgentId: string | null; // ID do agente selecionado
 }
 
 // Define a interface para as ações do chat
@@ -66,6 +67,7 @@ interface ChatActions {
   renameConversation: (id: string, newTitle: string) => Promise<void>;
   setAudioEnabled: (enabled: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
+  setSelectedAgentId: (id: string | null) => void;
 }
 
 export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
@@ -82,6 +84,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   audioEnabled: true,
   sidebarOpen: false,
+  selectedAgentId: null,
 
   // --- Ações ---
 
@@ -216,32 +219,39 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         content: msg.text,
       }));
 
-      // Get current user ID
+      // Get current user ID and selected agent
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
+      const selectedAgentId = get().selectedAgentId;
+
+      // Decide which endpoint to use based on agent selection
+      const useAgentChat = selectedAgentId !== null;
+      const endpoint = useAgentChat ? "agent-chat" : "chat-ai";
 
       // Constrói a URL da API dinamicamente com base no ambiente
       let response: Response | { data?: unknown; error?: unknown } | null =
         null;
       if (import.meta.env.DEV) {
-        const apiUrl = "/api/chat-ai"; // proxy in dev
+        const apiUrl = useAgentChat ? "/api/agent-chat" : "/api/chat-ai"; // proxy in dev
         response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             messages: conversationHistory,
             userId,
-            conversationId: currentConversationId 
+            conversationId: currentConversationId,
+            agentId: selectedAgentId 
           }),
           signal: abortController.signal,
         });
       } else {
         // In production use the Supabase client which will not embed the anon key in the built bundle
-        const invoked: unknown = await supabase.functions.invoke("chat-ai", {
+        const invoked: unknown = await supabase.functions.invoke(endpoint, {
           body: { 
             messages: conversationHistory,
             userId,
-            conversationId: currentConversationId 
+            conversationId: currentConversationId,
+            agentId: selectedAgentId
           },
         });
         const invokedResult = invoked as { data?: unknown; error?: unknown };
@@ -512,5 +522,8 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
   setSidebarOpen: (open: boolean) => {
     set({ sidebarOpen: open });
+  },
+  setSelectedAgentId: (id: string | null) => {
+    set({ selectedAgentId: id });
   },
 }));
