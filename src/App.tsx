@@ -2,48 +2,43 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { JarvisProvider } from "@/contexts/JarvisContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ApiDashboard from "./pages/ApiDashboard";
-import Auth from "./pages/Auth";
-import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/**
+ * 🤖 App - O.R.I.Ö.N JARVIS Mode
+ * 
+ * Sistema de IA pessoal sem autenticação.
+ * Acesso direto e imediato.
+ */
 const App = () => {
-  console.log('📱 App component renderizando...');
+  console.log('🤖 JARVIS Mode - Inicializando sistema autônomo...');
   
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
+        <JarvisProvider>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/api-dashboard" element={
-              <ProtectedRoute>
-                <ApiDashboard />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* Rota principal - Chat JARVIS (sem login) */}
+            <Route path="/" element={<Index />} />
+            
+            {/* Dashboard - acesso direto */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* API Dashboard - acesso direto */}
+            <Route path="/api-dashboard" element={<ApiDashboard />} />
+            
+            {/* Rota de fallback */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
+        </JarvisProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
