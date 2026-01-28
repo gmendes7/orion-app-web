@@ -1,92 +1,87 @@
 /**
- * 🤖 JARVIS Context - Sistema de IA Pessoal Autônomo
+ * 🤖 JARVIS Context - Sistema de IA Pessoal Autônomo (Refatorado)
  * 
  * Core inteligente único, modular, multimodal e persistente.
- * Sem autenticação tradicional - identificação local do dispositivo.
- * 
- * Funcionalidades:
- * - Identificação automática por device fingerprint
- * - Memória em camadas (curto/médio/longo prazo)
- * - Contexto contínuo e proatividade
- * - Personalidade técnica de engenheiro sênior
+ * Arquitetura limpa com separação de responsabilidades.
  */
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  JarvisState,
+  JarvisContextType,
+  JarvisMode,
+  ShortTermMemory,
+  ConversationContext,
+  EnvironmentContext,
+  ProjectInfo,
+  DEFAULT_PERSONALITY,
+  MODE_CONFIGS,
+} from "@/lib/jarvis/types";
+import {
+  buildSystemPrompt,
+  detectIntent,
+  suggestNextActions,
+} from "@/lib/jarvis/prompts";
+import {
+  getOrCreateDeviceIdentity,
+  loadMediumTermMemory,
+  loadLongTermMemory,
+  saveMediumTermMemory,
+  saveLongTermMemory,
+  loadPersonality,
+  savePersonality,
+  loadMode,
+  saveMode,
+  clearStorage,
+  updateSyncTimestamp,
+} from "@/lib/jarvis/storage";
+// ============= INITIAL STATE =============
 
-// ============= TIPOS =============
-
-interface DeviceIdentity {
-  deviceId: string;
-  fingerprint: string;
-  createdAt: Date;
-  lastSeen: Date;
-}
-
-interface ShortTermMemory {
-  currentTask: string | null;
-  recentTopics: string[];
-  activeContext: string | null;
-  sessionStart: Date;
-}
-
-interface MediumTermMemory {
-  activeProjects: string[];
-  recentDecisions: Array<{ decision: string; reason: string; date: Date }>;
-  preferredStack: string[];
-  workingPatterns: string[];
-}
-
-interface LongTermMemory {
-  userStyle: string;
-  technicalPreferences: Record<string, unknown>;
-  projectHistory: string[];
-  learnedPatterns: string[];
-}
-
-interface JarvisPersonality {
-  name: string;
-  role: string;
-  tone: "technical" | "casual" | "formal";
-  proactivityLevel: number; // 0-1
-}
-
-interface JarvisState {
-  isReady: boolean;
-  isInitializing: boolean;
-  identity: DeviceIdentity | null;
-  shortTermMemory: ShortTermMemory;
-  mediumTermMemory: MediumTermMemory;
-  longTermMemory: LongTermMemory;
-  personality: JarvisPersonality;
-  currentMode: "engineering" | "planning" | "debugging" | "general";
-}
-
-interface JarvisActions {
-  updateContext: (context: string) => void;
-  setCurrentTask: (task: string | null) => void;
-  addToRecentTopics: (topic: string) => void;
-  recordDecision: (decision: string, reason: string) => void;
-  setCurrentMode: (mode: JarvisState["currentMode"]) => void;
-  getContextualPrompt: () => string;
-  persistMemory: () => Promise<void>;
-}
-
-interface JarvisContextType extends JarvisState, JarvisActions {}
-
-// ============= CONSTANTES =============
-
-const JARVIS_DEFAULT_PERSONALITY: JarvisPersonality = {
-  name: "O.R.I.Ö.N",
-  role: "Engenheiro de Software Sênior & Arquiteto de Sistemas",
-  tone: "technical",
-  proactivityLevel: 0.8,
+const initialShortTermMemory: ShortTermMemory = {
+  currentTask: null,
+  recentTopics: [],
+  activeContext: null,
+  sessionStart: new Date(),
+  conversationSummary: null,
+  pendingActions: [],
 };
 
-const DEVICE_ID_KEY = "orion_device_id";
-const MEMORY_KEY = "orion_memory";
+const initialConversationContext: ConversationContext = {
+  currentIntent: null,
+  entities: {},
+  sentiment: 'neutral',
+  urgency: 'medium',
+  topicHistory: [],
+};
 
-// ============= CONTEXTO =============
+const initialEnvironmentContext: EnvironmentContext = {
+  platform: 'web',
+  screenSize: 'desktop',
+  timeOfDay: 'morning',
+  sessionDuration: 0,
+  interactionCount: 0,
+};
+
+const initialState: JarvisState = {
+  isReady: false,
+  isInitializing: true,
+  identity: null,
+  personality: DEFAULT_PERSONALITY,
+  currentMode: 'general',
+  shortTermMemory: initialShortTermMemory,
+  mediumTermMemory: loadMediumTermMemory(),
+  longTermMemory: loadLongTermMemory(),
+  conversationContext: initialConversationContext,
+  environmentContext: initialEnvironmentContext,
+  multimodal: {
+    voice: { isListening: false, isSpeaking: false, lastTranscript: '' },
+    camera: { isActive: false, isAnalyzing: false, lastCapture: null },
+  },
+  error: null,
+};
+
+// ============= CONTEXT =============
 
 const JarvisContext = createContext<JarvisContextType | undefined>(undefined);
 
@@ -98,70 +93,83 @@ export const useJarvis = () => {
   return context;
 };
 
+// ============= UTILITY FUNCTIONS =============
+
+function getTimeOfDay(): EnvironmentContext['timeOfDay'] {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 22) return 'evening';
+  return 'night';
+}
+
+function getScreenSize(): EnvironmentContext['screenSize'] {
+  if (typeof window === 'undefined') return 'desktop';
+  const width = window.innerWidth;
+  if (width < 768) return 'mobile';
+  if (width < 1024) return 'tablet';
+  return 'desktop';
+}
+
 // ============= PROVIDER =============
 
 export const JarvisProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<JarvisState>({
-    isReady: false,
-    isInitializing: true,
-    identity: null,
-    shortTermMemory: {
-      currentTask: null,
-      recentTopics: [],
-      activeContext: null,
-      sessionStart: new Date(),
-    },
-    mediumTermMemory: {
-      activeProjects: [],
-      recentDecisions: [],
-      preferredStack: ["React", "TypeScript", "Supabase", "Tailwind"],
-      workingPatterns: [],
-    },
-    longTermMemory: {
-      userStyle: "direto e técnico",
-      technicalPreferences: {},
-      projectHistory: [],
-      learnedPatterns: [],
-    },
-    personality: JARVIS_DEFAULT_PERSONALITY,
-    currentMode: "general",
-  });
+  const [state, setState] = useState<JarvisState>(initialState);
 
-  // ============= INICIALIZAÇÃO AUTOMÁTICA =============
+  // ============= INITIALIZATION =============
 
   useEffect(() => {
     const initializeJarvis = async () => {
       console.log("🤖 JARVIS - Inicializando sistema autônomo...");
       
       try {
-        // 1. Identificar dispositivo (sem login)
+        // 1. Get or create device identity
         const identity = await getOrCreateDeviceIdentity();
         
-        // 2. Carregar memória persistida
-        const savedMemory = loadPersistedMemory();
-        
-        // 3. Verificar/criar sessão anônima no Supabase se necessário
+        // 2. Load persisted data
+        const personality = loadPersonality();
+        const mode = loadMode();
+        const mediumTermMemory = loadMediumTermMemory();
+        const longTermMemory = loadLongTermMemory();
+
+        // 3. Try anonymous session (optional)
         await ensureAnonymousSession();
+
+        // 4. Set up environment context
+        const environmentContext: EnvironmentContext = {
+          platform: identity.platform,
+          screenSize: getScreenSize(),
+          timeOfDay: getTimeOfDay(),
+          sessionDuration: 0,
+          interactionCount: 0,
+        };
 
         setState(prev => ({
           ...prev,
           isReady: true,
           isInitializing: false,
           identity,
-          ...(savedMemory && {
-            mediumTermMemory: savedMemory.mediumTermMemory || prev.mediumTermMemory,
-            longTermMemory: savedMemory.longTermMemory || prev.longTermMemory,
-          }),
+          personality,
+          currentMode: mode,
+          mediumTermMemory,
+          longTermMemory,
+          environmentContext,
+          shortTermMemory: {
+            ...initialShortTermMemory,
+            sessionStart: new Date(),
+          },
         }));
 
         console.log("✅ JARVIS - Sistema pronto e operacional");
-        console.log("🆔 Device ID:", identity.deviceId);
+        console.log("🆔 Device:", identity.deviceId.substring(0, 16) + '...');
+        console.log("🎯 Modo:", MODE_CONFIGS[mode].name);
       } catch (error) {
         console.error("❌ JARVIS - Erro na inicialização:", error);
         setState(prev => ({
           ...prev,
           isReady: true,
           isInitializing: false,
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
         }));
       }
     };
@@ -169,80 +177,26 @@ export const JarvisProvider = ({ children }: { children: ReactNode }) => {
     initializeJarvis();
   }, []);
 
-  // ============= FUNÇÕES UTILITÁRIAS =============
-
-  const getOrCreateDeviceIdentity = async (): Promise<DeviceIdentity> => {
-    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    
-    if (!deviceId) {
-      // Gerar novo device ID único
-      deviceId = `orion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    }
-
-    // Criar fingerprint simples do dispositivo
-    const fingerprint = await generateFingerprint();
-
-    return {
-      deviceId,
-      fingerprint,
-      createdAt: new Date(),
-      lastSeen: new Date(),
-    };
-  };
-
-  const generateFingerprint = async (): Promise<string> => {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.textBaseline = "top";
-      ctx.font = "14px Arial";
-      ctx.fillText("ORION fingerprint", 2, 2);
-    }
-    
-    const data = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width,
-      screen.height,
-      new Date().getTimezoneOffset(),
-      canvas.toDataURL(),
-    ].join("|");
-
-    // Simple hash
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36);
-  };
-
   const ensureAnonymousSession = async () => {
-    // Verificar se já existe uma sessão
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      // Para o modo single-user, podemos usar signInAnonymously se disponível
-      // ou simplesmente permitir acesso sem autenticação
-      console.log("🔓 JARVIS - Operando em modo local (sem autenticação remota)");
-    }
-  };
-
-  const loadPersistedMemory = () => {
     try {
-      const saved = localStorage.getItem(MEMORY_KEY);
-      if (saved) {
-        return JSON.parse(saved);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("🔓 JARVIS - Modo local (sem autenticação remota)");
       }
-    } catch (error) {
-      console.warn("⚠️ JARVIS - Erro ao carregar memória:", error);
+    } catch {
+      console.log("🔓 JARVIS - Operando offline");
     }
-    return null;
   };
 
-  // ============= AÇÕES =============
+  // ============= MODE MANAGEMENT =============
+
+  const setMode = useCallback((mode: JarvisMode) => {
+    setState(prev => ({ ...prev, currentMode: mode }));
+    saveMode(mode);
+    console.log(`🎯 JARVIS - Modo alterado para: ${MODE_CONFIGS[mode].name}`);
+  }, []);
+
+  // ============= CONTEXT MANAGEMENT =============
 
   const updateContext = useCallback((context: string) => {
     setState(prev => ({
@@ -266,108 +220,253 @@ export const JarvisProvider = ({ children }: { children: ReactNode }) => {
 
   const addToRecentTopics = useCallback((topic: string) => {
     setState(prev => {
-      const topics = [topic, ...prev.shortTermMemory.recentTopics].slice(0, 10);
+      const topics = [topic, ...prev.shortTermMemory.recentTopics]
+        .filter((t, i, arr) => arr.indexOf(t) === i) // Remove duplicates
+        .slice(0, 15);
+      
       return {
         ...prev,
         shortTermMemory: {
           ...prev.shortTermMemory,
           recentTopics: topics,
         },
-      };
-    });
-  }, []);
-
-  const recordDecision = useCallback((decision: string, reason: string) => {
-    setState(prev => {
-      const decisions = [
-        { decision, reason, date: new Date() },
-        ...prev.mediumTermMemory.recentDecisions,
-      ].slice(0, 20);
-      return {
-        ...prev,
-        mediumTermMemory: {
-          ...prev.mediumTermMemory,
-          recentDecisions: decisions,
+        conversationContext: {
+          ...prev.conversationContext,
+          topicHistory: [...prev.conversationContext.topicHistory, topic].slice(-20),
         },
       };
     });
   }, []);
 
-  const setCurrentMode = useCallback((mode: JarvisState["currentMode"]) => {
-    setState(prev => ({ ...prev, currentMode: mode }));
+  // ============= MEMORY MANAGEMENT =============
+
+  const recordDecision = useCallback((
+    decision: string, 
+    reason: string, 
+    impact: 'low' | 'medium' | 'high' = 'medium'
+  ) => {
+    setState(prev => {
+      const newDecisions = [
+        {
+          id: `dec_${Date.now()}`,
+          decision,
+          reason,
+          context: prev.shortTermMemory.activeContext || '',
+          date: new Date(),
+          impact,
+        },
+        ...prev.mediumTermMemory.recentDecisions,
+      ].slice(0, 50);
+
+      const newMediumTerm = {
+        ...prev.mediumTermMemory,
+        recentDecisions: newDecisions,
+      };
+
+      // Auto-persist important decisions
+      if (impact === 'high') {
+        saveMediumTermMemory(newMediumTerm);
+      }
+
+      return {
+        ...prev,
+        mediumTermMemory: newMediumTerm,
+      };
+    });
   }, []);
 
+  const addProject = useCallback((project: Omit<ProjectInfo, 'id' | 'lastAccessed'>) => {
+    setState(prev => {
+      const existingIndex = prev.mediumTermMemory.activeProjects
+        .findIndex(p => p.name.toLowerCase() === project.name.toLowerCase());
+
+      let newProjects: ProjectInfo[];
+      
+      if (existingIndex >= 0) {
+        newProjects = [...prev.mediumTermMemory.activeProjects];
+        newProjects[existingIndex] = {
+          ...newProjects[existingIndex],
+          ...project,
+          lastAccessed: new Date(),
+        };
+      } else {
+        newProjects = [
+          {
+            id: `proj_${Date.now()}`,
+            ...project,
+            lastAccessed: new Date(),
+          },
+          ...prev.mediumTermMemory.activeProjects,
+        ].slice(0, 20);
+      }
+
+      const newMediumTerm = {
+        ...prev.mediumTermMemory,
+        activeProjects: newProjects,
+      };
+
+      saveMediumTermMemory(newMediumTerm);
+
+      return {
+        ...prev,
+        mediumTermMemory: newMediumTerm,
+      };
+    });
+  }, []);
+
+  const learnPattern = useCallback((pattern: string) => {
+    setState(prev => {
+      if (prev.longTermMemory.learnedPatterns.includes(pattern)) {
+        return prev;
+      }
+
+      const newLongTerm = {
+        ...prev.longTermMemory,
+        learnedPatterns: [...prev.longTermMemory.learnedPatterns, pattern].slice(-100),
+      };
+
+      saveLongTermMemory(newLongTerm);
+
+      return {
+        ...prev,
+        longTermMemory: newLongTerm,
+      };
+    });
+  }, []);
+
+  // ============= PROMPT GENERATION =============
+
   const getContextualPrompt = useCallback(() => {
-    const { personality, currentMode, shortTermMemory, mediumTermMemory, longTermMemory } = state;
-    
-    const modeInstructions = {
-      engineering: "Atue como Engenheiro de Software Sênior. Forneça código limpo, bem arquitetado e explicações técnicas detalhadas.",
-      planning: "Atue como Arquiteto de Sistemas. Foque em design de alto nível, trade-offs e decisões estratégicas.",
-      debugging: "Atue como Debugger Expert. Analise problemas sistematicamente, identifique causas raiz e sugira soluções.",
-      general: "Atue como Assistente Técnico Pessoal. Seja direto, útil e proativo.",
-    };
-
-    return `Você é ${personality.name}, ${personality.role}.
-
-🎯 **MODO ATUAL**: ${currentMode.toUpperCase()}
-${modeInstructions[currentMode]}
-
-📋 **CONTEXTO ATIVO**:
-${shortTermMemory.activeContext ? `- Contexto: ${shortTermMemory.activeContext}` : "- Nenhum contexto específico"}
-${shortTermMemory.currentTask ? `- Tarefa atual: ${shortTermMemory.currentTask}` : ""}
-${shortTermMemory.recentTopics.length > 0 ? `- Tópicos recentes: ${shortTermMemory.recentTopics.slice(0, 3).join(", ")}` : ""}
-
-🛠️ **STACK PREFERIDA**: ${mediumTermMemory.preferredStack.join(", ")}
-
-📝 **ESTILO DO USUÁRIO**: ${longTermMemory.userStyle}
-
-⚡ **DIRETRIZES**:
-- Seja técnico, direto e sem enrolação
-- Forneça código completo e funcional quando solicitado
-- Antecipe problemas e sugira melhorias proativamente
-- Justifique decisões técnicas importantes
-- Use markdown para formatação clara
-- Responda sempre em português brasileiro
-
-Você é um engenheiro pessoal dedicado, não um chatbot genérico. Pense como parceiro técnico.`;
+    return buildSystemPrompt({
+      personality: state.personality,
+      mode: state.currentMode,
+      shortTermMemory: state.shortTermMemory,
+      mediumTermMemory: state.mediumTermMemory,
+      longTermMemory: state.longTermMemory,
+      conversationContext: state.conversationContext,
+    });
   }, [state]);
+
+  const getSystemPrompt = useCallback(() => {
+    return getContextualPrompt();
+  }, [getContextualPrompt]);
+
+  // ============= PROACTIVE FEATURES =============
+
+  const getSuggestedActions = useCallback((): string[] => {
+    return suggestNextActions(
+      state.currentMode,
+      state.conversationContext,
+      state.mediumTermMemory
+    );
+  }, [state.currentMode, state.conversationContext, state.mediumTermMemory]);
+
+  const analyzeIntent = useCallback((message: string): ConversationContext => {
+    const detected = detectIntent(message);
+    
+    setState(prev => ({
+      ...prev,
+      conversationContext: {
+        ...prev.conversationContext,
+        ...detected,
+      },
+      environmentContext: {
+        ...prev.environmentContext,
+        interactionCount: prev.environmentContext.interactionCount + 1,
+      },
+    }));
+
+    return {
+      ...state.conversationContext,
+      ...detected,
+    };
+  }, [state.conversationContext]);
+
+  // ============= PERSISTENCE =============
 
   const persistMemory = useCallback(async () => {
     try {
-      const memoryToSave = {
-        mediumTermMemory: state.mediumTermMemory,
-        longTermMemory: state.longTermMemory,
-        lastSaved: new Date().toISOString(),
-      };
-      localStorage.setItem(MEMORY_KEY, JSON.stringify(memoryToSave));
-      console.log("💾 JARVIS - Memória persistida com sucesso");
+      saveMediumTermMemory(state.mediumTermMemory);
+      saveLongTermMemory(state.longTermMemory);
+      savePersonality(state.personality);
+      updateSyncTimestamp();
+      console.log("💾 JARVIS - Memória persistida");
     } catch (error) {
       console.error("❌ JARVIS - Erro ao persistir memória:", error);
     }
-  }, [state.mediumTermMemory, state.longTermMemory]);
+  }, [state.mediumTermMemory, state.longTermMemory, state.personality]);
 
-  // Persistir memória periodicamente
+  const clearMemory = useCallback((type: 'short' | 'medium' | 'long' | 'all') => {
+    clearStorage(type);
+    
+    setState(prev => {
+      switch (type) {
+        case 'short':
+          return { ...prev, shortTermMemory: initialShortTermMemory };
+        case 'medium':
+          return { ...prev, mediumTermMemory: loadMediumTermMemory() };
+        case 'long':
+          return { ...prev, longTermMemory: loadLongTermMemory() };
+        case 'all':
+          return {
+            ...prev,
+            shortTermMemory: initialShortTermMemory,
+            mediumTermMemory: loadMediumTermMemory(),
+            longTermMemory: loadLongTermMemory(),
+          };
+      }
+    });
+  }, []);
+
+  // ============= AUTO-PERSIST =============
+
   useEffect(() => {
     if (!state.isReady) return;
-    
+
     const interval = setInterval(() => {
       persistMemory();
-    }, 60000); // A cada 1 minuto
+    }, 60000); // Every minute
 
     return () => clearInterval(interval);
   }, [state.isReady, persistMemory]);
 
-  // ============= VALOR DO CONTEXTO =============
+  // ============= TRACK SESSION DURATION =============
+
+  useEffect(() => {
+    if (!state.isReady) return;
+
+    const interval = setInterval(() => {
+      setState(prev => ({
+        ...prev,
+        environmentContext: {
+          ...prev.environmentContext,
+          sessionDuration: Math.floor(
+            (Date.now() - new Date(prev.shortTermMemory.sessionStart).getTime()) / 1000
+          ),
+        },
+      }));
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [state.isReady]);
+
+  // ============= CONTEXT VALUE =============
 
   const value: JarvisContextType = {
     ...state,
+    setMode,
     updateContext,
     setCurrentTask,
     addToRecentTopics,
     recordDecision,
-    setCurrentMode,
+    addProject,
+    learnPattern,
     getContextualPrompt,
+    getSystemPrompt,
+    suggestNextActions: getSuggestedActions,
+    detectIntent: analyzeIntent,
     persistMemory,
+    clearMemory,
   };
 
   return (
@@ -376,3 +475,5 @@ Você é um engenheiro pessoal dedicado, não um chatbot genérico. Pense como p
     </JarvisContext.Provider>
   );
 };
+
+export default JarvisContext;

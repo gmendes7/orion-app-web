@@ -1,92 +1,163 @@
 /**
- * 🎙️ useVoiceAssistant - Hook completo para assistente por voz
+ * 🎙️ Enhanced Voice Assistant Hook
  * 
- * Combina:
- * - Reconhecimento de voz (STT)
- * - Síntese de voz (TTS) 
- * - Detecção de comandos
- * - Modo contínuo de escuta
+ * Features:
+ * - Speech Recognition (STT) with Web Speech API
+ * - Text-to-Speech (TTS) with natural voices
+ * - Command detection with customizable triggers
+ * - Continuous listening mode with wake word
+ * - Audio level monitoring
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+
+// ============= TYPES =============
 
 export type VoiceMode = "idle" | "listening" | "processing" | "speaking" | "error";
 
-interface VoiceCommand {
+export interface VoiceCommand {
   trigger: string[];
   action: string;
   handler?: () => void;
+  response?: string;
+}
+
+export interface VoiceConfig {
+  language: string;
+  voiceName?: string;
+  voiceRate: number;
+  voicePitch: number;
+  voiceVolume: number;
+  continuousMode: boolean;
+  wakeWord: string;
+  silenceTimeout: number;
 }
 
 interface UseVoiceAssistantProps {
   onTranscript?: (text: string) => void;
   onCommand?: (command: string, transcript: string) => void;
   onError?: (error: string) => void;
-  language?: string;
-  voiceName?: string;
-  voiceRate?: number;
-  voicePitch?: number;
-  continuousMode?: boolean;
-  wakeWord?: string;
+  onModeChange?: (mode: VoiceMode) => void;
+  config?: Partial<VoiceConfig>;
 }
 
+// ============= DEFAULT CONFIG =============
+
+const DEFAULT_CONFIG: VoiceConfig = {
+  language: "pt-BR",
+  voiceRate: 1.0,
+  voicePitch: 1.0,
+  voiceVolume: 1.0,
+  continuousMode: false,
+  wakeWord: "orion",
+  silenceTimeout: 3000,
+};
+
+// ============= DEFAULT COMMANDS =============
+
 const DEFAULT_COMMANDS: VoiceCommand[] = [
-  { trigger: ["parar", "pare", "stop"], action: "stop" },
-  { trigger: ["cancelar", "cancel"], action: "cancel" },
-  { trigger: ["enviar", "send", "mandar"], action: "send" },
-  { trigger: ["limpar", "clear", "apagar"], action: "clear" },
-  { trigger: ["analisar tela", "analise isso", "o que você vê"], action: "analyze_screen" },
-  { trigger: ["modo engenharia", "modo código"], action: "mode_engineering" },
-  { trigger: ["modo planejamento", "modo arquitetura"], action: "mode_planning" },
-  { trigger: ["modo debug", "modo depuração"], action: "mode_debugging" },
+  { 
+    trigger: ["parar", "pare", "stop", "cancelar"], 
+    action: "stop",
+    response: "Entendido."
+  },
+  { 
+    trigger: ["enviar", "send", "mandar"], 
+    action: "send" 
+  },
+  { 
+    trigger: ["limpar", "clear", "apagar"], 
+    action: "clear",
+    response: "Limpo."
+  },
+  { 
+    trigger: ["analisar tela", "analise isso", "o que você vê", "veja isso"], 
+    action: "analyze_screen",
+    response: "Analisando..."
+  },
+  { 
+    trigger: ["modo engenharia", "modo código", "modo dev"], 
+    action: "mode_engineering",
+    response: "Modo engenharia ativado."
+  },
+  { 
+    trigger: ["modo planejamento", "modo arquitetura", "modo design"], 
+    action: "mode_planning",
+    response: "Modo planejamento ativado."
+  },
+  { 
+    trigger: ["modo debug", "modo depuração", "encontrar erro"], 
+    action: "mode_debugging",
+    response: "Modo debug ativado."
+  },
+  { 
+    trigger: ["modo análise", "analisar código"], 
+    action: "mode_analysis",
+    response: "Modo análise ativado."
+  },
+  { 
+    trigger: ["quem é você", "quem te criou", "qual seu nome"], 
+    action: "identity" 
+  },
 ];
 
-export const useVoiceAssistant = ({
-  onTranscript,
-  onCommand,
-  onError,
-  language = "pt-BR",
-  voiceName,
-  voiceRate = 1.0,
-  voicePitch = 1.0,
-  continuousMode = false,
-  wakeWord = "orion",
-}: UseVoiceAssistantProps = {}) => {
-  const [mode, setMode] = useState<VoiceMode>("idle");
+// ============= HOOK =============
+
+export const useVoiceAssistant = (props: UseVoiceAssistantProps = {}) => {
+  const {
+    onTranscript,
+    onCommand,
+    onError,
+    onModeChange,
+  } = props;
+
+  const config = useMemo(() => ({
+    ...DEFAULT_CONFIG,
+    ...props.config,
+  }), [props.config]);
+
+  // State
+  const [mode, setModeState] = useState<VoiceMode>("idle");
   const [isWakeWordActive, setIsWakeWordActive] = useState(false);
   const [lastTranscript, setLastTranscript] = useState<string>("");
   const [isMuted, setIsMuted] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   
+  // Refs
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const isListeningRef = useRef(false);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
-  const isSpeechSupported = typeof window !== "undefined" && 
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-  const isTTSSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+  // Capabilities check
+  const isSpeechSupported = useMemo(() => 
+    typeof window !== "undefined" && 
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window),
+    []
+  );
+  
+  const isTTSSupported = useMemo(() => 
+    typeof window !== "undefined" && "speechSynthesis" in window,
+    []
+  );
 
-  // ============= SPEECH TO TEXT =============
+  // ============= MODE MANAGEMENT =============
 
-  const createRecognition = useCallback(() => {
-    if (!isSpeechSupported) return null;
+  const setMode = useCallback((newMode: VoiceMode) => {
+    setModeState(newMode);
+    onModeChange?.(newMode);
+  }, [onModeChange]);
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-
-    recognition.continuous = continuousMode;
-    recognition.interimResults = true;
-    recognition.lang = language;
-    recognition.maxAlternatives = 1;
-
-    return recognition;
-  }, [isSpeechSupported, continuousMode, language]);
+  // ============= COMMAND DETECTION =============
 
   const detectCommand = useCallback((text: string): VoiceCommand | null => {
     const lowerText = text.toLowerCase().trim();
     
     for (const cmd of DEFAULT_COMMANDS) {
       for (const trigger of cmd.trigger) {
-        if (lowerText.includes(trigger)) {
+        if (lowerText.includes(trigger.toLowerCase())) {
           return cmd;
         }
       }
@@ -94,28 +165,66 @@ export const useVoiceAssistant = ({
     return null;
   }, []);
 
+  // ============= SPEECH RECOGNITION =============
+
+  const createRecognition = useCallback(() => {
+    if (!isSpeechSupported) return null;
+
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+
+    recognition.continuous = config.continuousMode;
+    recognition.interimResults = true;
+    recognition.lang = config.language;
+    recognition.maxAlternatives = 1;
+
+    return recognition;
+  }, [isSpeechSupported, config.continuousMode, config.language]);
+
   const startListening = useCallback(async () => {
     if (!isSpeechSupported) {
-      const errMsg = "Reconhecimento de voz não suportado";
+      const errMsg = "Reconhecimento de voz não suportado neste navegador";
       onError?.(errMsg);
+      setMode("error");
       return false;
     }
 
-    // Parar TTS se estiver falando
+    // Stop TTS if speaking
     if (isTTSSupported) {
       window.speechSynthesis.cancel();
     }
 
     try {
-      // Solicitar permissão do microfone
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Setup audio level monitoring
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      source.connect(analyserRef.current);
+
+      // Start audio level animation
+      const updateLevel = () => {
+        if (analyserRef.current) {
+          const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          setAudioLevel(average / 255);
+        }
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      updateLevel();
 
       const recognition = createRecognition();
       if (!recognition) return false;
 
       recognition.onstart = () => {
         setMode("listening");
-        isListeningRef.current = true;
         console.log("🎙️ Escutando...");
       };
 
@@ -123,30 +232,32 @@ export const useVoiceAssistant = ({
         let finalTranscript = "";
         let interimTranscript = "";
 
-        const results = event.results;
-        // resultIndex may not be in TypeScript's type definition
-        const resultIndex = (event as { resultIndex?: number }).resultIndex ?? 0;
+        const resultIndex = (event as SpeechRecognitionEvent & { resultIndex?: number }).resultIndex ?? 0;
 
-        for (let i = resultIndex; i < results.length; i++) {
-          const transcript = results[i][0].transcript;
-          if (results[i].isFinal) {
+        for (let i = resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
             finalTranscript += transcript;
           } else {
             interimTranscript += transcript;
           }
         }
 
-        // Atualizar transcript em tempo real
+        // Update transcript in real-time
         const currentTranscript = finalTranscript || interimTranscript;
         setLastTranscript(currentTranscript);
 
-        // Se temos resultado final
+        // Reset silence timer
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+        }
+
         if (finalTranscript) {
           setMode("processing");
           
-          // Verificar wake word se necessário
-          if (wakeWord && !isWakeWordActive) {
-            if (finalTranscript.toLowerCase().includes(wakeWord.toLowerCase())) {
+          // Check wake word if required
+          if (config.wakeWord && !isWakeWordActive) {
+            if (finalTranscript.toLowerCase().includes(config.wakeWord.toLowerCase())) {
               setIsWakeWordActive(true);
               console.log("🔔 Wake word detectado!");
               speak("Sim, estou ouvindo.");
@@ -154,44 +265,57 @@ export const useVoiceAssistant = ({
             }
           }
 
-          // Detectar comandos
+          // Detect and handle commands
           const command = detectCommand(finalTranscript);
           if (command) {
-            console.log("📢 Comando detectado:", command.action);
+            console.log("📢 Comando:", command.action);
+            if (command.response) {
+              speak(command.response);
+            }
             onCommand?.(command.action, finalTranscript);
             command.handler?.();
           } else {
             onTranscript?.(finalTranscript);
           }
 
-          // Reset wake word após processar
-          if (!continuousMode) {
+          // Reset wake word after processing (unless continuous)
+          if (!config.continuousMode) {
             setIsWakeWordActive(false);
           }
         }
+
+        // Set silence timer
+        silenceTimerRef.current = setTimeout(() => {
+          if (recognitionRef.current && !config.continuousMode) {
+            recognitionRef.current.stop();
+          }
+        }, config.silenceTimeout);
       };
 
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      recognition.onerror = (event) => {
         console.error("❌ Erro no reconhecimento:", event.error);
         
         if (event.error !== "no-speech" && event.error !== "aborted") {
           setMode("error");
-          onError?.(`Erro: ${event.error}`);
+          onError?.(`Erro de reconhecimento: ${event.error}`);
           setTimeout(() => setMode("idle"), 2000);
         }
       };
 
       recognition.onend = () => {
-        isListeningRef.current = false;
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        setAudioLevel(0);
         
-        // Reiniciar se em modo contínuo
-        if (continuousMode && mode !== "error") {
+        // Restart if in continuous mode
+        if (config.continuousMode && mode !== "error") {
           setTimeout(() => {
             if (recognitionRef.current) {
               try {
                 recognitionRef.current.start();
               } catch {
-                console.log("Reconhecimento já em execução");
+                // Already running
               }
             }
           }, 100);
@@ -204,24 +328,45 @@ export const useVoiceAssistant = ({
       recognition.start();
       return true;
     } catch (error) {
-      const errMsg = "Erro ao acessar microfone";
+      const errMsg = error instanceof Error ? error.message : "Erro ao acessar microfone";
       onError?.(errMsg);
       setMode("error");
-      console.error("❌", error);
+      console.error("❌ Erro de microfone:", error);
       return false;
     }
-  }, [isSpeechSupported, isTTSSupported, createRecognition, wakeWord, isWakeWordActive, continuousMode, mode, detectCommand, onCommand, onTranscript, onError]);
+  }, [
+    isSpeechSupported, 
+    isTTSSupported, 
+    createRecognition, 
+    config, 
+    isWakeWordActive, 
+    mode, 
+    detectCommand, 
+    onCommand, 
+    onTranscript, 
+    onError,
+    setMode,
+  ]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
-    isListeningRef.current = false;
+    
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    setAudioLevel(0);
     setMode("idle");
     setIsWakeWordActive(false);
     console.log("🔇 Parou de escutar");
-  }, []);
+  }, [setMode]);
 
   // ============= TEXT TO SPEECH =============
 
@@ -230,49 +375,44 @@ export const useVoiceAssistant = ({
 
     const voices = window.speechSynthesis.getVoices();
     
-    // Tentar encontrar voz específica
-    if (voiceName) {
-      const specific = voices.find(v => v.name === voiceName);
+    // Try specific voice name
+    if (config.voiceName) {
+      const specific = voices.find(v => v.name.includes(config.voiceName!));
       if (specific) return specific;
     }
 
-    // Preferir vozes em português
+    // Prefer Portuguese voices
     const ptVoices = voices.filter(v => v.lang.startsWith("pt"));
     if (ptVoices.length > 0) {
-      // Preferir vozes brasileiras
+      // Prefer Brazilian Portuguese
       const brVoice = ptVoices.find(v => v.lang === "pt-BR");
       if (brVoice) return brVoice;
       return ptVoices[0];
     }
 
+    // Fallback to default
     return voices[0] || null;
-  }, [isTTSSupported, voiceName]);
+  }, [isTTSSupported, config.voiceName]);
 
-  const speak = useCallback((text: string, options?: { rate?: number; pitch?: number }) => {
+  const speak = useCallback((text: string, options?: Partial<VoiceConfig>) => {
     if (!isTTSSupported || isMuted) return;
 
-    // Cancelar fala anterior
+    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
-    utterance.rate = options?.rate ?? voiceRate;
-    utterance.pitch = options?.pitch ?? voicePitch;
-    utterance.volume = 1;
+    utterance.lang = config.language;
+    utterance.rate = options?.voiceRate ?? config.voiceRate;
+    utterance.pitch = options?.voicePitch ?? config.voicePitch;
+    utterance.volume = options?.voiceVolume ?? config.voiceVolume;
 
     const voice = getPreferredVoice();
     if (voice) {
       utterance.voice = voice;
     }
 
-    utterance.onstart = () => {
-      setMode("speaking");
-    };
-
-    utterance.onend = () => {
-      setMode("idle");
-    };
-
+    utterance.onstart = () => setMode("speaking");
+    utterance.onend = () => setMode("idle");
     utterance.onerror = (event) => {
       console.error("❌ Erro TTS:", event);
       setMode("idle");
@@ -281,70 +421,78 @@ export const useVoiceAssistant = ({
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
 
-    console.log("🔊 Falando:", text.substring(0, 50) + "...");
-  }, [isTTSSupported, isMuted, language, voiceRate, voicePitch, getPreferredVoice]);
+    console.log("🔊 Falando:", text.substring(0, 50) + (text.length > 50 ? "..." : ""));
+  }, [isTTSSupported, isMuted, config, getPreferredVoice, setMode]);
 
   const stopSpeaking = useCallback(() => {
     if (isTTSSupported) {
       window.speechSynthesis.cancel();
     }
     setMode("idle");
-  }, [isTTSSupported]);
+  }, [isTTSSupported, setMode]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
-    if (!isMuted) {
-      stopSpeaking();
-    }
-  }, [isMuted, stopSpeaking]);
+    setIsMuted(prev => {
+      if (!prev) stopSpeaking();
+      return !prev;
+    });
+  }, [stopSpeaking]);
 
-  // ============= EFEITOS =============
+  // ============= EFFECTS =============
 
-  // Carregar vozes quando disponíveis
+  // Load voices when available
   useEffect(() => {
     if (isTTSSupported) {
-      const loadVoices = () => {
-        window.speechSynthesis.getVoices();
-      };
+      const loadVoices = () => window.speechSynthesis.getVoices();
       loadVoices();
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
   }, [isTTSSupported]);
 
-  // Cleanup
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopListening();
       stopSpeaking();
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, [stopListening, stopSpeaking]);
 
+  // ============= RETURN =============
+
   return {
-    // Estado
+    // State
     mode,
     lastTranscript,
     isWakeWordActive,
     isMuted,
+    audioLevel,
     
-    // Suporte
+    // Capabilities
     isSpeechSupported,
     isTTSSupported,
     
-    // Estados derivados
+    // Derived states
     isListening: mode === "listening",
     isSpeaking: mode === "speaking",
     isProcessing: mode === "processing",
+    isError: mode === "error",
+    isIdle: mode === "idle",
     
-    // Ações STT
+    // STT Actions
     startListening,
     stopListening,
     
-    // Ações TTS
+    // TTS Actions
     speak,
     stopSpeaking,
     toggleMute,
     
-    // Utilitários
+    // Utils
     detectCommand,
   };
 };
+
+export default useVoiceAssistant;
