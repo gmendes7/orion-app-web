@@ -11,7 +11,7 @@
 import { Button } from "@/components/ui/button";
 import { useJarvis } from "@/contexts/JarvisContext";
 import { useChatStore } from "@/hooks/useChatStore";
-import { useAIAgents, AIAgent } from "@/hooks/useAIAgents";
+import { useAIAgents } from "@/hooks/useAIAgents";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useCamera } from "@/hooks/useCamera";
 import { useMemorySystem } from "@/hooks/useMemorySystem";
@@ -87,13 +87,10 @@ const JarvisChat = () => {
     conversationsLoading,
     stopStreaming,
     error,
-    selectedAgentId,
-    setSelectedAgentId,
   } = useChatStore();
 
   // Hooks de IA
-  const { agents } = useAIAgents();
-  const selectedAgent = agents.find(a => a.id === selectedAgentId) || null;
+  const { agents: _agents } = useAIAgents();
 
   // Voice assistant
   const voiceAssistant = useVoiceAssistant({
@@ -111,7 +108,10 @@ const JarvisChat = () => {
         variant: "destructive",
       });
     },
-    wakeWord: "orion",
+    config: {
+      wakeWord: "orion",
+      language: "pt-BR",
+    },
   });
 
   // Camera hook
@@ -142,8 +142,6 @@ const JarvisChat = () => {
   const sendMessage = useChatStore((s) => s.sendMessage);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ============= EFEITOS =============
 
@@ -192,11 +190,7 @@ const JarvisChat = () => {
 
   // ============= HANDLERS =============
 
-  const handleSelectAgent = (agent: AIAgent | null) => {
-    setSelectedAgentId(agent?.id || null);
-  };
-
-  const handleVoiceCommand = (command: string, transcript: string) => {
+  const handleVoiceCommand = (command: string, _transcript: string) => {
     console.log("🎤 Comando de voz:", command);
     
     switch (command) {
@@ -208,15 +202,15 @@ const JarvisChat = () => {
         handleCaptureAndAnalyze();
         break;
       case "mode_engineering":
-        jarvis.setCurrentMode("engineering");
+        jarvis.setMode("engineering");
         voiceAssistant.speak("Modo engenharia ativado.");
         break;
       case "mode_planning":
-        jarvis.setCurrentMode("planning");
+        jarvis.setMode("planning");
         voiceAssistant.speak("Modo planejamento ativado.");
         break;
       case "mode_debugging":
-        jarvis.setCurrentMode("debugging");
+        jarvis.setMode("debugging");
         voiceAssistant.speak("Modo debug ativado.");
         break;
       default:
@@ -239,7 +233,7 @@ const JarvisChat = () => {
   };
 
   const handleModeChange = (mode: "engineering" | "planning" | "debugging" | "general") => {
-    jarvis.setCurrentMode(mode);
+    jarvis.setMode(mode);
     memory.addSessionNote(`Modo alterado para: ${mode}`);
   };
 
