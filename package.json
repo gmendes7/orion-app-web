@@ -1,15 +1,56 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "orion-ai-assistant",
+  "displayName": "O.R.I.O.N.X - Advanced AI Assistant",
+  "description": "Advanced AI assistant with voice, camera, and semantic search capabilities",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Gabriel Mendes Lourenço",
+    "email": "gabriel@example.com",
+    "url": "https://github.com/seu-usuario"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/usuario/orion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/usuario/orion/issues"
+  },
+  "homepage": "https://orion-ai.com",
+  "keywords": [
+    "ai",
+    "assistant",
+    "jarvis",
+    "voice",
+    "chat",
+    "typescript",
+    "react",
+    "pwa"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "release:patch": "npm version patch && npm run build",
+    "release:minor": "npm version minor && npm run build",
+    "release:major": "npm version major && npm run build",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "studio": "supabase studio",
+    "db:push": "supabase db push",
+    "postinstall": "husky install || true"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
@@ -48,11 +89,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
-<<<<<<< Updated upstream
     "@supabase/supabase-js": "^2.57.0",
-=======
-    "@supabase/supabase-js": "^2.56.1",
->>>>>>> Stashed changes
     "@tanstack/react-query": "^5.83.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "class-variance-authority": "^0.7.1",

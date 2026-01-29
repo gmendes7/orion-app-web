@@ -1,95 +1,102 @@
-<<<<<<< Updated upstream
--- Ativar RLS para as tabelas
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
--- Políticas para a tabela 'conversations'
-CREATE POLICY "Users can view their own conversations."
-  ON conversations FOR SELECT
-  USING (auth.uid() = user_id);
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-CREATE POLICY "Users can create their own conversations."
-  ON conversations FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own conversations."
-  ON conversations FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own conversations."
-  ON conversations FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Políticas para a tabela 'messages'
-CREATE POLICY "Users can view messages in their own conversations."
-  ON messages FOR SELECT
-  USING (
-    auth.uid() = (
-      SELECT user_id FROM conversations
-      WHERE id = messages.conversation_id
-    )
-  );
-
-CREATE POLICY "Users can create messages in their own conversations."
-  ON messages FOR INSERT
-  WITH CHECK (
-    auth.uid() = (
-      SELECT user_id FROM conversations
-      WHERE id = messages.conversation_id
-    )
-  );
-
--- Geralmente, não se permite update ou delete de mensagens, mas se for necessário:
-CREATE POLICY "Users can update their own messages."
-  ON messages FOR UPDATE
-  USING (
-    auth.uid() = (
-      SELECT user_id FROM conversations
-      WHERE id = messages.conversation_id
-    )
-  );
-# Arquivos de ambiente - NUNCA comitar!
-.env*
-
-# Ambientes virtuais Python
-.venv/
-venv/
-env/
-
-# Cache do Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-=======
-# Ambientes virtuais Python
-.venv/
-venv/
-env/
-
-# Cache do Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
->>>>>>> Stashed changes
-# Configs de IDEs
-.vscode/
-.idea/
-
-# Arquivos temporários do sistema
-.DS_Store
-Thumbs.db
-
-# Logs e Builds
-*.log
+# Build outputs
 dist/
 build/
-<<<<<<< Updated upstream
-
-# Arquivos de cache e build do Next.js
 .next/
-=======
->>>>>>> Stashed changes
-node_modules
+out/
+*.tsbuildinfo
+
+# Environment files - NUNCA comitar!
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.iml
+.DS_Store
+.fleet
+
+# Testing
+coverage/
+.nyc_output/
+
+# OS files
+Thumbs.db
+*.log
+
+# Temp files
+*.tmp
+*.temp
+.turbo/
+dist-ssr/
+
+# Cache
+.eslintcache
+.cache/
+
+# Misc
+.serverless/
+.env.*.local
+*.pem
+
+# Backend - Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv/
+venv/
+ENV/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Docker
+.dockerignore
+
+# Capacitor
+android/
+ios/
+www/
+capacitor.json.bak
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Secret files
+*.key
+*.pem
+secrets.json
+
+# Database migrations backups
+*.sql.bak
+
+# Git merge conflicts
+*.orig
+.merge_*
