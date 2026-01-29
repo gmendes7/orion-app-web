@@ -48,6 +48,8 @@ All colors MUST be HSL.
     --orion-plasma-glow: 54 100% 50%;   /* Plasma yellow */
     --orion-space-dust: 45 15% 20%;     /* Muted gold dust */
     --orion-cosmic-amber: 40 100% 50%;  /* Cosmic amber */
+    --orion-cosmic-blue: 210 80% 50%;   /* Cosmic blue accent */
+    --orion-nebula-purple: 270 70% 50%; /* Nebula purple */
     
     /* Advanced Gradients - Neon Yellow */
     --black-hole-gradient: radial-gradient(ellipse at center, 

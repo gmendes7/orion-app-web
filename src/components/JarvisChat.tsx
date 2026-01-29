@@ -2,19 +2,17 @@
  * 🤖 JarvisChat - Interface principal do assistente JARVIS
  * 
  * Características:
- * - Sem autenticação
+ * - Sem autenticação (modo single-user)
  * - Multimodal (voz, câmera, texto)
- * - Memória inteligente
+ * - Memória inteligente local
  * - Personalidade de engenheiro sênior
  */
 
 import { Button } from "@/components/ui/button";
 import { useJarvis } from "@/contexts/JarvisContext";
-import { useChatStore } from "@/hooks/useChatStore";
-import { useAIAgents } from "@/hooks/useAIAgents";
+import { useLocalChatStore } from "@/hooks/useLocalChatStore";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useCamera } from "@/hooks/useCamera";
-import { useMemorySystem } from "@/hooks/useMemorySystem";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { ORION_LOGO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -61,8 +59,8 @@ const ModeButton = ({ mode, currentMode, icon, label, onClick }: ModeButtonProps
     className={cn(
       "flex items-center gap-1.5 text-xs transition-all",
       currentMode === mode 
-        ? "bg-orion-stellar-gold/20 text-orion-stellar-gold" 
-        : "text-orion-space-dust hover:text-orion-stellar-gold"
+        ? "bg-primary/20 text-primary" 
+        : "text-muted-foreground hover:text-primary"
     )}
   >
     {icon}
@@ -73,38 +71,39 @@ const ModeButton = ({ mode, currentMode, icon, label, onClick }: ModeButtonProps
 // ============= COMPONENTE PRINCIPAL =============
 
 const JarvisChat = () => {
-  console.log("🤖 JarvisChat - Carregando interface JARVIS...");
+  console.log("🤖 JarvisChat - Carregando interface...");
 
   const { toast } = useToast();
   const jarvis = useJarvis();
-  const memory = useMemorySystem();
 
+  // Usar store local (sem autenticação)
   const {
     initialize,
     messages,
     isTyping,
     isStreaming,
-    conversationsLoading,
+    sendMessage,
     stopStreaming,
     error,
-  } = useChatStore();
-
-  // Hooks de IA
-  const { agents: _agents } = useAIAgents();
+    clearError,
+    audioEnabled,
+    setAudioEnabled,
+    sidebarOpen,
+    setSidebarOpen,
+  } = useLocalChatStore();
 
   // Voice assistant
   const voiceAssistant = useVoiceAssistant({
     onTranscript: (text) => {
-      memory.addMessage("user", text);
-      sendMessage(text);
+      handleSendMessage(text);
     },
     onCommand: (command, transcript) => {
       handleVoiceCommand(command, transcript);
     },
-    onError: (error) => {
+    onError: (errorMsg) => {
       toast({
         title: "Erro de Voz",
-        description: error,
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -121,13 +120,12 @@ const JarvisChat = () => {
         title: "📷 Análise Concluída",
         description: analysis.description.substring(0, 100) + "...",
       });
-      // Enviar análise como contexto
-      sendMessage(`[Análise de Imagem]\n${analysis.description}`);
+      handleSendMessage(`[Análise de Imagem]\n${analysis.description}`);
     },
-    onError: (error) => {
+    onError: (errorMsg) => {
       toast({
         title: "Erro de Câmera",
-        description: error,
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -135,26 +133,36 @@ const JarvisChat = () => {
 
   // Estado local
   const [showCamera, setShowCamera] = useState(false);
-  const audioEnabled = useChatStore((s) => s.audioEnabled);
-  const setAudioEnabled = useChatStore((s) => s.setAudioEnabled);
-  const sidebarOpen = useChatStore((s) => s.sidebarOpen);
-  const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
-  const sendMessage = useChatStore((s) => s.sendMessage);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ============= EFEITOS =============
 
   useEffect(() => {
-    console.log("🤖 JarvisChat - Inicializando...");
+    console.log("🤖 JarvisChat - Inicializando store local...");
     initialize();
-  }, []);
+  }, [initialize]);
+
+  // Handler global para erros não tratados
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled rejection:", event.reason);
+      toast({
+        title: "⚠️ Erro inesperado",
+        description: "Ocorreu um erro. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+      event.preventDefault();
+    };
+
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => window.removeEventListener("unhandledrejection", handleRejection);
+  }, [toast]);
 
   useEffect(() => {
     if (error) {
       const errorMessage = error.message || "Erro desconhecido";
       
-      if (errorMessage.includes("rate limit")) {
+      if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
         toast({
           title: "⚠️ Limite Atingido",
           description: "Aguarde um momento antes de enviar outra mensagem.",
@@ -173,22 +181,21 @@ const JarvisChat = () => {
           variant: "destructive",
         });
       }
+      clearError();
     }
-  }, [error, toast]);
+  }, [error, toast, clearError]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Atualizar memória com mensagens
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      memory.addMessage(lastMsg.isUser ? "user" : "assistant", lastMsg.text);
-    }
-  }, [messages]);
-
   // ============= HANDLERS =============
+
+  const handleSendMessage = (msg: string) => {
+    jarvis.addToRecentTopics(msg.split(" ")[0]);
+    const systemPrompt = jarvis.getSystemPrompt();
+    sendMessage(msg, systemPrompt);
+  };
 
   const handleVoiceCommand = (command: string, _transcript: string) => {
     console.log("🎤 Comando de voz:", command);
@@ -234,7 +241,6 @@ const JarvisChat = () => {
 
   const handleModeChange = (mode: "engineering" | "planning" | "debugging" | "general") => {
     jarvis.setMode(mode);
-    memory.addSessionNote(`Modo alterado para: ${mode}`);
   };
 
   // ============= RENDER =============
@@ -246,13 +252,13 @@ const JarvisChat = () => {
         <OrionSidebar
           isOpen={sidebarOpen}
           setIsOpen={setSidebarOpen}
-          conversations={useChatStore((s) => s.conversations)}
-          currentConversationId={useChatStore((s) => s.currentConversationId)}
-          loading={conversationsLoading}
-          setCurrentConversationId={useChatStore((s) => s.setCurrentConversationId)}
-          createNewConversation={() => useChatStore.getState().createConversation("Nova Conversa")}
-          deleteConversation={useChatStore((s) => s.deleteConversation)}
-          renameConversation={useChatStore((s) => s.renameConversation)}
+          conversations={useLocalChatStore((s) => s.conversations)}
+          currentConversationId={useLocalChatStore((s) => s.currentConversationId)}
+          loading={false}
+          setCurrentConversationId={useLocalChatStore((s) => s.setCurrentConversationId)}
+          createNewConversation={() => useLocalChatStore.getState().createConversation("Nova Conversa")}
+          deleteConversation={useLocalChatStore((s) => s.deleteConversation)}
+          renameConversation={useLocalChatStore((s) => s.renameConversation)}
           handleLogout={() => {
             toast({ title: "ℹ️ Modo JARVIS", description: "Sistema single-user, logout desabilitado." });
           }}
@@ -336,9 +342,9 @@ const JarvisChat = () => {
               {/* Right section */}
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {/* Memory indicator */}
-                <div className="hidden sm:flex items-center gap-1 text-xs text-orion-space-dust">
+                <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                   <Brain className="w-3.5 h-3.5" />
-                  <span>{memory.stats.totalEntries}</span>
+                  <span>{messages.length}</span>
                 </div>
 
                 {/* Camera button */}
@@ -463,9 +469,9 @@ const JarvisChat = () => {
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 max-w-4xl mx-auto w-full">
-            {conversationsLoading ? (
+            {isTyping && messages.length === 0 ? (
               <div className="flex justify-center items-center h-full">
-                <Loader2 className="w-8 h-8 text-orion-stellar-gold animate-spin" />
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
               </div>
             ) : (
               <AnimatePresence>
@@ -572,30 +578,26 @@ const JarvisChat = () => {
 
           {/* Chat Input */}
           <ChatInput
-            onSendMessage={(msg) => {
-              memory.addMessage("user", msg);
-              jarvis.addToRecentTopics(msg.split(" ")[0]);
-              sendMessage(msg);
-            }}
+            onSendMessage={handleSendMessage}
             isTyping={isTyping}
             isListening={voiceAssistant.isListening}
             startListening={voiceAssistant.startListening}
-            conversationId={useChatStore((s) => s.currentConversationId)}
+            conversationId={useLocalChatStore((s) => s.currentConversationId)}
           />
 
           {/* Footer */}
-          <footer className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/30 py-2 px-3">
+          <footer className="border-t border-border/30 backdrop-blur-xl bg-card/30 py-2 px-3">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <p className="text-[10px] sm:text-xs text-orion-space-dust">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Desenvolvido por{" "}
-                <span className="text-orion-stellar-gold font-medium stellar-text">
+                <span className="text-primary font-medium">
                   Gabriel Mendes
                 </span>
               </p>
-              <div className="flex items-center gap-2 text-[10px] text-orion-space-dust">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <span>Modo: {jarvis.currentMode}</span>
                 <span>•</span>
-                <span>Memória: {memory.stats.totalEntries}</span>
+                <span>Mensagens: {messages.length}</span>
               </div>
             </div>
           </footer>
