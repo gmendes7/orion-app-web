@@ -1,4 +1,5 @@
 name: CI
+<<<<<<< Updated upstream
 on: [push, pull_request]
 jobs:
   build:
@@ -13,3 +14,81 @@ jobs:
       - run: npm run build
       - name: Secret Scan (optional)
         uses: github/codeql-action/analyze@v2
+=======
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python:
+    name: Python CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/python/requirements.txt
+      - name: Run tests (if any)
+        run: |
+          if [ -f backend/python/pyproject.toml ] || [ -d backend/python/tests ]; then
+            pytest -q
+          else
+            echo "No python tests found"
+          fi
+
+  node:
+    name: Node Gateway CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Install
+        run: |
+          cd backend/node-integration
+          npm ci
+      - name: Lint / smoke
+        run: |
+          echo "No lint configured; ensure package.json scripts include lint/test if needed"
+
+  rust:
+    name: Rust Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: "stable"
+      - name: Build
+        run: |
+          cd libs/rust/crypto
+          if [ -f Cargo.toml ]; then cargo build --release; else echo "no crate"; fi
+
+  cpp:
+    name: C++ Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build C++
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential cmake libsodium-dev python3-dev python3-pip
+          cd libs/cpp/validation
+          mkdir -p build
+          cmake -S . -B build -DBUILD_PYBIND11=ON
+          cmake --build build -- -j$(nproc)
+          # Smoke test: ensure library built
+          if [ -f build/libvalidate_c.so ]; then echo "libvalidate_c.so built"; else echo "lib not found"; exit 1; fi
+          # run a small smoke test for the library
+          ls -la build
+>>>>>>> Stashed changes

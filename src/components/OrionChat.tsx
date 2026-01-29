@@ -298,10 +298,14 @@ const OrionChat = () => {
           >
             <p>
               Desenvolvido por{" "}
+<<<<<<< Updated upstream
               <span className="text-accent font-medium">
                 Gabriel Mendes Lorenz Schjneider Sanhes
               </span>
               , 18 anos
+=======
+              <span className="text-accent font-medium">Gabriel Mendes Lorenz Schjneider Sanches</span>, 18 anos
+>>>>>>> Stashed changes
             </p>
           </motion.div>
         </div>

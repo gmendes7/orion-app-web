@@ -1,0 +1,15 @@
+# backend/python/requirements.txt
+numpy
+pandas
+scikit-learn
+tensorflow
+joblib
+sqlalchemy
+psycopg2-binary
+boto3
+
+# Dev / utils
+black
+mypy
+pytest
+pybind11

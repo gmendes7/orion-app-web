@@ -1,0 +1,13 @@
+[package]
+name = "crypto"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "crypto"
+path = "src/lib.rs"
+
+[dependencies]
+ring = "0.16"
+arrayref = "0.3"
+thiserror = "1.0"

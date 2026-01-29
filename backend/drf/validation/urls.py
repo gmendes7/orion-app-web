@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import os
 from dotenv import load_dotenv
 from django.urls import path
@@ -23,3 +24,11 @@ if OPENAI_API_KEY:
     print("Chave de API da OpenAI carregada com sucesso.")
 else:
     print("AVISO: A variável de ambiente OPENAI_API_KEY não foi encontrada. Verifique seu arquivo .env.")
+=======
+from django.urls import path
+from .views import ValidateSignatureView
+
+urlpatterns = [
+    path('validate-signature/', ValidateSignatureView.as_view(), name='validate-signature'),
+]
+>>>>>>> Stashed changes

@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
+<<<<<<< Updated upstream
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatStore } from "@/hooks/useChatStore";
 import { useAIAgents, AIAgent } from "@/hooks/useAIAgents";
+=======
+>>>>>>> Stashed changes
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useTextToSpeech } from "@/integrations/hooks/useTextToSpeech";
 import { useVoiceInput } from "@/integrations/hooks/useVoiceInput";
 import { ORION_LOGO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+<<<<<<< Updated upstream
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Menu, Square, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -18,11 +22,50 @@ import { OrionSidebar } from "./OrionSidebar";
 import { ConsentBanner } from "./ConsentBanner";
 import { RAGMemoryIndicator } from "./RAGMemoryIndicator";
 import { AgentSelector } from "./AgentSelector";
+=======
+import {
+  formatNeonResponse,
+  safeCommandExecution,
+} from "@/utils/safeCommandExecution";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Cloud,
+  Menu,
+  MessageSquare,
+  Mic,
+  Newspaper,
+  Plus,
+  Search,
+  Send,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { HexagonBackground } from "./HexagonBackground";
+import TypingEffect from "./TypingEffect";
+
+interface Message {
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastMessage: Date;
+}
+>>>>>>> Stashed changes
 
 const OrionChat = () => {
   console.log("💬 OrionChat component carregando...");
 
   const { toast } = useToast();
+<<<<<<< Updated upstream
   const { user, signOut } = useAuth();
 
   console.log("💬 OrionChat - Usuário:", user?.email || "Não identificado");
@@ -99,6 +142,39 @@ const OrionChat = () => {
       }
     }
   }, [error, toast]);
+=======
+  const [conversations, setConversations] = useState<Conversation[]>([
+    {
+      id: "default",
+      title: "Nova Conversa",
+      messages: [
+        {
+          id: "1",
+          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ],
+      lastMessage: new Date(),
+    },
+  ]);
+
+  const [currentConversationId, setCurrentConversationId] = useState("default");
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentConversation =
+    conversations.find((c) => c.id === currentConversationId) ||
+    conversations[0];
+  const messages = useMemo(
+    () => currentConversation?.messages || [],
+    [currentConversation]
+  );
+>>>>>>> Stashed changes
 
   // Voice input hook
   const { startListening, isListening } = useVoiceInput({
@@ -135,6 +211,7 @@ const OrionChat = () => {
     scrollToBottom();
   }, [messages]);
 
+<<<<<<< Updated upstream
   const handleLogout = async () => {
     await signOut();
   };
@@ -151,6 +228,457 @@ const OrionChat = () => {
         loading={conversationsLoading}
         setCurrentConversationId={useChatStore(
           (s) => s.setCurrentConversationId
+=======
+  // Criar nova conversa
+  const createNewConversation = () => {
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      title: "Nova Conversa",
+      messages: [
+        {
+          id: Date.now().toString(),
+          text: "Olá! Sou o **O.R.I.Ö.N**, seu assistente de IA futurista. Como posso ajudar você hoje? ✨",
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ],
+      lastMessage: new Date(),
+    };
+
+    setConversations((prev) => [newConversation, ...prev]);
+    setCurrentConversationId(newConversation.id);
+    setSidebarOpen(false);
+  };
+
+  // Deletar conversa
+  const deleteConversation = (conversationId: string) => {
+    if (conversations.length === 1) return; // Não deletar a última conversa
+
+    setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+
+    if (currentConversationId === conversationId) {
+      const remaining = conversations.filter((c) => c.id !== conversationId);
+      setCurrentConversationId(remaining[0]?.id || "");
+    }
+  };
+
+  // Comandos com sistema de fallback
+  const handleWebSearch = async (query: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("web-search", {
+          body: { query, type: "search", count: 5 },
+        });
+
+        if (error) throw error;
+
+        return `🔍 **Resultados da Pesquisa: "${query}"** ✨\n\n${
+          data.answer
+        }\n\n${
+          data.relatedQuestions?.length > 0
+            ? `**Perguntas relacionadas:**\n${data.relatedQuestions
+                .map((q: string) => `• ${q}`)
+                .join("\n")}`
+            : ""
+        }`;
+      },
+      "🔍 Não consegui encontrar resultados agora. Tente reformular sua pergunta ou aguarde um momento. ✨",
+      "search"
+    );
+
+    return formatNeonResponse(result.message, !result.success);
+  };
+
+  const handleWeatherQuery = async (city: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("weather-api", {
+          body: { city, type: "current" },
+        });
+
+        if (error) throw error;
+
+        const weather = data.current;
+        return (
+          `🌤️ **Clima em ${data.location.name}, ${data.location.country}** ✨\n\n` +
+          `**Temperatura:** ${weather.temperature}°C (sensação: ${weather.feels_like}°C)\n` +
+          `**Condição:** ${weather.description}\n` +
+          `**Umidade:** ${weather.humidity}%\n` +
+          `**Vento:** ${weather.wind.speed} m/s\n` +
+          `**Pressão:** ${weather.pressure} hPa\n\n` +
+          `🌅 **Nascer do sol:** ${data.sunrise}\n` +
+          `🌇 **Pôr do sol:** ${data.sunset}`
+        );
+      },
+      "🌤️ Desculpe, não consegui acessar a previsão do tempo agora. Mas posso tentar de novo mais tarde! ☀️",
+      "weather"
+    );
+
+    return formatNeonResponse(result.message, !result.success);
+  };
+
+  const handleNewsQuery = async (query?: string) => {
+    const result = await safeCommandExecution(
+      async () => {
+        const { data, error } = await supabase.functions.invoke("news-api", {
+          body: {
+            query,
+            category: query ? undefined : "general",
+            pageSize: 5,
+          },
+        });
+
+        if (error) throw error;
+
+        const articles = data.articles.slice(0, 5);
+        return (
+          `📰 **${
+            query ? `Notícias sobre "${query}"` : "Principais Notícias"
+          }** ✨\n\n` +
+          articles
+            .map(
+              (
+                article: {
+                  title?: string;
+                  description?: string;
+                  source?: { name?: string };
+                  publishedAt?: string;
+                  url?: string;
+                },
+                index: number
+              ) =>
+                `**${index + 1}. ${article.title || "Sem título"}**\n` +
+                `${article.description || ""}\n` +
+                `*Fonte: ${article.source?.name || "Desconhecida"} • ${
+                  article.publishedAt || ""
+                }*\n` +
+                `[Ler mais](${article.url || "#"})`
+            )
+            .join("\n\n")
+        );
+      },
+      "📰 No momento não consegui buscar as notícias. Tente novamente em alguns minutos. 📺",
+      "news"
+    );
+
+    return formatNeonResponse(result.message, !result.success);
+  };
+
+  const detectAndExecuteCommands = async (text: string) => {
+    const lowerText = text.toLowerCase();
+
+    // Comando de pesquisa web
+    if (
+      lowerText.includes("pesquisar") ||
+      lowerText.includes("buscar na internet") ||
+      lowerText.includes("google")
+    ) {
+      const query = text
+        .replace(/(pesquisar|buscar na internet|google)/i, "")
+        .trim();
+      if (query) {
+        return await handleWebSearch(query);
+      }
+    }
+
+    // Comando de clima
+    if (lowerText.includes("clima") || lowerText.includes("tempo")) {
+      const city = text.replace(/(clima|tempo)\s*(de|em|da)?\s*/i, "").trim();
+      return await handleWeatherQuery(city || "São Paulo");
+    }
+
+    // Comando de notícias
+    if (lowerText.includes("notícias") || lowerText.includes("news")) {
+      const query = text
+        .replace(/(notícias|news)\s*(sobre|de)?\s*/i, "")
+        .trim();
+      return await handleNewsQuery(query);
+    }
+
+    return null;
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || isTyping) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: input,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    const currentInput = input;
+
+    // Atualizar conversa atual
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === currentConversationId
+          ? {
+              ...conv,
+              messages: [...conv.messages, userMessage],
+              lastMessage: new Date(),
+            }
+          : conv
+      )
+    );
+
+    setInput("");
+    setIsTyping(true);
+
+    try {
+      // Detectar e executar comandos especiais primeiro
+      const commandResult = await detectAndExecuteCommands(currentInput);
+
+      if (commandResult) {
+        const commandResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: commandResult,
+          isUser: false,
+          timestamp: new Date(),
+        };
+
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === currentConversationId
+              ? { ...conv, messages: [...conv.messages, commandResponse] }
+              : conv
+          )
+        );
+
+        setTypingMessageId(commandResponse.id);
+        setIsTyping(false);
+
+        // Auto-falar resposta se áudio estiver habilitado
+        if (audioEnabled) {
+          speak(commandResult.replace(/\*\*/g, "").replace(/\[.*?\]/g, ""));
+        }
+
+        return;
+      }
+
+      // Preparar contexto da conversa para o chat AI
+      const conversation = messages.map((msg) => ({
+        role: msg.isUser ? "user" : "assistant",
+        content: msg.text,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("chat-ai", {
+        body: {
+          message: currentInput,
+          conversation: conversation,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || "Erro de comunicação");
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      const orionMessageId = (Date.now() + 1).toString();
+      const orionResponse: Message = {
+        id: orionMessageId,
+        text: data.response,
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversationId
+            ? { ...conv, messages: [...conv.messages, orionResponse] }
+            : conv
+        )
+      );
+
+      setTypingMessageId(orionMessageId);
+      setIsTyping(false);
+
+      // Auto-falar resposta se áudio estiver habilitado
+      if (audioEnabled) {
+        speak(data.response);
+      }
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      setIsTyping(false);
+
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: formatNeonResponse(
+          "Desculpe, ocorreu um erro na comunicação. Tente novamente.",
+          true
+        ),
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversationId
+            ? { ...conv, messages: [...conv.messages, errorMessage] }
+            : conv
+        )
+      );
+
+      toast({
+        title: "Erro de Comunicação",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      const textarea = e.target as HTMLTextAreaElement;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      if (e.shiftKey) {
+        // Remover indentação
+        const value = textarea.value;
+        const beforeTab = value.substring(0, start);
+        const afterTab = value.substring(end);
+        if (beforeTab.endsWith("  ")) {
+          setInput(beforeTab.slice(0, -2) + afterTab);
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start - 2;
+          }, 0);
+        }
+      } else {
+        // Adicionar indentação
+        setInput(input.substring(0, start) + "  " + input.substring(end));
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + 2;
+        }, 0);
+      }
+    }
+  };
+
+  const handleTypingComplete = (messageId: string) => {
+    if (typingMessageId === messageId) {
+      setTypingMessageId(null);
+    }
+  };
+
+  // Botões de ação rápida
+  const quickActions = [
+    {
+      icon: Search,
+      label: "Pesquisar",
+      action: () => setInput("Pesquisar sobre "),
+      color: "from-orion-cosmic-blue to-orion-stellar-gold",
+    },
+    {
+      icon: Cloud,
+      label: "Clima",
+      action: () => setInput("Clima em "),
+      color: "from-orion-energy-burst to-orion-accretion-disk",
+    },
+    {
+      icon: Newspaper,
+      label: "Notícias",
+      action: () => setInput("Notícias sobre "),
+      color: "from-orion-plasma-glow to-orion-stellar-gold",
+    },
+  ];
+
+  return (
+    <div className="flex h-screen bg-background text-foreground relative overflow-hidden">
+      <HexagonBackground />
+
+      {/* Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed inset-y-0 left-0 z-50 w-80 bg-card/95 backdrop-blur-xl border-r border-orion-cosmic-blue/30 shadow-2xl md:relative md:translate-x-0 md:w-64 lg:w-80"
+          >
+            <div className="flex flex-col h-full">
+              {/* Header do Sidebar */}
+              <div className="p-4 border-b border-orion-cosmic-blue/20">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-orion-stellar-gold">
+                    Conversas
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSidebarOpen(false)}
+                    className="md:hidden text-orion-cosmic-blue hover:text-orion-stellar-gold"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <Button
+                  onClick={createNewConversation}
+                  className="w-full mt-3 bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold hover:opacity-90 text-orion-void font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Conversa
+                </Button>
+              </div>
+
+              {/* Lista de Conversas */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                {conversations.map((conv) => (
+                  <motion.div
+                    key={conv.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-3 rounded-lg cursor-pointer group transition-all duration-200",
+                      currentConversationId === conv.id
+                        ? "bg-orion-stellar-gold/20 border border-orion-stellar-gold/50 shadow-lg"
+                        : "bg-orion-event-horizon hover:bg-orion-cosmic-blue/10 border border-orion-cosmic-blue/20"
+                    )}
+                    onClick={() => {
+                      setCurrentConversationId(conv.id);
+                      setSidebarOpen(false);
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-orion-stellar-gold truncate">
+                          {conv.title}
+                        </p>
+                        <p className="text-xs text-orion-space-dust mt-1">
+                          {conv.lastMessage.toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+
+                      {conversations.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteConversation(conv.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 text-orion-space-dust hover:text-orion-accretion-disk transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+>>>>>>> Stashed changes
         )}
         createNewConversation={() =>
           useChatStore.getState().createConversation("Nova Conversa")
@@ -161,7 +689,7 @@ const OrionChat = () => {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 min-h-0">
         {/* Header */}
         <motion.header
           initial={{ y: -30, opacity: 0 }}
@@ -181,6 +709,7 @@ const OrionChat = () => {
                 <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
 
+<<<<<<< Updated upstream
               <div className="relative group flex-shrink-0">
                 <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl shadow-lg shadow-orion-stellar-gold/20 overflow-hidden">
                   <img
@@ -189,13 +718,24 @@ const OrionChat = () => {
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
+=======
+              <div className="relative group">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/20">
+                  <MessageSquare className="w-5 h-5 text-orion-void" />
+>>>>>>> Stashed changes
                 </div>
                 <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-orion-accretion-disk rounded-full animate-pulse shadow-lg shadow-orion-accretion-disk/50" />
               </div>
 
+<<<<<<< Updated upstream
               <div className="min-w-0 flex-1">
                 <h1 className="text-base sm:text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text truncate">
                   O.R.I.O.N
+=======
+              <div>
+                <h1 className="text-xl font-bold text-orion-stellar-gold tracking-wide stellar-text">
+                  O.R.I.Ö.N
+>>>>>>> Stashed changes
                 </h1>
                 <span className="text-xs sm:text-sm text-orion-space-dust truncate block">
                   {selectedAgent ? selectedAgent.name : "Assistente de IA"}
@@ -257,6 +797,7 @@ const OrionChat = () => {
         </motion.header>
 
         {/* Messages Area */}
+<<<<<<< Updated upstream
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 max-w-4xl mx-auto w-full">
           {conversationsLoading ? (
             <div className="flex justify-center items-center h-full">
@@ -284,6 +825,64 @@ const OrionChat = () => {
                           alt="O.R.I.Ö.N"
                           className="w-full h-full object-cover"
                         />
+=======
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full min-h-0">
+          <AnimatePresence>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                className={cn(
+                  "flex gap-4",
+                  message.isUser ? "justify-end" : "justify-start"
+                )}
+              >
+                {!message.isUser && (
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orion-stellar-gold to-orion-accretion-disk flex items-center justify-center shadow-lg shadow-orion-stellar-gold/30">
+                      <MessageSquare className="w-4 h-4 text-orion-void" />
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "rounded-2xl px-4 py-3 backdrop-blur-sm transition-all duration-300 hover:shadow-lg",
+                    // Use responsive max-width that adapts on small screens
+                    message.isUser
+                      ? "max-w-[90%] sm:max-w-[75%] md:max-w-[60%] bg-gradient-to-br from-orion-cosmic-blue to-orion-stellar-gold text-orion-void shadow-orion-cosmic-blue/20 ml-auto"
+                      : "max-w-[90%] sm:max-w-[75%] md:max-w-[60%] chat-message-orion text-foreground shadow-orion-stellar-gold/10"
+                  )}
+                >
+                  <div className="text-sm leading-relaxed">
+                    {!message.isUser && typingMessageId === message.id ? (
+                      <TypingEffect
+                        text={message.text}
+                        speed={25}
+                        onComplete={() => handleTypingComplete(message.id)}
+                      />
+                    ) : (
+                      <div className="prose prose-sm prose-invert max-w-none">
+                        {message.text.split("\n").map((line, i) => (
+                          <p key={i} className="mb-2 last:mb-0">
+                            {line.includes("**") ? (
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: line.replace(
+                                    /\*\*(.*?)\*\*/g,
+                                    '<strong class="text-orion-stellar-gold">$1</strong>'
+                                  ),
+                                }}
+                              />
+                            ) : (
+                              line
+                            )}
+                          </p>
+                        ))}
+>>>>>>> Stashed changes
                       </div>
                     </div>
                   )}
@@ -385,6 +984,7 @@ const OrionChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
+<<<<<<< Updated upstream
         <ChatInput
           onSendMessage={sendMessage}
           isTyping={isTyping}
@@ -402,6 +1002,95 @@ const OrionChat = () => {
                 Gabriel Mendes
               </span>
             </p>
+=======
+        {/* Quick Actions */}
+        <div className="px-4 py-2">
+          <div className="flex gap-2 justify-center max-w-4xl mx-auto flex-wrap">
+            {quickActions.map((action, index) => (
+              <motion.button
+                key={action.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={action.action}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300",
+                  "bg-gradient-to-r",
+                  action.color,
+                  "text-orion-void hover:scale-105 hover:shadow-lg active:scale-95",
+                  "border border-white/20 backdrop-blur-sm"
+                )}
+              >
+                <action.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{action.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="border-t border-orion-cosmic-blue/20 backdrop-blur-xl bg-card/50 p-4"
+        >
+          <div className="max-w-4xl mx-auto">
+            <div className="relative flex items-end gap-3">
+              <div className="flex-1 relative">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Digite sua mensagem... (Shift+Enter para nova linha, Tab para indentar)"
+                  disabled={isTyping}
+                  rows={Math.min(Math.max(input.split("\n").length, 1), 4)}
+                  className={cn(
+                    "w-full resize-none rounded-xl px-4 py-3 pr-12 text-sm",
+                    "bg-orion-event-horizon/50 border-2 border-orion-cosmic-blue/30",
+                    "text-foreground placeholder-orion-space-dust",
+                    "focus:border-orion-stellar-gold/60 focus:ring-2 focus:ring-orion-stellar-gold/20",
+                    "transition-all duration-300 backdrop-blur-sm",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  style={{
+                    minHeight: "48px",
+                    maxHeight: "120px",
+                  }}
+                />
+
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startListening}
+                    disabled={isListening || isTyping}
+                    className={cn(
+                      "w-8 h-8 text-orion-cosmic-blue hover:text-orion-stellar-gold transition-all duration-300",
+                      isListening &&
+                        "text-orion-accretion-disk animate-pulse scale-110"
+                    )}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                onClick={sendMessage}
+                disabled={!input.trim() || isTyping}
+                className={cn(
+                  "w-12 h-12 rounded-xl bg-gradient-to-r from-orion-cosmic-blue to-orion-stellar-gold",
+                  "text-orion-void font-medium shadow-lg transition-all duration-300",
+                  "hover:scale-105 hover:shadow-xl active:scale-95",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+                  "border border-white/20"
+                )}
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+>>>>>>> Stashed changes
           </div>
         </footer>
       </div>

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 -- Ativar RLS para as tabelas
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -60,6 +61,19 @@ __pycache__/
 *.pyo
 *.pyd
 
+=======
+# Ambientes virtuais Python
+.venv/
+venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+>>>>>>> Stashed changes
 # Configs de IDEs
 .vscode/
 .idea/
@@ -72,7 +86,10 @@ Thumbs.db
 *.log
 dist/
 build/
+<<<<<<< Updated upstream
 
 # Arquivos de cache e build do Next.js
 .next/
+=======
+>>>>>>> Stashed changes
 node_modules
