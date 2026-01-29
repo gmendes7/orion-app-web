@@ -1,6 +1,11 @@
+/**
+ * 🤖 useAIAgents - Hook para gerenciar agentes de IA
+ * 
+ * Versão single-user sem autenticação.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 export interface AIAgent {
   id: string;
@@ -36,7 +41,6 @@ export const useAIAgents = (): UseAIAgentsReturn => {
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
   const fetchAgents = useCallback(async () => {
     setLoading(true);
@@ -74,17 +78,12 @@ export const useAIAgents = (): UseAIAgentsReturn => {
   }, [agents]);
 
   const createAgent = useCallback(async (agent: Partial<AIAgent>): Promise<AIAgent | null> => {
-    if (!user) {
-      setError('Você precisa estar logado para criar agentes');
-      return null;
-    }
-
     try {
       const { data, error: insertError } = await supabase
         .from('ai_agents')
         .insert({
           ...agent,
-          created_by: user.id,
+          created_by: null, // Single-user mode
         })
         .select()
         .single();
@@ -100,7 +99,7 @@ export const useAIAgents = (): UseAIAgentsReturn => {
       console.error('Error creating agent:', err);
       return null;
     }
-  }, [user]);
+  }, []);
 
   const updateAgent = useCallback(async (id: string, updates: Partial<AIAgent>): Promise<boolean> => {
     try {

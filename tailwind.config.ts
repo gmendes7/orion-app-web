@@ -74,6 +74,7 @@ export default {
 				'orion-plasma-glow': 'hsl(var(--orion-plasma-glow))',
 				'orion-space-dust': 'hsl(var(--orion-space-dust))',
 				'orion-cosmic-blue': 'hsl(var(--orion-cosmic-blue))',
+				'orion-nebula-purple': 'hsl(var(--orion-nebula-purple))',
 				'neon-yellow': 'hsl(54 100% 50%)',
 				'neon-gold': 'hsl(45 100% 50%)',
 				'neon-amber': 'hsl(40 100% 50%)',

@@ -1,20 +1,24 @@
-import { useAuth } from "@/contexts/AuthContext";
+/**
+ * 🎛️ OrionSidebar - Sidebar do chat JARVIS
+ * 
+ * Versão single-user sem autenticação.
+ */
+
 import { AnimatePresence } from "framer-motion";
-import { Plus, X, Database, LogOut, User, Shield, Key, Bot } from "lucide-react";
+import { Plus, X, Database, User, Shield, Key, Bot } from "lucide-react";
 import { ConversationItem } from "./ConversationItem";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { PrivacyPolicy } from "./PrivacyPolicy";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { AgentSelector } from "./AgentSelector";
-import { useChatStore } from "@/hooks/useChatStore";
 import { useAIAgents, AIAgent } from "@/hooks/useAIAgents";
 
 interface Conversation {
   id: string;
   title?: string;
   updated_at?: string;
+  updatedAt?: Date;
 }
 
 interface OrionSidebarProps {
@@ -40,39 +44,24 @@ export const OrionSidebar = ({
   createNewConversation,
   deleteConversation,
   renameConversation,
-  handleLogout,
+  handleLogout: _handleLogout,
 }: OrionSidebarProps) => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [username, setUsername] = useState<string>('');
   
   // Agent selection for mobile
-  const { selectedAgentId, setSelectedAgentId } = useChatStore();
   const { agents } = useAIAgents();
-  const selectedAgent = agents.find(a => a.id === selectedAgentId) || null;
+  const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   
   const handleSelectAgent = (agent: AIAgent | null) => {
-    setSelectedAgentId(agent?.id || null);
+    setSelectedAgent(agent);
   };
 
-  // Busca o username do perfil do usuário
-  useEffect(() => {
-    const fetchUsername = async () => {
-      if (user?.id) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single();
-        
-        if (data?.username) {
-          setUsername(data.username);
-        }
-      }
-    };
-    fetchUsername();
-  }, [user?.id]);
+  // Username para modo single-user
+  const username = "Usuário JARVIS";
+  
+  // Para compatibilidade - não usamos mais
+  void agents;
 
   return (
     <AnimatePresence>
@@ -171,9 +160,9 @@ export const OrionSidebar = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                    {username || user?.email}
+                    {username}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-orion-space-dust truncate">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                     O.R.I.Ö.N Assistant
                   </p>
                 </div>
@@ -183,21 +172,11 @@ export const OrionSidebar = ({
               <Button
                 onClick={() => setShowPrivacyPolicy(true)}
                 variant="outline"
-                className="w-full border-orion-cosmic-blue/30 text-orion-space-dust hover:bg-orion-cosmic-blue/10 hover:text-orion-stellar-gold text-xs h-8"
+                className="w-full border-border/30 text-muted-foreground hover:bg-primary/10 hover:text-primary text-xs h-8"
                 size="sm"
               >
                 <Shield className="w-3.5 h-3.5 mr-2" />
                 <span>Privacidade e LGPD</span>
-              </Button>
-
-              {/* Logout Button */}
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 text-xs h-8"
-              >
-                <LogOut className="w-3.5 h-3.5 mr-2" />
-                Sair
               </Button>
             </div>
           </div>
