@@ -1,5 +1,6 @@
 name: CI
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 on: [push, pull_request]
 jobs:
   build:
@@ -15,6 +16,8 @@ jobs:
       - name: Secret Scan (optional)
         uses: github/codeql-action/analyze@v2
 =======
+=======
+>>>>>>> Stashed changes
 
 on:
   push:
@@ -91,4 +94,7 @@ jobs:
           if [ -f build/libvalidate_c.so ]; then echo "libvalidate_c.so built"; else echo "lib not found"; exit 1; fi
           # run a small smoke test for the library
           ls -la build
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

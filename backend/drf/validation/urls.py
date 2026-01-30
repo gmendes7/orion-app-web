@@ -1,4 +1,5 @@
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import os
 from dotenv import load_dotenv
 from django.urls import path
@@ -25,10 +26,15 @@ if OPENAI_API_KEY:
 else:
     print("AVISO: A variável de ambiente OPENAI_API_KEY não foi encontrada. Verifique seu arquivo .env.")
 =======
+=======
+>>>>>>> Stashed changes
 from django.urls import path
 from .views import ValidateSignatureView
 
 urlpatterns = [
     path('validate-signature/', ValidateSignatureView.as_view(), name='validate-signature'),
 ]
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

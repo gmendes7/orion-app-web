@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -100,3 +101,29 @@ secrets.json
 # Git merge conflicts
 *.orig
 .merge_*
+=======
+# Ambientes virtuais Python
+.venv/
+venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configs de IDEs
+.vscode/
+.idea/
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+
+# Logs e Builds
+*.log
+dist/
+build/
+node_modules
+>>>>>>> Stashed changes
