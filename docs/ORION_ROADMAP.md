@@ -1,82 +1,99 @@
-# ORION — Roadmap para tornar a IA impecável
+# ORION — Plano Técnico e Arquitetura (JARVIS Realista)
 
-Objetivo: transformar ORION numa IA especialista em servidores, bancos, programação lógica/matemática e troubleshooting, com memória longa, integração com ferramentas externas (GitHub, Supabase, logs), comunicação técnica e camadas de explicação.
+## 1) Objetivo e princípios
+- **Produto real, não demo**: foco em usabilidade diária e confiabilidade.
+- **Modularidade**: cada capacidade (voz, visão, automação, memória) como serviço isolado.
+- **Privacidade por padrão**: processamento local sempre que possível, com controle explícito de dados.
+- **Eficiência**: minimizar custo de API e latência; fallback offline parcial.
 
-Visão geral dos componentes
+## 2) Estado atual (observável no repo)
+- Front-end React/Vite com foco em UI conversacional.
+- Integrações com Supabase e funções edge.
+- Componentes de interface para Orion (ex.: `OrionInterface`, `OrionEye`).
 
-1. Core AI runtime
+## 3) Arquitetura alvo (camadas)
 
-- Serverless functions para: chat, tools proxy, embeddings, memory store/retrieval.
-- Pipeline RAG (retrieval-augmented generation) usando embeddings + vetor DB (Supabase/pgvector).
-- Prompt templates e sistema de controle de tom (system prompt + user style profile).
+### 3.1 Núcleo Cognitivo (Brain)
+**Responsabilidades**
+- Orquestrar agentes especializados.
+- Planejamento de tarefas (HTN/ToT simples + heurísticas).
+- Roteamento de intenções para módulos (voz, visão, automação).
 
-2. Memória longa
+**Tecnologias possíveis**
+- Orquestrador local: Node.js + worker threads.
+- LLM: modelo local (via Ollama) + fallback cloud quando necessário.
+- Estrutura de agentes: registro de capacidades + políticas de execução.
 
-- Banco: Supabase (Postgres + pgvector) ou alternativa vector DB.
-- Estrutura: `memories` (metadata, text, created_at), `memory_embeddings` (embedding vector, memory_id).
-- TTL e políticas de segurança + criptografia at rest (via Supabase/KMS).
+### 3.2 Memória Inteligente
+**Camadas**
+- **Curto prazo**: contexto da sessão (em memória + persistência leve).
+- **Médio prazo**: histórico recente, ações executadas e resultados.
+- **Longo prazo**: preferências e padrões (consentimento explícito).
 
-3. Integrações externas (tools)
+**RAG**
+- Vetorização local (sentence transformers) e índice (SQLite + sqlite-vss / qdrant local).
+- Política de retenção configurável pelo usuário.
 
-- GitHub: app or PAT to read PRs, comment, suggest changes.
-- Supabase: execute queries, manage user state, store memories.
-- Logs: collect from servers (CloudWatch/ELK); provide a logs adapter for analysis.
-- Documentation: versioned docs ingestion pipeline (convert to embeddings).
+### 3.3 Voz (Speech)
+**Entrada**
+- VAD + streaming ASR (Whisper local ou serviço cloud quando necessário).
+- Detecção de intenção e extração de slots.
 
-4. Frontend & UX
+**Saída**
+- TTS local (p.ex. Piper) + vozes por perfil (técnico, casual, urgente).
 
-- Chat UI (React) with streaming, cancel, TTS (já presente).
-- Mobile responsive layout and accessibility.
-- Settings: profiles (tone), memory toggles, privacy options.
+### 3.4 Visão (Computer Vision)
+- Captura de tela com consentimento.
+- OCR + detecção de elementos visuais (buttons, cards, dialogs).
+- Explicação contextual + sugestões baseadas no estado visual.
 
-5. Security & Governance
+### 3.5 Automação de Sistema (SO)
+- Execução por “planos” com confirmação.
+- **Modo seguro**: lista branca de comandos permitidos.
+- Logs assinados e reversibilidade quando possível.
 
-- Secrets: store in environment (Supabase secrets / GitHub secrets / AWS KMS).
-- Rate limits, input validation, audit logs (append-only), opt-out memory per-user.
-- Data retention policy and export tools.
+### 3.6 Proatividade Inteligente
+- Score de confiança para sugestões.
+- Níveis de proatividade configuráveis.
+- Nunca atuar sem confirmação explícita.
 
-Fases e entregáveis (MVP -> v1 -> v2)
+## 4) Roadmap técnico (entregas)
 
-MVP (2-4 semanas):
+### Fase 1 — MVP Real (4–6 semanas)
+- Brain mínimo: roteamento de intenções + agente principal.
+- Memória curta/média com histórico local.
+- Voz: ASR + TTS com configuração simples.
+- Automação segura: abrir apps e executar scripts autorizados.
+- Observabilidade básica (logs estruturados + métricas).
 
-- Memory tables + simple supabase function to upsert/query mems using OpenAI embeddings.
-- Chat function integration: use memory retrieval as context.
-- GitHub PR bot skeleton (read PR, post summary/comment).
-- Mobile responsive fixes (already applied).
+### Fase 2 — Multimodal (6–10 semanas)
+- Visão básica (OCR + detecção simples de UI).
+- RAG local para memória longa.
+- Painel de privacidade e permissões.
 
-v1 (4-8 semanas):
+### Fase 3 — Avançado (10+ semanas)
+- Planejamento avançado (multi-step + validação)
+- Proatividade contextual com níveis configuráveis.
+- Aprendizado de hábitos (opt-in) com auditoria.
 
-- Full RAG pipeline with chunking, retriever scoring, freshness heuristics.
-- User profiles and tone adaptation.
-- Secure key management + audit logging.
+## 5) Segurança e privacidade
+- Criptografia local (AES-GCM) para dados sensíveis.
+- Segregação por usuário e por dispositivo.
+- Política de logs com níveis (mínimo / padrão / detalhado).
+- “Botão de pânico”: desativa automações e apaga sessão.
 
-v2 (ongoing):
+## 6) MVP recomendado
+- **Núcleo**: roteador de intents + um agente principal.
+- **Voz**: ASR local + TTS local.
+- **Memória**: histórico de conversa + notas rápidas (curto/médio prazo).
+- **Automação**: scripts aprovados e execução com confirmação.
 
-- Fine-tuning or retrieval-augmented fine-tuning pipelines.
-- Advanced tools: run database migrations, execute limited queries, analyze logs.
-- Multi-modal memory (images, attachments).
+## 7) Critérios de sucesso
+- Latência de resposta < 2s para comandos comuns.
+- 95%+ de intents reconhecidas corretamente em cenários comuns.
+- Zero execução sem confirmação explícita.
 
-Métricas de sucesso
-
-- Tempo médio para resposta < 2s (latência de infra para RAG < 1s para retrieval).
-- Precisão nas respostas técnicas (avaliado por testes e revisão humana) > 90%.
-- Adoção: 50% dos usuários ativos usam memória personalizada.
-
----
-
-# Ações imediatas (o que eu criei no repositório)
-
-- `supabase/migrations/create_memory_tables.sql` — DDL para criar tabelas de memória e embeddings (pgvector).
-- `supabase/functions/memory-store/index.ts` — função edge (TS) para upsert/query memórias usando OpenAI embeddings (placeholder de API key).
-- `prompts/orion_templates.md` — templates de sistema e instruções para camadas de explicação e tom.
-- `scripts/github-pr-bot.js` — script Node.js (octokit) esqueleto para comentar PRs.
-- `docs/ORION_ROADMAP.md` — este arquivo.
-
-Próximos passos
-
-- Configurar segredo `OPENAI_API_KEY` e `SUPABASE_SERVICE_KEY` (para funções server-side) no painel do Supabase.
-- Deploy da função `memory-store` no Supabase Functions.
-- Rodar a migração SQL no banco Supabase (ou via UI SQL editor).
-- Testar com alguns exemplos de input para verificar embeddings e queries.
-
-Observação: os exemplos usam a API de embeddings da OpenAI por ser amplamente disponível; você pode trocar por outra provedora de embeddings (Anthropic, Cohere) alterando `memory-store`.
+## 8) Próximas ações sugeridas no código
+- Criar módulo `brain/` com registry de agentes.
+- Implementar pipeline de voz (ASR/TTS) isolado em worker.
+- Adicionar storage local para memória (SQLite + criptografia).
