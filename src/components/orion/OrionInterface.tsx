@@ -16,11 +16,11 @@ import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 
 import { OrionEye, OrionState } from "./OrionEye";
-import { VoiceWaveform } from "./orion/VoiceWaveform";
-import { ParticleField } from "./orion/ParticleField";
-import { StatusIndicator } from "./orion/StatusIndicator";
-import { CommandInput } from "./orion/CommandInput";
-import { TranscriptDisplay } from "./orion/TranscriptDisplay";
+import { VoiceWaveform } from "./VoiceWaveform";
+import { ParticleField } from "./ParticleField";
+import { StatusIndicator } from "./StatusIndicator";
+import { CommandInput } from "./CommandInput";
+import { TranscriptDisplay } from "./TranscriptDisplay";
 
 export const OrionInterface = () => {
   const { toast } = useToast();
