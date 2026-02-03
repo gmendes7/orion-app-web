@@ -1,5 +1,6 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // Simple crypto helpers: AES-256-GCM encrypt/decrypt using `aes-gcm` and `rand` crates.
 
 use aes_gcm::{Aes256Gcm, Key, Nonce}; // 96-bits nonce
@@ -33,6 +34,8 @@ pub fn decrypt_aes256_gcm(key_bytes: &[u8;32], nonce_bytes: &[u8], ciphertext: &
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 // libs/rust/crypto/src/lib.rs
 // Exemplo simples de funções de encriptação AEAD com `ring`.
 
@@ -58,6 +61,9 @@ pub fn open_in_place(key_bytes: &[u8;32], nonce_bytes: &[u8;12], ciphertext: &mu
 
 // Observação: este exemplo depende de crates `ring` e `arrayref` no Cargo.toml do crate.
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

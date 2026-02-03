@@ -1,5 +1,6 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import os
 from dotenv import load_dotenv
 from django.urls import path
@@ -28,6 +29,8 @@ else:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 from django.urls import path
 from .views import ValidateSignatureView
 
@@ -35,6 +38,9 @@ urlpatterns = [
     path('validate-signature/', ValidateSignatureView.as_view(), name='validate-signature'),
 ]
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

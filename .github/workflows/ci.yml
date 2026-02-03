@@ -1,6 +1,7 @@
 name: CI
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 on: [push, pull_request]
 jobs:
   build:
@@ -16,6 +17,8 @@ jobs:
       - name: Secret Scan (optional)
         uses: github/codeql-action/analyze@v2
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -95,6 +98,9 @@ jobs:
           # run a small smoke test for the library
           ls -la build
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

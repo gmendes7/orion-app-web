@@ -1,7 +1,10 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 FROM alpine:latest
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 # backend/python/Dockerfile
@@ -13,6 +16,9 @@ COPY backend/python ./backend/python
 WORKDIR /app/backend/python
 CMD ["python", "example_ml.py"]
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
