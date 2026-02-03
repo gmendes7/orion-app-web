@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
 # 🚀 Plano Completo de Melhorias - O.R.I.O.N.X
 
 **Projeto:** O.R.I.O.N.X - Assistente de Inteligência Artificial  
@@ -44,11 +47,14 @@
 - [ ] Tech stack visual
 
 **Status Atual:** Responsividade mobile otimizada ✅
+<<<<<<< HEAD
 =======
 =======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
 # Proposta de arquitetura — Projeto ORION
 
 Resumo rápido
@@ -238,6 +244,7 @@ Próximos passos que eu posso executar aqui
 - Criar skeletons de código/arquivos (posso adicionar exemplos no repositório). ✔️ (vou criar exemplos mínimos)
 - Gerar templates Terraform para infra AWS (opcional).
 - Criar Dockerfiles e workflow CI para build/test.
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
@@ -245,3 +252,5 @@ Próximos passos que eu posso executar aqui
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e

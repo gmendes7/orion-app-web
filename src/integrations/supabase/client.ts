@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
 // Supabase client wrapper — reads runtime config from Vite env variables.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
@@ -32,6 +35,7 @@ export const supabase = createClient<Database>(
   SUPABASE_ANON_KEY,
   authOptions
 );
+<<<<<<< HEAD
 =======
 // Supabase client wrapper — reads runtime config from Vite env variables.
 // Do NOT commit your real keys. Add them to a local `.env` file (see `.env.example`).
@@ -124,3 +128,5 @@ export const supabase = createClient<Database>(
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 >>>>>>> Stashed changes
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e

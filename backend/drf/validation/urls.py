@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -31,12 +32,15 @@ else:
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
 from django.urls import path
 from .views import ValidateSignatureView
 
 urlpatterns = [
     path('validate-signature/', ValidateSignatureView.as_view(), name='validate-signature'),
 ]
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
@@ -44,3 +48,5 @@ urlpatterns = [
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
