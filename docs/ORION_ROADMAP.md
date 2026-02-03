@@ -1,99 +1,151 @@
-# ORION — Plano Técnico e Arquitetura (JARVIS Realista)
+# ORION — Arquitetura e Roadmap Técnico (Nível JARVIS Realista)
 
-## 1) Objetivo e princípios
-- **Produto real, não demo**: foco em usabilidade diária e confiabilidade.
-- **Modularidade**: cada capacidade (voz, visão, automação, memória) como serviço isolado.
-- **Privacidade por padrão**: processamento local sempre que possível, com controle explícito de dados.
-- **Eficiência**: minimizar custo de API e latência; fallback offline parcial.
+> Documento de engenharia: serve como guia direto para implementação.
 
-## 2) Estado atual (observável no repo)
-- Front-end React/Vite com foco em UI conversacional.
-- Integrações com Supabase e funções edge.
-- Componentes de interface para Orion (ex.: `OrionInterface`, `OrionEye`).
+## 1) Visão de Produto
+ORION é um assistente pessoal multimodal (voz, visão, automação, contexto) com foco em **autonomia supervisionada**, privacidade e desempenho. O objetivo é entregar utilidade diária comparável a um “JARVIS real”, porém **100% viável tecnologicamente**.
 
-## 3) Arquitetura alvo (camadas)
+**Princípios obrigatórios**
+- **Local-first** sempre que possível (voz, memória, visão, automação)
+- **Privacidade e consentimento explícitos**
+- **Arquitetura modular** (troca de módulos sem quebrar o sistema)
+- **Sem dependência de APIs caras** como requisito básico
+- **Auditabilidade**: logs legíveis e rastreáveis
+
+---
+
+## 2) Diagnóstico do Estado Atual (observável no repo)
+- Front-end React/Vite com UI conversacional.
+- Supabase para dados e edge functions.
+- Componentes de interface Orion (OrionEye, OrionInterface).
+- Base pronta para evoluir o “cérebro” e os módulos multimodais.
+
+**Gap atual**: falta uma camada de **orquestração cognitiva**, **memória persistente**, **voz/visão funcional** e **automação segura**.
+
+---
+
+## 3) Arquitetura de Camadas (proposta final)
 
 ### 3.1 Núcleo Cognitivo (Brain)
 **Responsabilidades**
-- Orquestrar agentes especializados.
-- Planejamento de tarefas (HTN/ToT simples + heurísticas).
-- Roteamento de intenções para módulos (voz, visão, automação).
+- Compreender intenções e objetivos do usuário.
+- Planejar tarefas (multi-step) e delegar para agentes.
+- Decidir quando pedir confirmação vs. executar.
 
-**Tecnologias possíveis**
-- Orquestrador local: Node.js + worker threads.
-- LLM: modelo local (via Ollama) + fallback cloud quando necessário.
-- Estrutura de agentes: registro de capacidades + políticas de execução.
+**Componentes internos**
+- **Router de intenção** (classificação de intent + extração de slots)
+- **Planner** (HTN/ToT simplificado + validação)
+- **Executor** (chama módulos de voz, visão, automação)
+- **Policy Engine** (regras de segurança e consentimento)
+
+**Tecnologias**
+- Orquestrador: Node.js + workers
+- Modelo local: Ollama + fallback cloud
+- Mensageria: event bus leve (em memória + persistência)
+
+---
 
 ### 3.2 Memória Inteligente
 **Camadas**
-- **Curto prazo**: contexto da sessão (em memória + persistência leve).
-- **Médio prazo**: histórico recente, ações executadas e resultados.
-- **Longo prazo**: preferências e padrões (consentimento explícito).
+- **Curto prazo**: contexto da sessão atual (RAM + cache local)
+- **Médio prazo**: últimos X dias/ações
+- **Longo prazo**: preferências/hábitos (somente opt-in)
 
 **RAG**
-- Vetorização local (sentence transformers) e índice (SQLite + sqlite-vss / qdrant local).
-- Política de retenção configurável pelo usuário.
+- Vetorização local (sentence-transformers)
+- Índice: SQLite + sqlite-vss ou Qdrant local
+
+**Política de retenção**
+- Configurável pelo usuário
+- Expiração automática
+- Exportável/Removível
+
+---
 
 ### 3.3 Voz (Speech)
 **Entrada**
-- VAD + streaming ASR (Whisper local ou serviço cloud quando necessário).
-- Detecção de intenção e extração de slots.
+- VAD + ASR streaming (Whisper local)
+- Fallback cloud se baixa performance
 
 **Saída**
-- TTS local (p.ex. Piper) + vozes por perfil (técnico, casual, urgente).
+- TTS local (Piper) com perfis: técnico, casual, urgente
+
+**Desafios e soluções**
+- Latência: pipeline em worker separado
+- Ruído: normalização + VAD agressivo
+
+---
 
 ### 3.4 Visão (Computer Vision)
-- Captura de tela com consentimento.
-- OCR + detecção de elementos visuais (buttons, cards, dialogs).
-- Explicação contextual + sugestões baseadas no estado visual.
+**Capacidades**
+- OCR de tela
+- Detecção de UI (botões, janelas, campos)
+- Interpretação contextual
 
-### 3.5 Automação de Sistema (SO)
-- Execução por “planos” com confirmação.
-- **Modo seguro**: lista branca de comandos permitidos.
-- Logs assinados e reversibilidade quando possível.
+**Ferramentas possíveis**
+- Tesseract + OpenCV local
+- OCR + layout detection
+
+---
+
+### 3.5 Automação do Sistema
+**Regras**
+- Execução apenas com consentimento explícito
+- Log de cada ação
+- Modo seguro (lista branca)
+
+**Exemplos de ações**
+- Abrir apps, organizar arquivos, executar scripts pré-aprovados
+- Macro automations (ex: backup, limpeza)
+
+---
 
 ### 3.6 Proatividade Inteligente
-- Score de confiança para sugestões.
-- Níveis de proatividade configuráveis.
-- Nunca atuar sem confirmação explícita.
+**Lógica**
+- Score de confiança
+- Proatividade configurável (0–3)
+- Sugestões “não invasivas”
 
-## 4) Roadmap técnico (entregas)
+---
 
-### Fase 1 — MVP Real (4–6 semanas)
-- Brain mínimo: roteamento de intenções + agente principal.
-- Memória curta/média com histórico local.
-- Voz: ASR + TTS com configuração simples.
-- Automação segura: abrir apps e executar scripts autorizados.
-- Observabilidade básica (logs estruturados + métricas).
+## 4) Roadmap por Fases
+
+### Fase 1 — MVP funcional (4–6 semanas)
+- Brain básico: roteamento de intents
+- Memória curta/média
+- ASR/TTS local
+- Automação segura (scripts aprovados)
 
 ### Fase 2 — Multimodal (6–10 semanas)
-- Visão básica (OCR + detecção simples de UI).
-- RAG local para memória longa.
-- Painel de privacidade e permissões.
+- OCR + visão básica
+- Memória longa com RAG
+- Painel de permissões e privacidade
 
 ### Fase 3 — Avançado (10+ semanas)
-- Planejamento avançado (multi-step + validação)
-- Proatividade contextual com níveis configuráveis.
-- Aprendizado de hábitos (opt-in) com auditoria.
+- Planejamento multi-step robusto
+- Proatividade contextual configurável
+- Aprendizado de hábitos (opt-in)
 
-## 5) Segurança e privacidade
-- Criptografia local (AES-GCM) para dados sensíveis.
-- Segregação por usuário e por dispositivo.
-- Política de logs com níveis (mínimo / padrão / detalhado).
-- “Botão de pânico”: desativa automações e apaga sessão.
+---
 
-## 6) MVP recomendado
-- **Núcleo**: roteador de intents + um agente principal.
-- **Voz**: ASR local + TTS local.
-- **Memória**: histórico de conversa + notas rápidas (curto/médio prazo).
-- **Automação**: scripts aprovados e execução com confirmação.
+## 5) Segurança e Privacidade
+- Criptografia local (AES-GCM) para dados sensíveis
+- Segregação por usuário e dispositivo
+- Logs com níveis (mínimo / padrão / detalhado)
+- “Botão de pânico”: desativa automações e apaga sessão
 
-## 7) Critérios de sucesso
-- Latência de resposta < 2s para comandos comuns.
-- 95%+ de intents reconhecidas corretamente em cenários comuns.
-- Zero execução sem confirmação explícita.
+---
 
-## 8) Próximas ações sugeridas no código
-- Criar módulo `brain/` com registry de agentes.
-- Implementar pipeline de voz (ASR/TTS) isolado em worker.
-- Adicionar storage local para memória (SQLite + criptografia).
+## 6) MVP recomendado (entregável concreto)
+- **Brain** com Router de intents
+- **Voz**: ASR + TTS local
+- **Memória**: histórico local + notas rápidas
+- **Automação**: scripts aprovados e confirmação obrigatória
+
+---
+
+## 7) Próximas ações no código
+- Criar módulo `brain/` com registry de agentes
+- Criar serviço de voz (worker separado)
+- Criar camada de memória local (SQLite + criptografia)
+- Adicionar painel de permissões no front-end
