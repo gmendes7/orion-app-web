@@ -121,7 +121,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       error: 'Erro ao buscar notícias',
-      details: error.message,
+      details: (error as Error).message,
       fallback: 'Não foi possível obter as notícias no momento. Tente novamente em alguns instantes.'
     }), {
       status: 500,

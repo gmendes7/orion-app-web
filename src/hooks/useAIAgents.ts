@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface AIAgent {
   id: string;
@@ -16,7 +17,7 @@ export interface AIAgent {
   model: string;
   temperature: number;
   max_tokens: number;
-  tools: unknown[];
+  tools: Json | null;
   is_active: boolean;
   is_public: boolean;
   created_by: string | null;
@@ -79,12 +80,22 @@ export const useAIAgents = (): UseAIAgentsReturn => {
 
   const createAgent = useCallback(async (agent: Partial<AIAgent>): Promise<AIAgent | null> => {
     try {
+      const insertData = {
+        name: agent.name || 'New Agent',
+        system_prompt: agent.system_prompt || '',
+        type: agent.type || 'custom',
+        description: agent.description,
+        model: agent.model,
+        temperature: agent.temperature,
+        max_tokens: agent.max_tokens,
+        tools: agent.tools as Json,
+        is_active: agent.is_active,
+        is_public: agent.is_public,
+        created_by: null,
+      };
       const { data, error: insertError } = await supabase
         .from('ai_agents')
-        .insert({
-          ...agent,
-          created_by: null, // Single-user mode
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -103,9 +114,13 @@ export const useAIAgents = (): UseAIAgentsReturn => {
 
   const updateAgent = useCallback(async (id: string, updates: Partial<AIAgent>): Promise<boolean> => {
     try {
+      const safeUpdates: Record<string, unknown> = { ...updates };
+      if ('tools' in safeUpdates) {
+        safeUpdates.tools = safeUpdates.tools as Json;
+      }
       const { error: updateError } = await supabase
         .from('ai_agents')
-        .update(updates)
+        .update(safeUpdates as Parameters<typeof supabase.from<'ai_agents'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
         .eq('id', id);
 
       if (updateError) throw updateError;

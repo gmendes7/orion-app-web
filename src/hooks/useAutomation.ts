@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface AutomationTask {
   id: string;
@@ -9,9 +9,9 @@ export interface AutomationTask {
   name: string;
   description: string | null;
   trigger_type: 'schedule' | 'event' | 'webhook' | 'manual';
-  trigger_config: Record<string, unknown>;
+  trigger_config: Json | null;
   action_type: 'message' | 'api_call' | 'email' | 'notification' | 'custom';
-  action_config: Record<string, unknown>;
+  action_config: Json | null;
   is_active: boolean;
   last_run_at: string | null;
   next_run_at: string | null;
@@ -24,8 +24,8 @@ export interface TaskExecutionLog {
   id: string;
   task_id: string;
   status: 'pending' | 'running' | 'success' | 'failed' | 'cancelled';
-  input_data: Record<string, unknown> | null;
-  output_data: Record<string, unknown> | null;
+  input_data: Json | null;
+  output_data: Json | null;
   error_message: string | null;
   duration_ms: number | null;
   created_at: string;
@@ -47,7 +47,8 @@ export const useAutomation = (): UseAutomationReturn => {
   const [tasks, setTasks] = useState<AutomationTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  // Single-user mode - use a fixed user id
+  const user = { id: 'single-user' };
 
   const fetchTasks = useCallback(async () => {
     if (!user) {
@@ -89,12 +90,20 @@ export const useAutomation = (): UseAutomationReturn => {
     }
 
     try {
+      const insertData = {
+        name: task.name || 'New Task',
+        trigger_type: task.trigger_type || 'manual',
+        action_type: task.action_type || 'message',
+        description: task.description,
+        agent_id: task.agent_id,
+        trigger_config: task.trigger_config as Json,
+        action_config: task.action_config as Json,
+        is_active: task.is_active,
+        user_id: user.id,
+      };
       const { data, error: insertError } = await supabase
         .from('automation_tasks')
-        .insert({
-          ...task,
-          user_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -113,9 +122,12 @@ export const useAutomation = (): UseAutomationReturn => {
 
   const updateTask = useCallback(async (id: string, updates: Partial<AutomationTask>): Promise<boolean> => {
     try {
+      const safeUpdates = { ...updates } as Record<string, unknown>;
+      if ('trigger_config' in safeUpdates) safeUpdates.trigger_config = safeUpdates.trigger_config as Json;
+      if ('action_config' in safeUpdates) safeUpdates.action_config = safeUpdates.action_config as Json;
       const { error: updateError } = await supabase
         .from('automation_tasks')
-        .update(updates)
+        .update(safeUpdates as Parameters<typeof supabase.from<'automation_tasks'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
         .eq('id', id);
 
       if (updateError) throw updateError;

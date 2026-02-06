@@ -96,7 +96,9 @@ serve(async (req) => {
       .eq("api_key_id", apiKeyData.id)
       .gte("request_time", oneMinuteAgo);
 
-    const maxPerMinute = apiKeyData.user_subscriptions.subscription_plans.max_requests_per_minute;
+    const sub = (apiKeyData as any).user_subscriptions?.[0];
+    const plan = sub?.subscription_plans?.[0];
+    const maxPerMinute = plan?.max_requests_per_minute ?? 60;
     
     if (recentRequests && recentRequests.length >= maxPerMinute) {
       return new Response(
@@ -123,7 +125,7 @@ serve(async (req) => {
       .eq("user_id", apiKeyData.user_id)
       .gte("request_time", startOfMonth.toISOString());
 
-    const maxPerMonth = apiKeyData.user_subscriptions.subscription_plans.max_requests_per_month;
+    const maxPerMonth = plan?.max_requests_per_month ?? 10000;
 
     if (monthlyRequests && monthlyRequests.length >= maxPerMonth) {
       return new Response(
@@ -150,7 +152,7 @@ serve(async (req) => {
         valid: true,
         user_id: apiKeyData.user_id,
         api_key_id: apiKeyData.id,
-        tier: apiKeyData.user_subscriptions.tier,
+        tier: sub?.tier ?? 'free',
         requests_remaining: {
           per_minute: maxPerMinute - (recentRequests?.length || 0),
           per_month: maxPerMonth - (monthlyRequests?.length || 0),
