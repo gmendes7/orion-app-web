@@ -278,7 +278,7 @@ Responda sempre em português brasileiro (PT-BR) de forma natural, precisa e bem
     console.error("Erro na função agent-chat:", error);
     return new Response(
       JSON.stringify({
-        error: error.message || "Falha crítica do sistema",
+        error: (error as Error).message || "Falha crítica do sistema",
       }),
       {
         status: 500,

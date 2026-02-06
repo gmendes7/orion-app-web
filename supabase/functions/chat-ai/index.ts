@@ -256,7 +256,7 @@ Responda sempre em português brasileiro (PT-BR) de forma natural, precisa e bem
     console.error("Erro na função chat-ai:", error);
     return new Response(
       JSON.stringify({
-        error: error.message || "Falha crítica do sistema O.R.I.Ö.N",
+        error: (error as Error).message || "Falha crítica do sistema O.R.I.Ö.N",
         details:
           "Verifique se todos os protocolos de comunicação estão funcionais",
       }),

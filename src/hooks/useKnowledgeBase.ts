@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface KnowledgeItem {
   id: string;
@@ -9,7 +9,7 @@ export interface KnowledgeItem {
   content: string;
   source_type: 'document' | 'url' | 'manual' | 'api' | null;
   source_url: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Json | null;
   is_public: boolean;
   created_at: string;
   updated_at: string;
@@ -34,7 +34,8 @@ export const useKnowledgeBase = (): UseKnowledgeBaseReturn => {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  // Single-user mode
+  const user = { id: 'single-user' };
 
   const fetchItems = useCallback(async () => {
     if (!user) {
@@ -77,12 +78,18 @@ export const useKnowledgeBase = (): UseKnowledgeBaseReturn => {
 
     try {
       // Insert the knowledge item
+      const insertData = {
+        title: item.title || 'Untitled',
+        content: item.content || '',
+        source_type: item.source_type,
+        source_url: item.source_url,
+        metadata: item.metadata as Json,
+        is_public: item.is_public,
+        user_id: user.id,
+      };
       const { data, error: insertError } = await supabase
         .from('knowledge_base')
-        .insert({
-          ...item,
-          user_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -111,9 +118,11 @@ export const useKnowledgeBase = (): UseKnowledgeBaseReturn => {
 
   const updateKnowledge = useCallback(async (id: string, updates: Partial<KnowledgeItem>): Promise<boolean> => {
     try {
+      const safeUpdates = { ...updates } as Record<string, unknown>;
+      if ('metadata' in safeUpdates) safeUpdates.metadata = safeUpdates.metadata as Json;
       const { error: updateError } = await supabase
         .from('knowledge_base')
-        .update(updates)
+        .update(safeUpdates as Parameters<typeof supabase.from<'knowledge_base'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
         .eq('id', id);
 
       if (updateError) throw updateError;

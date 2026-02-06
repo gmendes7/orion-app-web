@@ -79,7 +79,7 @@ serve(async (req) => {
     console.error("❌ Erro na função generate-embedding:", error);
     return new Response(
       JSON.stringify({
-        error: error.message || "Erro ao gerar embedding",
+        error: (error as Error).message || "Erro ao gerar embedding",
       }),
       {
         status: 500,

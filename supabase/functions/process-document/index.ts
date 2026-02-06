@@ -107,7 +107,7 @@ serve(async (req) => {
         return { success: true, index };
       } catch (error) {
         console.error(`Error processing chunk ${index}:`, error);
-        return { success: false, index, error: error.message };
+        return { success: false, index, error: (error as Error).message };
       }
     });
 
@@ -131,7 +131,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Process document error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

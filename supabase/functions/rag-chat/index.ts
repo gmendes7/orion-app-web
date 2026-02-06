@@ -68,7 +68,7 @@ serve(async (req) => {
       throw new Error('Context search failed');
     }
 
-    const relevantContext = searchResults?.map(result => result.chunk_content).join('\n\n') || '';
+    const relevantContext = searchResults?.map((result: { chunk_content: string }) => result.chunk_content).join('\n\n') || '';
     
     console.log(`Found ${searchResults?.length || 0} relevant chunks for context`);
 
@@ -121,7 +121,7 @@ Se a pergunta não puder ser respondida com o contexto fornecido, informe isso c
         success: true,
         response: assistantResponse,
         context_chunks_used: searchResults?.length || 0,
-        sources: searchResults?.map(result => ({
+        sources: searchResults?.map((result: { document_id: string; document_title: string; similarity_score: number }) => ({
           document_id: result.document_id,
           document_title: result.document_title,
           similarity_score: result.similarity_score
@@ -133,7 +133,7 @@ Se a pergunta não puder ser respondida com o contexto fornecido, informe isso c
   } catch (error) {
     console.error('RAG chat error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
