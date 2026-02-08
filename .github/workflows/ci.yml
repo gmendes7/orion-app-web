@@ -1,26 +1,4 @@
 name: CI
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-on: [push, pull_request]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: node-version: 20
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test --if-present
-      - run: npm run build
-      - name: Secret Scan (optional)
-        uses: github/codeql-action/analyze@v2
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 on:
   push:
@@ -51,6 +29,21 @@ jobs:
           fi
 
   node:
+    name: Node CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test --if-present
+      - run: npm run build
+      - name: Secret Scan (optional)
+        uses: github/codeql-action/analyze@v2
+
+  node-gateway:
     name: Node Gateway CI
     runs-on: ubuntu-latest
     steps:
@@ -97,10 +90,3 @@ jobs:
           if [ -f build/libvalidate_c.so ]; then echo "libvalidate_c.so built"; else echo "lib not found"; exit 1; fi
           # run a small smoke test for the library
           ls -la build
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes

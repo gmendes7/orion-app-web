@@ -1,78 +1,64 @@
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
->>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
-# 🚀 Plano Completo de Melhorias - O.R.I.O.N.X
+﻿# ðŸš€ Plano Completo de Melhorias - O.R.I.O.N.X
 
-**Projeto:** O.R.I.O.N.X - Assistente de Inteligência Artificial  
-**Desenvolvedor:** Gabriel Mendes Lourenço, 18 anos - UNIDERP  
+**Projeto:** O.R.I.O.N.X - Assistente de InteligÃªncia Artificial  
+**Desenvolvedor:** Gabriel Mendes LourenÃ§o, 18 anos - UNIDERP  
 **Tempo de Desenvolvimento:** ~6 meses  
 
-## ✅ Melhorias Implementadas
+## âœ… Melhorias Implementadas
 
 ### 1. **Responsividade Mobile Completa**
-- ✅ Breakpoints otimizados (320px, 640px, 768px, 1024px, 1280px)
-- ✅ Textos e botões dimensionados responsivamente
-- ✅ Sidebar adaptativa com largura variável
-- ✅ Header compacto em dispositivos móveis
-- ✅ Mensagens com max-width responsivo
-- ✅ Input de chat otimizado para todos os tamanhos
+- âœ… Breakpoints otimizados (320px, 640px, 768px, 1024px, 1280px)
+- âœ… Textos e botÃµes dimensionados responsivamente
+- âœ… Sidebar adaptativa com largura variÃ¡vel
+- âœ… Header compacto em dispositivos mÃ³veis
+- âœ… Mensagens com max-width responsivo
+- âœ… Input de chat otimizado para todos os tamanhos
 
-### 2. **Próximas Etapas Sugeridas**
+### 2. **PrÃ³ximas Etapas Sugeridas**
 
 #### Arquitetura e Escalabilidade
 - [ ] Implementar cache Redis para performance
 - [ ] Configurar CDN (Cloudflare/Vercel)
 - [ ] Auto-scaling com monitoramento
-- [ ] Backup automatizado diário
+- [ ] Backup automatizado diÃ¡rio
 
-#### Segurança
+#### SeguranÃ§a
 - [ ] Criptografia end-to-end
 - [ ] Azure Key Vault para secrets
 - [ ] Conformidade LGPD completa
-- [ ] Rate limiting avançado
+- [ ] Rate limiting avanÃ§ado
 
-#### Automação N8N
+#### AutomaÃ§Ã£o N8N
 - [ ] Workflow de monitoramento
-- [ ] Processamento de imagens automático
+- [ ] Processamento de imagens automÃ¡tico
 - [ ] Alertas em tempo real
 - [ ] Backup automatizado
 
 #### Landing Page
-- [ ] Página "Como funciona a O.R.I.O.N.X"
-- [ ] Seção de recursos principais
-- [ ] Informações do criador
+- [ ] PÃ¡gina "Como funciona a O.R.I.O.N.X"
+- [ ] SeÃ§Ã£o de recursos principais
+- [ ] InformaÃ§Ãµes do criador
 - [ ] Tech stack visual
 
-**Status Atual:** Responsividade mobile otimizada ✅
-<<<<<<< HEAD
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
-# Proposta de arquitetura — Projeto ORION
+**Status Atual:** Responsividade mobile otimizada âœ…
+# Proposta de arquitetura â€” Projeto ORION
 
-Resumo rápido
+Resumo rÃ¡pido
 
 - Linguagem principal: Python (ML e backend via Django + DRF).
-- Componentes nativos para segurança/performance: Rust e C++ (criptografia e validação).
-- Integração Node.js: gateway para comunicações com sistemas externos (ex.: interface da Câmara).
-- Infra: AWS (serviços gerenciados) + edge computing para processamento sensível localmente.
+- Componentes nativos para seguranÃ§a/performance: Rust e C++ (criptografia e validaÃ§Ã£o).
+- IntegraÃ§Ã£o Node.js: gateway para comunicaÃ§Ãµes com sistemas externos (ex.: interface da CÃ¢mara).
+- Infra: AWS (serviÃ§os gerenciados) + edge computing para processamento sensÃ­vel localmente.
 
-Estrutura proposta (diretório)
+Estrutura proposta (diretÃ³rio)
 
 - backend/
-  - python/ # scripts, pipelines e utilitários ML
+  - python/ # scripts, pipelines e utilitÃ¡rios ML
   - drf/ # Django + DRF app (API, serializadores, views)
-  - node-integration/ # Node.js gateway para serviços externos
+  - node-integration/ # Node.js gateway para serviÃ§os externos
 - libs/
   - rust/crypto/ # bibliotecas Rust para criptografia, FFI
-  - cpp/validation/ # C++ para validação de dados/assinaturas
+  - cpp/validation/ # C++ para validaÃ§Ã£o de dados/assinaturas
 - infra/
   - aws/ # Cloud infra as code (terraform / cloudformation)
   - edge/ # scripts e imagens para edge devices
@@ -81,7 +67,7 @@ Estrutura proposta (diretório)
 - scripts/
   - deploy.sh
 
-Dependências principais recomendadas
+DependÃªncias principais recomendadas
 
 1. Python / ML
 
@@ -89,7 +75,7 @@ Dependências principais recomendadas
 - scikit-learn
 - pandas
 - numpy
-- joblib (serialização de modelos)
+- joblib (serializaÃ§Ã£o de modelos)
 - sqlalchemy / psycopg2-binary (acesso ao DB)
 
 2. Django + DRF
@@ -103,10 +89,10 @@ Dependências principais recomendadas
 3. Rust (crypto)
 
 - ring (para primitives AEAD)
-- serde + serde_json (serialização)
+- serde + serde_json (serializaÃ§Ã£o)
 - thiserror (erros)
 
-4. C++ (validação)
+4. C++ (validaÃ§Ã£o)
 
 - libsodium (crypto e assinaturas)
 - abseil / fmt (apoiar utilidades)
@@ -122,16 +108,16 @@ Dependências principais recomendadas
 - terraform (IaC)
 - AWS: EKS/ECS, RDS (Postgres), S3, KMS, Lambda, CloudWatch, API Gateway
 
-Segurança e performance (alto nível)
+SeguranÃ§a e performance (alto nÃ­vel)
 
-- Criptografia em reposição: usar KMS (AWS) para chave de alto-nível; derivar chaves locais para edge.
-- Funções críticas em Rust (compiladas para WASM para rodar no edge quando possível) e C++ (para integração nativa).
+- Criptografia em reposiÃ§Ã£o: usar KMS (AWS) para chave de alto-nÃ­vel; derivar chaves locais para edge.
+- FunÃ§Ãµes crÃ­ticas em Rust (compiladas para WASM para rodar no edge quando possÃ­vel) e C++ (para integraÃ§Ã£o nativa).
 - Logs: coletar logs em local, criptografar (AES-GCM) antes de enviar para cloud. Chaves de transporte via KMS.
-- Isolamento de dados sensíveis: micro-serviços dedicados e encriptação at-rest (RDS + S3). Audit logs imutáveis.
+- Isolamento de dados sensÃ­veis: micro-serviÃ§os dedicados e encriptaÃ§Ã£o at-rest (RDS + S3). Audit logs imutÃ¡veis.
 
-Exemplos rápidos de código (snippets)
+Exemplos rÃ¡pidos de cÃ³digo (snippets)
 
-1. Python — pipeline ML (TensorFlow e scikit-learn)
+1. Python â€” pipeline ML (TensorFlow e scikit-learn)
 
 ```python
 # backend/python/example_ml.py
@@ -174,7 +160,7 @@ def train_tf(df: pd.DataFrame):
     return model
 ```
 
-2. Node.js — gateway pequeno para interface externa
+2. Node.js â€” gateway pequeno para interface externa
 
 ```js
 // backend/node-integration/gateway.js
@@ -185,7 +171,7 @@ app.use(express.json());
 
 app.post("/forward-vote", async (req, res) => {
   const votePayload = req.body;
-  // aplicar validações leves
+  // aplicar validaÃ§Ãµes leves
   try {
     const resp = await fetch("https://camera.example/api/submit", {
       method: "POST",
@@ -203,7 +189,7 @@ app.post("/forward-vote", async (req, res) => {
 app.listen(3000);
 ```
 
-3. C++ — validação com libsodium (verificação de assinatura)
+3. C++ â€” validaÃ§Ã£o com libsodium (verificaÃ§Ã£o de assinatura)
 
 ```cpp
 // libs/cpp/validation/verify.cpp (exemplo)
@@ -216,7 +202,7 @@ bool verify_signature(const std::string &message, const std::string &sig, const 
 }
 ```
 
-4. Rust — exemplo AES-GCM (ring) simplificado
+4. Rust â€” exemplo AES-GCM (ring) simplificado
 
 ```rust
 // libs/rust/crypto/src/lib.rs
@@ -231,26 +217,17 @@ pub fn encrypt(key_bytes: &[u8;32], nonce_bytes: &[u8;12], plaintext: &mut Vec<u
 }
 ```
 
-Arquitetura infra — alto nível
+Arquitetura infra â€” alto nÃ­vel
 
-- Ingestão: edge devices capturam dados e executam validação/anonimização localmente (WASM/Rust ou C++). Dados sensíveis só saem criptografados.
+- IngestÃ£o: edge devices capturam dados e executam validaÃ§Ã£o/anonimizaÃ§Ã£o localmente (WASM/Rust ou C++). Dados sensÃ­veis sÃ³ saem criptografados.
 - Pipeline: cargas em S3 (encrypted), processamento batch/stream em ECS/EKS com worker pools.
 - Banco: RDS(Postgres) com encryption at rest + read replicas.
-- Model serving: SageMaker / ECS + REST endpoints (TF model servido via TensorFlow Serving / TorchServe) para previsões em baixa latência.
+- Model serving: SageMaker / ECS + REST endpoints (TF model servido via TensorFlow Serving / TorchServe) para previsÃµes em baixa latÃªncia.
 - Observability: CloudWatch + Grafana, logs criptografados e audit trail.
 
-Próximos passos que eu posso executar aqui
+PrÃ³ximos passos que eu posso executar aqui
 
-- Criar skeletons de código/arquivos (posso adicionar exemplos no repositório). ✔️ (vou criar exemplos mínimos)
+- Criar skeletons de cÃ³digo/arquivos (posso adicionar exemplos no repositÃ³rio). âœ”ï¸ (vou criar exemplos mÃ­nimos)
 - Gerar templates Terraform para infra AWS (opcional).
 - Criar Dockerfiles e workflow CI para build/test.
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> 534f3205cfe376ada3b5e8bd024e7a9dfb63c30e
+

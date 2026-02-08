@@ -49,21 +49,22 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get("OPENWEATHER_API_KEY");
     if (!apiKey) {
-      throw new Error("OPENWEATHER_API_KEY não configurada");
+      throw new Error("OPENWEATHER_API_KEY nÃ£o configurada");
     }
 
     let url = "";
     const baseUrl = "https://api.openweathermap.org/data/2.5";
 
+    // Determinar coordenadas ou cidade
     if (lat && lon) {
       url = `${baseUrl}/${type === "forecast" ? "forecast" : "weather"}?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
     } else if (city) {
       url = `${baseUrl}/${type === "forecast" ? "forecast" : "weather"}?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric&lang=pt_br`;
     } else {
-      throw new Error("É necessário fornecer cidade ou coordenadas (lat, lon)");
+      throw new Error("Ã‰ necessÃ¡rio fornecer cidade ou coordenadas (lat, lon)");
     }
 
-    console.log(`🌤️ Buscando ${type} para: ${city || `${lat}, ${lon}`}`);
+    console.log(`ðŸŒ¤ï¸ Buscando ${type} para: ${type || `${lat}, ${lon}`}`);
 
     const response = await safeFetch(url);
 
@@ -74,6 +75,7 @@ serve(async (req) => {
 
     const data = await response.json();
 
+    // Formatar resposta baseada no tipo
     let result;
 
     if (type === "current") {
@@ -102,6 +104,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString(),
       };
     } else {
+      // Forecast
       const forecasts = data.list.slice(0, days * 8).map((item: any) => ({
         date: new Date(item.dt * 1000).toLocaleDateString("pt-BR"),
         time: new Date(item.dt * 1000).toLocaleTimeString("pt-BR"),
@@ -125,19 +128,20 @@ serve(async (req) => {
       };
     }
 
-    console.log("✅ Dados meteorológicos obtidos com sucesso");
+    console.log("âœ… Dados meteorolÃ³gicos obtidos com sucesso");
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("❌ Erro na função weather-api:", error);
+    console.error("âŒ Erro na funÃ§Ã£o weather-api:", error);
 
     return new Response(
       JSON.stringify({
-        error: "Erro ao obter dados meteorológicos",
-        details: (error as Error).message,
-        fallback: "Não foi possível obter os dados meteorológicos no momento.",
+        error: "Erro ao obter dados meteorolÃ³gicos",
+        details: error.message,
+        fallback:
+          "NÃ£o foi possÃ­vel obter os dados meteorolÃ³gicos no momento. Verifique se a cidade foi digitada corretamente.",
       }),
       {
         status: 500,
