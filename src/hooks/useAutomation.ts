@@ -127,7 +127,7 @@ export const useAutomation = (): UseAutomationReturn => {
       if ('action_config' in safeUpdates) safeUpdates.action_config = safeUpdates.action_config as Json;
       const { error: updateError } = await supabase
         .from('automation_tasks')
-        .update(safeUpdates as Parameters<typeof supabase.from<'automation_tasks'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
+        .update(safeUpdates as any)
         .eq('id', id);
 
       if (updateError) throw updateError;

@@ -120,7 +120,7 @@ export const useAIAgents = (): UseAIAgentsReturn => {
       }
       const { error: updateError } = await supabase
         .from('ai_agents')
-        .update(safeUpdates as Parameters<typeof supabase.from<'ai_agents'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
+        .update(safeUpdates as any)
         .eq('id', id);
 
       if (updateError) throw updateError;
