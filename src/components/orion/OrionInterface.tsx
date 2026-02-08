@@ -3,15 +3,15 @@
  * 
  * Interface imersiva, cinematográfica e futurista.
  * Foco em: Olho central, voz, sensorial.
- * 
- * SEM elementos tradicionais de dashboard.
+ * Voz natural com ElevenLabs TTS.
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useJarvis } from "@/contexts/JarvisContext";
 import { useLocalChatStore } from "@/hooks/useLocalChatStore";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
+import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 
@@ -25,6 +25,7 @@ import { TranscriptDisplay } from "./TranscriptDisplay";
 export const OrionInterface = () => {
   const { toast } = useToast();
   const jarvis = useJarvis();
+  const prevMessagesLenRef = useRef(0);
   
   const {
     initialize,
@@ -41,6 +42,23 @@ export const OrionInterface = () => {
   const [orionState, setOrionState] = useState<OrionState>("idle");
   const [audioLevel, setAudioLevel] = useState(0);
   const [showTranscript, setShowTranscript] = useState(false);
+
+  // ElevenLabs TTS - voz natural
+  const tts = useElevenLabsTTS({
+    onStart: () => {
+      setOrionState("speaking");
+      console.log("🔊 ORION está falando...");
+    },
+    onEnd: () => {
+      if (!voiceAssistant.isListening) {
+        setOrionState("idle");
+      }
+      console.log("🔊 ORION terminou de falar");
+    },
+    onError: (error) => {
+      console.warn("⚠️ TTS Error:", error);
+    },
+  });
 
   // Voice assistant
   const voiceAssistant = useVoiceAssistant({
@@ -90,20 +108,20 @@ export const OrionInterface = () => {
   useEffect(() => {
     if (isTyping || isStreaming) {
       setOrionState("thinking");
+    } else if (tts.isSpeaking || tts.isLoading) {
+      setOrionState("speaking");
     } else if (voiceAssistant.isListening) {
       setOrionState("listening");
-    } else if (voiceAssistant.isSpeaking) {
-      setOrionState("speaking");
     } else if (camera.isAnalyzing) {
       setOrionState("analyzing");
     } else {
       setOrionState("idle");
     }
-  }, [isTyping, isStreaming, voiceAssistant.isListening, voiceAssistant.isSpeaking, camera.isAnalyzing]);
+  }, [isTyping, isStreaming, voiceAssistant.isListening, tts.isSpeaking, tts.isLoading, camera.isAnalyzing]);
 
-  // Simular nível de áudio (em produção, usar Web Audio API real)
+  // Simular nível de áudio
   useEffect(() => {
-    if (voiceAssistant.isListening || voiceAssistant.isSpeaking) {
+    if (voiceAssistant.isListening || tts.isSpeaking) {
       const interval = setInterval(() => {
         setAudioLevel(Math.random() * 0.5 + 0.3);
       }, 100);
@@ -111,21 +129,44 @@ export const OrionInterface = () => {
     } else {
       setAudioLevel(0.1);
     }
-  }, [voiceAssistant.isListening, voiceAssistant.isSpeaking]);
+  }, [voiceAssistant.isListening, tts.isSpeaking]);
+
+  // 🔊 Auto-speak AI responses with ElevenLabs
+  useEffect(() => {
+    if (!audioEnabled) return;
+    if (messages.length <= prevMessagesLenRef.current) {
+      prevMessagesLenRef.current = messages.length;
+      return;
+    }
+    prevMessagesLenRef.current = messages.length;
+
+    // Get the last message
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.isUser) return;
+
+    // Don't speak welcome messages or error messages
+    if (lastMsg.id === "welcome" || lastMsg.text.startsWith("⚠️")) return;
+
+    // Speak the AI response
+    console.log("🔊 Auto-speaking AI response...");
+    tts.speak(lastMsg.text);
+  }, [messages, audioEnabled, tts]);
 
   // Handlers
   const handleSendMessage = useCallback((msg: string) => {
+    // Stop speaking if ORION is talking
+    tts.stop();
     jarvis.addToRecentTopics(msg.split(" ")[0]);
     const systemPrompt = jarvis.getSystemPrompt();
     sendMessage(msg, systemPrompt);
     setShowTranscript(true);
-  }, [jarvis, sendMessage]);
+  }, [jarvis, sendMessage, tts]);
 
   const handleVoiceCommand = useCallback((command: string) => {
     switch (command) {
       case "stop":
         stopStreaming();
-        voiceAssistant.stopSpeaking();
+        tts.stop();
         break;
       case "analyze_screen":
         camera.requestCamera();
@@ -133,7 +174,7 @@ export const OrionInterface = () => {
       default:
         break;
     }
-  }, [stopStreaming, voiceAssistant, camera]);
+  }, [stopStreaming, tts, camera]);
 
   const handleEyeClick = useCallback(() => {
     if (voiceAssistant.isListening) {
@@ -229,7 +270,7 @@ export const OrionInterface = () => {
 
           {/* Waveform de voz */}
           <AnimatePresence>
-            {(voiceAssistant.isListening || voiceAssistant.isSpeaking || isStreaming) && (
+            {(voiceAssistant.isListening || tts.isSpeaking || isStreaming) && (
               <motion.div
                 className="w-full h-24"
                 initial={{ opacity: 0, scaleY: 0 }}
@@ -238,9 +279,9 @@ export const OrionInterface = () => {
                 transition={{ duration: 0.3 }}
               >
                 <VoiceWaveform
-                  isActive={voiceAssistant.isListening || voiceAssistant.isSpeaking || isStreaming}
+                  isActive={voiceAssistant.isListening || tts.isSpeaking || isStreaming}
                   audioLevel={audioLevel}
-                  isSpeaking={voiceAssistant.isSpeaking || isStreaming}
+                  isSpeaking={tts.isSpeaking || isStreaming}
                   isListening={voiceAssistant.isListening}
                   className="w-full h-full rounded-2xl"
                 />
