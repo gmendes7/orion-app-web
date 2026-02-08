@@ -122,7 +122,7 @@ export const useKnowledgeBase = (): UseKnowledgeBaseReturn => {
       if ('metadata' in safeUpdates) safeUpdates.metadata = safeUpdates.metadata as Json;
       const { error: updateError } = await supabase
         .from('knowledge_base')
-        .update(safeUpdates as Parameters<typeof supabase.from<'knowledge_base'>>[0] extends { update: (v: infer U) => unknown } ? U : never)
+        .update(safeUpdates as any)
         .eq('id', id);
 
       if (updateError) throw updateError;

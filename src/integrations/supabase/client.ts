@@ -1,23 +1,11 @@
-// Supabase client wrapper - reads runtime config from Vite env variables.
-// Do NOT commit your real keys. Add them to a local .env file (see .env.example).
+// Supabase client — uses hardcoded project values (publishable/anon key is safe for client)
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// Vite exposes env vars prefixed with VITE_ via import.meta.env
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) || "";
+const SUPABASE_URL = "https://wcwwqfiolxcluyuhmxxf.supabase.co";
 const SUPABASE_ANON_KEY =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  // In dev we want a clear error if envs are missing but avoid throwing during
-  // static analysis in some tools - use console.warn.
-  // Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env.local
-  console.warn(
-    "[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not defined. Configure .env.local based on .env.example"
-  );
-}
-
-// Use localStorage only in browser environments
 const authOptions =
   typeof window !== "undefined" && typeof localStorage !== "undefined"
     ? {
@@ -34,6 +22,3 @@ export const supabase = createClient<Database>(
   SUPABASE_ANON_KEY,
   authOptions
 );
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";

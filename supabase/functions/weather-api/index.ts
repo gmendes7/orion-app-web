@@ -139,7 +139,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: "Erro ao obter dados meteorolÃ³gicos",
-        details: error.message,
+        details: (error as Error).message,
         fallback:
           "NÃ£o foi possÃ­vel obter os dados meteorolÃ³gicos no momento. Verifique se a cidade foi digitada corretamente.",
       }),
