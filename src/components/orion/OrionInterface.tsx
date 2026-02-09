@@ -136,7 +136,11 @@ export const OrionInterface = () => {
   }));
 
   return (
-    <div className="relative w-full h-[100dvh] bg-orion-void overflow-hidden">
+    <div
+      className={`relative w-full h-[100dvh] bg-orion-void overflow-hidden transition-all duration-500 ease-out ${
+        device.isOrientationChanging ? "opacity-90 scale-[0.98]" : "opacity-100 scale-100"
+      }`}
+    >
       {/* Particles - reduced on mobile */}
       {device.showParticles && (
         <ParticleField

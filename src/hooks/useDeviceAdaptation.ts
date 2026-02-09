@@ -5,7 +5,7 @@
  * to adapt ORION's interface in real-time.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export type DeviceType = "mobile" | "tablet" | "desktop";
 export type Orientation = "portrait" | "landscape";
@@ -21,6 +21,7 @@ interface DeviceAdaptation {
   eyeSize: "sm" | "md" | "lg" | "xl";
   showParticles: boolean;
   reducedMotion: boolean;
+  isOrientationChanging: boolean;
 }
 
 export function useDeviceAdaptation(): DeviceAdaptation {
@@ -37,44 +38,53 @@ export function useDeviceAdaptation(): DeviceAdaptation {
 
   const [deviceType, setDeviceType] = useState<DeviceType>(getDeviceType);
   const [orientation, setOrientation] = useState<Orientation>(getOrientation);
+  const [isOrientationChanging, setIsOrientationChanging] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Check for reduced motion preference
   const reducedMotion = typeof window !== "undefined"
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
 
-  // Simple GPU capability check
   const isLowPerformance = typeof navigator !== "undefined"
     ? (navigator.hardwareConcurrency ?? 4) <= 2
     : false;
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleChange = () => {
+      const newOrientation = getOrientation();
+      const prevOrientation = orientation;
+
       setDeviceType(getDeviceType());
-      setOrientation(getOrientation());
+
+      if (newOrientation !== prevOrientation) {
+        setIsOrientationChanging(true);
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => setIsOrientationChanging(false), 500);
+      }
+
+      setOrientation(newOrientation);
     };
 
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
+    window.addEventListener("resize", handleChange);
+    window.addEventListener("orientationchange", handleChange);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("resize", handleChange);
+      window.removeEventListener("orientationchange", handleChange);
+      clearTimeout(timeoutRef.current);
     };
-  }, [getDeviceType, getOrientation]);
+  }, [getDeviceType, getOrientation, orientation]);
 
   const isMobile = deviceType === "mobile";
   const isTablet = deviceType === "tablet";
   const isDesktop = deviceType === "desktop";
 
-  // Adaptive settings
   const particleCount = isLowPerformance || reducedMotion ? 0 
     : isMobile ? 25 
     : isTablet ? 40 
     : 80;
 
   const eyeSize: DeviceAdaptation["eyeSize"] = isMobile ? "md" : isTablet ? "lg" : "xl";
-
   const showParticles = !reducedMotion && !isLowPerformance;
 
   return {
@@ -88,5 +98,6 @@ export function useDeviceAdaptation(): DeviceAdaptation {
     eyeSize,
     showParticles,
     reducedMotion,
+    isOrientationChanging,
   };
 }
