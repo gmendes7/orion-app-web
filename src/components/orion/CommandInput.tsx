@@ -51,7 +51,7 @@ export const CommandInput = ({
       transition={{ delay: 0.5 }}
     >
       {/* Container principal */}
-      <div className="relative flex items-center gap-2 px-4 py-3 rounded-2xl bg-card/30 backdrop-blur-xl border border-orion-stellar-gold/20">
+      <div className="relative flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 rounded-xl md:rounded-2xl bg-card/30 backdrop-blur-xl border border-orion-stellar-gold/20">
         {/* Botão de voz */}
         <motion.button
           onClick={onVoiceToggle}
