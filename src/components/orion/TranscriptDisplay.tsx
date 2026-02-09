@@ -49,7 +49,7 @@ export const TranscriptDisplay = ({
       {/* Container com scroll */}
       <div
         ref={scrollRef}
-        className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-orion-stellar-gold/20 scrollbar-track-transparent"
+        className="max-h-32 md:max-h-48 overflow-y-auto scroll-touch scrollbar-thin scrollbar-thumb-orion-stellar-gold/20 scrollbar-track-transparent"
       >
         <AnimatePresence mode="popLayout">
           {messages.slice(-5).map((message) => (

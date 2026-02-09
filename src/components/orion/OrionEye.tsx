@@ -32,10 +32,10 @@ interface OrionEyeProps {
 }
 
 const sizeClasses = {
-  sm: "w-32 h-32",
-  md: "w-48 h-48",
-  lg: "w-64 h-64",
-  xl: "w-80 h-80",
+  sm: "w-28 h-28 xs:w-32 xs:h-32",
+  md: "w-36 h-36 xs:w-40 xs:h-40 sm:w-48 sm:h-48",
+  lg: "w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64",
+  xl: "w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80",
 };
 
 // Cores por estado (HSL para consistência com tema)

@@ -10,4 +10,5 @@ export { ParticleField } from "./ParticleField";
 export { StatusIndicator } from "./StatusIndicator";
 export { CommandInput } from "./CommandInput";
 export { TranscriptDisplay } from "./TranscriptDisplay";
+export { CameraOverlay } from "./CameraOverlay";
 export { OrionInterface } from "./OrionInterface";
