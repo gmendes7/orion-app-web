@@ -1,20 +1,17 @@
 /**
- * 🎵 VoiceWaveform - Onda Sonora Visual
+ * 🎵 VoiceWaveform - Visualização Orgânica de Áudio
  * 
- * Visualização de áudio estilo radar/osciloscópio.
- * Cor dourada, fundo escuro, animações suaves.
- * 
- * Reage em tempo real à voz do usuário e da IA.
+ * Anéis circulares dinâmicos, partículas e pulso de energia.
+ * Parece consciência, não equalizador.
  */
 
-import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface VoiceWaveformProps {
   isActive: boolean;
-  audioLevel?: number; // 0-1
-  isSpeaking?: boolean; // IA está falando
-  isListening?: boolean; // Usuário está falando
+  audioLevel?: number;
+  isSpeaking?: boolean;
+  isListening?: boolean;
   className?: string;
 }
 
@@ -27,101 +24,122 @@ export const VoiceWaveform = ({
 }: VoiceWaveformProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const [bars] = useState<number[]>(Array(64).fill(0));
-  const barsRef = useRef(bars);
-
-  // Cor baseada no estado
-  const getColor = () => {
-    if (isSpeaking) return { r: 255, g: 200, b: 50 };  // Dourado brilhante
-    if (isListening) return { r: 255, g: 215, b: 0 };  // Amarelo
-    return { r: 180, g: 140, b: 50 }; // Dourado escuro (idle)
-  };
+  const particlesRef = useRef<Array<{ angle: number; radius: number; speed: number; size: number; alpha: number }>>([]);
 
   useEffect(() => {
+    // Initialize particles
+    if (particlesRef.current.length === 0) {
+      particlesRef.current = Array.from({ length: 40 }, () => ({
+        angle: Math.random() * Math.PI * 2,
+        radius: 30 + Math.random() * 60,
+        speed: 0.005 + Math.random() * 0.015,
+        size: 1 + Math.random() * 2,
+        alpha: 0.3 + Math.random() * 0.7,
+      }));
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     resize();
     window.addEventListener("resize", resize);
 
+    const getColor = () => {
+      if (isSpeaking) return { r: 255, g: 200, b: 50 };
+      if (isListening) return { r: 255, g: 215, b: 0 };
+      return { r: 180, g: 140, b: 50 };
+    };
+
     const draw = () => {
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-      const centerY = height / 2;
-      const barWidth = width / barsRef.current.length;
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      const cx = w / 2;
+      const cy = h / 2;
       const color = getColor();
+      const time = Date.now() / 1000;
+      const baseRadius = Math.min(cx, cy) * 0.35;
+      const level = isActive ? audioLevel : 0.05;
 
-      // Limpar canvas com fade
-      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-      ctx.fillRect(0, 0, width, height);
+      // Clear with fade
+      ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(0, 0, w, h);
 
-      // Linha central
-      ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.2)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-
-      // Desenhar barras
-      barsRef.current.forEach((value, i) => {
-        // Atualizar valor com suavização
-        const targetValue = isActive 
-          ? Math.random() * audioLevel * 100 + (audioLevel * 20)
-          : Math.random() * 5;
-        
-        barsRef.current[i] = barsRef.current[i] * 0.85 + targetValue * 0.15;
-
-        const barHeight = barsRef.current[i];
-        const x = i * barWidth;
-        
-        // Gradiente para cada barra
-        const gradient = ctx.createLinearGradient(x, centerY - barHeight, x, centerY + barHeight);
-        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.8 + (audioLevel * 0.2)})`);
-        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(x, centerY - barHeight, barWidth - 1, barHeight * 2);
-
-        // Glow effect
-        if (isActive && barHeight > 30) {
-          ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
-          ctx.shadowBlur = 10;
-          ctx.fillRect(x, centerY - barHeight * 0.5, barWidth - 1, barHeight);
-          ctx.shadowBlur = 0;
-        }
-      });
-
-      // Linha de onda senoidal sobre as barras
+      // Outer glow
       if (isActive) {
-        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
-        ctx.lineWidth = 2;
+        const glowGrad = ctx.createRadialGradient(cx, cy, baseRadius * 0.5, cx, cy, baseRadius * 2.5);
+        glowGrad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.08 * level})`);
+        glowGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Dynamic rings (3 concentric)
+      for (let ring = 0; ring < 3; ring++) {
+        const ringRadius = baseRadius * (0.6 + ring * 0.5) + Math.sin(time * (2 - ring * 0.3)) * level * 15;
+        const segments = 128;
+        const ringAlpha = (0.6 - ring * 0.15) * (0.4 + level);
+
         ctx.beginPath();
-        
-        const time = Date.now() / 1000;
-        for (let x = 0; x < width; x++) {
-          const y = centerY + 
-            Math.sin(x * 0.02 + time * 3) * (audioLevel * 30) +
-            Math.sin(x * 0.05 + time * 5) * (audioLevel * 15);
-          
-          if (x === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * Math.PI * 2;
+          const wobble =
+            Math.sin(angle * 3 + time * (3 + ring)) * level * 12 +
+            Math.sin(angle * 7 - time * 2) * level * 6 +
+            Math.sin(angle * 5 + time * 4) * level * 4;
+          const r = ringRadius + wobble;
+          const x = cx + Math.cos(angle) * r;
+          const y = cy + Math.sin(angle) * r;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${ringAlpha})`;
+        ctx.lineWidth = 1.5 - ring * 0.3;
         ctx.stroke();
       }
+
+      // Energy pulse (expanding circle)
+      if (isActive) {
+        const pulsePhase = (time * 1.5) % 1;
+        const pulseRadius = baseRadius * (0.8 + pulsePhase * 1.2);
+        const pulseAlpha = (1 - pulsePhase) * 0.3 * level;
+        ctx.beginPath();
+        ctx.arc(cx, cy, pulseRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${pulseAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Orbiting particles
+      particlesRef.current.forEach((p) => {
+        p.angle += p.speed * (1 + level * 2);
+        const pRadius = p.radius * (1 + level * 0.4 + Math.sin(time * 2 + p.angle * 3) * 0.1);
+        const px = cx + Math.cos(p.angle) * pRadius;
+        const py = cy + Math.sin(p.angle) * pRadius;
+        const pAlpha = p.alpha * (0.3 + level * 0.7);
+
+        ctx.beginPath();
+        ctx.arc(px, py, p.size * (1 + level * 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${pAlpha})`;
+        ctx.fill();
+      });
+
+      // Core glow
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 0.4);
+      coreGrad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${0.15 + level * 0.25})`);
+      coreGrad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, baseRadius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
 
       animationRef.current = requestAnimationFrame(draw);
     };
@@ -130,44 +148,17 @@ export const VoiceWaveform = ({
 
     return () => {
       window.removeEventListener("resize", resize);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [isActive, audioLevel, isSpeaking, isListening]);
 
   return (
     <div className={`relative ${className}`}>
-      {/* Background com gradiente */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orion-stellar-gold/5 to-transparent" />
-      
-      {/* Canvas da waveform */}
       <canvas
         ref={canvasRef}
         className="w-full h-full"
         style={{ background: "transparent" }}
       />
-
-      {/* Bordas com glow */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          boxShadow: isActive 
-            ? "inset 0 0 30px rgba(255, 200, 50, 0.2)" 
-            : "none",
-        }}
-        animate={{
-          opacity: isActive ? [0.5, 1, 0.5] : 0.2,
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-        }}
-      />
-
-      {/* Indicadores laterais */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-orion-stellar-gold/50 to-transparent" />
-      <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-orion-stellar-gold/50 to-transparent" />
     </div>
   );
 };
