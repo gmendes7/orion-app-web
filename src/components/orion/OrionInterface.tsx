@@ -23,6 +23,7 @@ import { StatusIndicator } from "./StatusIndicator";
 import { CommandInput } from "./CommandInput";
 import { TranscriptDisplay } from "./TranscriptDisplay";
 import { CameraOverlay } from "./CameraOverlay";
+import SpaceBackground from "@/components/SpaceBackground";
 
 export const OrionInterface = () => {
   const { toast } = useToast();
@@ -141,7 +142,10 @@ export const OrionInterface = () => {
         device.isOrientationChanging ? "opacity-90 scale-[0.98]" : "opacity-100 scale-100"
       }`}
     >
-      {/* Particles - reduced on mobile */}
+      {/* Star field - Three.js background */}
+      {device.showParticles && <SpaceBackground />}
+
+      {/* Particles overlay */}
       {device.showParticles && (
         <ParticleField
           intensity={orionState === "idle" ? 0.3 : 0.7}
@@ -151,7 +155,7 @@ export const OrionInterface = () => {
       )}
 
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-radial from-orion-void via-orion-void to-black opacity-90" />
+      <div className="absolute inset-0 bg-gradient-radial from-orion-void via-orion-void to-black opacity-70" />
 
       {/* Main container */}
       <div className="relative z-10 flex flex-col items-center justify-between h-full safe-top safe-bottom">
