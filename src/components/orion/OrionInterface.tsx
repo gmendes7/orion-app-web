@@ -16,6 +16,7 @@ import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useDeviceAdaptation } from "@/hooks/useDeviceAdaptation";
 import { useProactiveOrion } from "@/hooks/useProactiveOrion";
+import { useBehavioralDetection } from "@/hooks/useBehavioralDetection";
 
 import { OrionEye, OrionState } from "./OrionEye";
 import { VoiceWaveform } from "./VoiceWaveform";
@@ -95,6 +96,25 @@ export const OrionInterface = () => {
     cooldownSeconds: 300,
     enabled: true,
   });
+
+  // Behavioral detection system
+  const behavioral = useBehavioralDetection({
+    analysisInterval: 15_000,
+    cameraAnalysisEnabled: camera.isActive,
+    enabled: true,
+  });
+
+  // React to behavioral suggestions
+  useEffect(() => {
+    if (!behavioral.suggestion) return;
+    const msg = behavioral.suggestion;
+    // Speak the suggestion if audio is enabled
+    if (audioEnabled) {
+      tts.speak(msg);
+    }
+    // Also send as a proactive message
+    sendMessage(`[ORION_BEHAVIORAL] ${msg}`, jarvis.getSystemPrompt());
+  }, [behavioral.suggestion, audioEnabled, tts, sendMessage, jarvis]);
 
   // Update visual state
   useEffect(() => {
