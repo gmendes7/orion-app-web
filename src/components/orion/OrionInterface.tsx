@@ -143,7 +143,7 @@ export const OrionInterface = () => {
       }`}
     >
       {/* Star field - Three.js background */}
-      {device.showParticles && <SpaceBackground />}
+      {device.showParticles && <SpaceBackground orionState={orionState} />}
 
       {/* Particles overlay */}
       {device.showParticles && (
