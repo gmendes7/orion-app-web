@@ -15,6 +15,7 @@ import { useElevenLabsTTS } from "@/hooks/useElevenLabsTTS";
 import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useDeviceAdaptation } from "@/hooks/useDeviceAdaptation";
+import { useProactiveOrion } from "@/hooks/useProactiveOrion";
 
 import { OrionEye, OrionState } from "./OrionEye";
 import { VoiceWaveform } from "./VoiceWaveform";
@@ -79,6 +80,22 @@ export const OrionInterface = () => {
 
   useEffect(() => { initialize(); }, [initialize]);
 
+  // Proactive system — spontaneous conversations
+  const handleProactive = useCallback((event: { type: string; message: string }) => {
+    // Add as AI message and speak it
+    const proactiveMsg = event.message;
+    sendMessage(`[ORION_PROACTIVE] ${proactiveMsg}`, jarvis.getSystemPrompt());
+    if (audioEnabled) {
+      tts.speak(proactiveMsg);
+    }
+  }, [sendMessage, jarvis, audioEnabled, tts]);
+
+  const proactive = useProactiveOrion(handleProactive, {
+    silenceThresholdSeconds: 180,
+    cooldownSeconds: 300,
+    enabled: true,
+  });
+
   // Update visual state
   useEffect(() => {
     if (isTyping || isStreaming) setOrionState("thinking");
@@ -114,10 +131,11 @@ export const OrionInterface = () => {
 
   const handleSendMessage = useCallback((msg: string) => {
     tts.stop();
+    proactive.registerActivity();
     jarvis.addToRecentTopics(msg.split(" ")[0]);
     sendMessage(msg, jarvis.getSystemPrompt());
     setShowTranscript(true);
-  }, [jarvis, sendMessage, tts]);
+  }, [jarvis, sendMessage, tts, proactive]);
 
   const handleVoiceCommand = useCallback((command: string) => {
     if (command === "stop") { stopStreaming(); tts.stop(); }
