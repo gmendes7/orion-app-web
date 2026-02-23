@@ -47,7 +47,8 @@ export const OrionInterface = () => {
   const [orionState, setOrionState] = useState<OrionState>("idle");
   const [audioLevel, setAudioLevel] = useState(0);
   // Mobile: texto oculto por padrão
-  const [showTranscript, setShowTranscript] = useState(!device.isMobile);
+  // Voice-first: texto oculto por padrão em todos os dispositivos
+  const [showTranscript, setShowTranscript] = useState(false);
 
   // ElevenLabs TTS
   const tts = useElevenLabsTTS({
@@ -154,7 +155,7 @@ export const OrionInterface = () => {
     proactive.registerActivity();
     jarvis.addToRecentTopics(msg.split(" ")[0]);
     sendMessage(msg, jarvis.getSystemPrompt());
-    setShowTranscript(true);
+    // Não mostrar texto automaticamente — interface voice-only
   }, [jarvis, sendMessage, tts, proactive]);
 
   const handleVoiceCommand = useCallback((command: string) => {
