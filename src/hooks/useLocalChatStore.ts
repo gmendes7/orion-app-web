@@ -203,50 +203,78 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
           content: msg.text,
         }));
 
-        // Chamar Edge Function
-        console.log("🚀 Enviando para chat-ai...");
+        // Streaming via fetch direto (supabase.functions.invoke não suporta streaming)
+        console.log("🚀 Enviando para chat-ai (streaming)...");
 
-        const response = await supabase.functions.invoke("chat-ai", {
-          body: {
+        const SUPABASE_URL = "https://wcwwqfiolxcluyuhmxxf.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
             messages: conversationHistory,
             systemPrompt: systemPrompt || undefined,
-          },
+          }),
+          signal: abortController.signal,
         });
 
-        if (response.error) {
-          throw new Error(response.error.message || "Erro ao processar resposta");
+        if (!response.ok) {
+          const errorData = await response.text();
+          let errorMsg = "Erro ao processar resposta";
+          try {
+            const parsed = JSON.parse(errorData);
+            errorMsg = parsed.message || parsed.error || errorMsg;
+          } catch { errorMsg = errorData || errorMsg; }
+          throw new Error(errorMsg);
         }
 
-        // Processar resposta
+        // Streaming token-by-token
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("Stream não disponível");
+
+        const decoder = new TextDecoder();
+        const assistantMsgId = crypto.randomUUID();
         let assistantText = "";
 
-        if (typeof response.data === "string") {
-          assistantText = response.data;
-        } else if (response.data && typeof response.data === "object") {
-          // Tentar extrair texto de diferentes formatos
-          const data = response.data as Record<string, unknown>;
-          if (data.response) {
-            assistantText = String(data.response);
-          } else if (data.text) {
-            assistantText = String(data.text);
-          } else if (data.content) {
-            assistantText = String(data.content);
-          } else {
-            // Tentar como stream
-            assistantText = JSON.stringify(data);
-          }
-        }
-
-        // Criar mensagem do assistente
+        // Create initial assistant message
         const assistantMessage: LocalMessage = {
-          id: crypto.randomUUID(),
-          text: assistantText || "Desculpe, não consegui processar sua mensagem.",
+          id: assistantMsgId,
+          text: "",
           isUser: false,
           timestamp: new Date(),
         };
+        set({ messages: [...updatedMessages, assistantMessage], isTyping: false });
 
-        const finalMessages = [...updatedMessages, assistantMessage];
-        set({ messages: finalMessages, isTyping: false });
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          assistantText += chunk;
+
+          // Update the assistant message progressively
+          const progressMessages = [
+            ...updatedMessages,
+            { ...assistantMessage, text: assistantText },
+          ];
+          set({ messages: progressMessages });
+        }
+
+        // Final save
+        if (!assistantText.trim()) {
+          assistantText = "Desculpe, não consegui processar sua mensagem.";
+        }
+
+        const finalMessages = [
+          ...updatedMessages,
+          { ...assistantMessage, text: assistantText },
+        ];
+        set({ messages: finalMessages });
 
         // Salvar
         const finalConversations = get().conversations.map((c) =>
