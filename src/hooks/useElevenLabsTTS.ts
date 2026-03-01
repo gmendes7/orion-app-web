@@ -25,6 +25,7 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<TTSProvider>("elevenlabs");
+  const [elevenLabsAvailable, setElevenLabsAvailable] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -84,28 +85,33 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
     // Stop any current speech
     stop();
 
-    // Clean text for TTS (remove markdown, emojis etc)
+    // Clean text for TTS
     const cleanText = text
-      .replace(/```[\s\S]*?```/g, "") // Remove code blocks
-      .replace(/`[^`]*`/g, "") // Remove inline code
-      .replace(/[#*_~>\[\]()]/g, "") // Remove markdown syntax
-      .replace(/\n{2,}/g, ". ") // Replace multiple newlines with period
-      .replace(/\n/g, " ") // Replace single newlines with space
-      .replace(/\s{2,}/g, " ") // Normalize spaces
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/`[^`]*`/g, "")
+      .replace(/[#*_~>\[\]()]/g, "")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\n/g, " ")
+      .replace(/\s{2,}/g, " ")
       .trim();
 
     if (!cleanText) return;
 
-    // Limit to reasonable length for TTS
     const ttsText = cleanText.length > 800 ? cleanText.substring(0, 800) + "..." : cleanText;
+
+    // If ElevenLabs is known to be down, go straight to browser TTS
+    if (!elevenLabsAvailable) {
+      console.log("🔊 ElevenLabs indisponível, usando browser TTS");
+      setProvider("browser");
+      speakWithBrowser(ttsText);
+      return;
+    }
 
     setIsLoading(true);
 
     try {
       const controller = new AbortController();
       abortRef.current = controller;
-
-      console.log("🔊 Requesting ElevenLabs TTS...");
 
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/elevenlabs-tts`,
@@ -122,20 +128,21 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
       );
 
       if (!response.ok) {
-        throw new Error(`TTS request failed: ${response.status}`);
+        const data = await response.json().catch(() => ({}));
+        // If server says fallback, disable ElevenLabs for this session
+        if (data.fallback) {
+          console.warn("⚠️ ElevenLabs indisponível nesta sessão, usando browser TTS");
+          setElevenLabsAvailable(false);
+        }
+        throw new Error(data.error || `TTS request failed: ${response.status}`);
       }
 
       const data = await response.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+      if (data.error || !data.audioContent) {
+        throw new Error(data.error || "No audio content received");
       }
 
-      if (!data.audioContent) {
-        throw new Error("No audio content received");
-      }
-
-      // Play using data URI (browser natively decodes base64)
       const audioUrl = `data:audio/mpeg;base64,${data.audioContent}`;
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
@@ -145,18 +152,15 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
         setIsSpeaking(true);
         setProvider("elevenlabs");
         onStart?.();
-        console.log("🔊 ElevenLabs audio playing");
       };
 
       audio.onended = () => {
         setIsSpeaking(false);
         audioRef.current = null;
         onEnd?.();
-        console.log("🔊 ElevenLabs audio ended");
       };
 
       audio.onerror = () => {
-        console.error("❌ Audio playback error, falling back to browser TTS");
         setIsLoading(false);
         setProvider("browser");
         speakWithBrowser(ttsText);
@@ -169,7 +173,7 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
         return;
       }
 
-      console.warn("⚠️ ElevenLabs TTS failed, falling back to browser:", (error as Error).message);
+      console.warn("⚠️ ElevenLabs TTS failed, usando browser TTS:", (error as Error).message);
       setIsLoading(false);
       setProvider("browser");
       onError?.((error as Error).message);
@@ -177,7 +181,7 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
       // Fallback to browser TTS
       speakWithBrowser(ttsText);
     }
-  }, [voiceId, stop, speakWithBrowser, onStart, onEnd, onError]);
+  }, [voiceId, stop, speakWithBrowser, onStart, onEnd, onError, elevenLabsAvailable]);
 
   return {
     speak,

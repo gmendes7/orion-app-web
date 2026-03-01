@@ -56,7 +56,11 @@ export const OrionInterface = () => {
     onEnd: () => {
       if (!voiceAssistant.isListening) setOrionState("idle");
     },
-    onError: (error) => console.warn("⚠️ TTS Error:", error),
+    onError: (error) => {
+      console.warn("⚠️ TTS Error:", error);
+      // Auto-show transcript when voice fails so user can read the response
+      setShowTranscript(true);
+    },
   });
 
   // Voice assistant
