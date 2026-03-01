@@ -16,7 +16,19 @@ import {
   LongTermMemory,
   ConversationContext,
   MODE_CONFIGS,
+  SupportedAiLanguage,
 } from './types';
+
+const LANGUAGE_DIRECTIVES: Record<SupportedAiLanguage, string> = {
+  "pt-BR": "Responda em português do Brasil, com naturalidade e clareza.",
+  "en-US": "Respond in clear American English.",
+  "es-ES": "Responde en español con naturalidad.",
+  "fr-FR": "Répondez en français clair et naturel.",
+  "de-DE": "Antworte auf natürlichem Deutsch.",
+  "it-IT": "Rispondi in italiano in modo chiaro e naturale.",
+  "ja-JP": "自然で明確な日本語で回答してください。",
+  "zh-CN": "请使用清晰自然的简体中文回答。",
+};
 
 // ============= PROMPT TEMPLATES =============
 
@@ -40,6 +52,7 @@ const COMMUNICATION_STYLE = `
 - Tom: {tone}
 - Verbosidade: {verbosity}
 - Idioma: {language}
+- Diretriz de idioma: {languageDirective}
 - Responda de forma {toneDescription}
 - Use markdown para formatação clara
 - Forneça código completo quando solicitado
@@ -127,6 +140,7 @@ export function buildSystemPrompt(params: PromptBuilderParams): string {
       .replace('{tone}', personality.tone)
       .replace('{verbosity}', personality.verbosity)
       .replace('{language}', personality.language)
+      .replace('{languageDirective}', LANGUAGE_DIRECTIVES[personality.language])
       .replace('{toneDescription}', TONE_DESCRIPTIONS[personality.tone])
   );
 

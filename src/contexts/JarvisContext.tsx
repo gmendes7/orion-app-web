@@ -15,6 +15,8 @@ import {
   ConversationContext,
   EnvironmentContext,
   ProjectInfo,
+  SupportedAiLanguage,
+  SUPPORTED_AI_LANGUAGES,
   DEFAULT_PERSONALITY,
   MODE_CONFIGS,
 } from "@/lib/jarvis/types";
@@ -189,6 +191,28 @@ export const JarvisProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ============= MODE MANAGEMENT =============
+
+  const setResponseLanguage = useCallback((language: SupportedAiLanguage) => {
+    if (!SUPPORTED_AI_LANGUAGES[language]) {
+      return;
+    }
+
+    setState(prev => {
+      const updatedPersonality = {
+        ...prev.personality,
+        language,
+      };
+
+      savePersonality(updatedPersonality);
+
+      return {
+        ...prev,
+        personality: updatedPersonality,
+      };
+    });
+
+    console.log(`🌐 JARVIS - Idioma de resposta alterado para: ${SUPPORTED_AI_LANGUAGES[language]}`);
+  }, []);
 
   const setMode = useCallback((mode: JarvisMode) => {
     setState(prev => ({ ...prev, currentMode: mode }));
@@ -455,6 +479,7 @@ export const JarvisProvider = ({ children }: { children: ReactNode }) => {
   const value: JarvisContextType = {
     ...state,
     setMode,
+    setResponseLanguage,
     updateContext,
     setCurrentTask,
     addToRecentTopics,

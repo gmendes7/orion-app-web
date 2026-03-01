@@ -33,7 +33,7 @@ export interface JarvisPersonality {
   tone: 'technical' | 'casual' | 'formal' | 'friendly';
   proactivityLevel: number; // 0-1
   verbosity: 'concise' | 'balanced' | 'detailed';
-  language: string;
+  language: SupportedAiLanguage;
 }
 
 export const DEFAULT_PERSONALITY: JarvisPersonality = {
@@ -43,6 +43,27 @@ export const DEFAULT_PERSONALITY: JarvisPersonality = {
   proactivityLevel: 0.8,
   verbosity: "balanced",
   language: "pt-BR",
+};
+
+export type SupportedAiLanguage =
+  | "pt-BR"
+  | "en-US"
+  | "es-ES"
+  | "fr-FR"
+  | "de-DE"
+  | "it-IT"
+  | "ja-JP"
+  | "zh-CN";
+
+export const SUPPORTED_AI_LANGUAGES: Record<SupportedAiLanguage, string> = {
+  "pt-BR": "Português (Brasil)",
+  "en-US": "English (US)",
+  "es-ES": "Español",
+  "fr-FR": "Français",
+  "de-DE": "Deutsch",
+  "it-IT": "Italiano",
+  "ja-JP": "日本語",
+  "zh-CN": "中文 (简体)",
 };
 
 // ============= MODES =============
@@ -201,7 +222,7 @@ export interface EnvironmentContext {
 
 export interface VoiceConfig {
   enabled: boolean;
-  language: string;
+  language: SupportedAiLanguage;
   voiceName?: string;
   rate: number;
   pitch: number;
@@ -251,6 +272,7 @@ export interface JarvisState {
 export interface JarvisActions {
   // Mode management
   setMode: (mode: JarvisMode) => void;
+  setResponseLanguage: (language: SupportedAiLanguage) => void;
   
   // Context management
   updateContext: (context: string) => void;

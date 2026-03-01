@@ -9,12 +9,14 @@
  */
 
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useJarvis } from "@/contexts/JarvisContext";
 import { useLocalChatStore } from "@/hooks/useLocalChatStore";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { ORION_LOGO_URL } from "@/lib/constants";
+import { SUPPORTED_AI_LANGUAGES, type SupportedAiLanguage } from "@/lib/jarvis/types";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -239,6 +241,20 @@ const JarvisChat = () => {
     }
   };
 
+  const handleLanguageChange = (language: string) => {
+    const nextLanguage = language as SupportedAiLanguage;
+    if (!SUPPORTED_AI_LANGUAGES[nextLanguage]) {
+      return;
+    }
+
+    jarvis.setResponseLanguage(nextLanguage);
+
+    toast({
+      title: "🌐 Idioma da IA atualizado",
+      description: `Respostas agora em ${SUPPORTED_AI_LANGUAGES[nextLanguage]}.`,
+    });
+  };
+
   const handleModeChange = (mode: "engineering" | "planning" | "debugging" | "general") => {
     jarvis.setMode(mode);
   };
@@ -345,6 +361,25 @@ const JarvisChat = () => {
                 <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                   <Brain className="w-3.5 h-3.5" />
                   <span>{messages.length}</span>
+                </div>
+
+                {/* AI response language */}
+                <div className="hidden lg:block min-w-[168px]">
+                  <Select
+                    value={jarvis.personality.language}
+                    onValueChange={handleLanguageChange}
+                  >
+                    <SelectTrigger className="h-8 bg-card/70 border-orion-cosmic-blue/30 text-xs">
+                      <SelectValue placeholder="Idioma da IA" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(SUPPORTED_AI_LANGUAGES).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Camera button */}
