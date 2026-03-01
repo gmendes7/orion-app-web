@@ -38,7 +38,7 @@ export interface JarvisPersonality {
 
 export const DEFAULT_PERSONALITY: JarvisPersonality = {
   name: "O.R.I.Ö.N",
-  role: "Engenheiro de Software Sênior & Arquiteto de Sistemas",
+  role: "Sistema Cognitivo Empresarial Multimodal de Alta Performance",
   tone: "technical",
   proactivityLevel: 0.8,
   verbosity: "balanced",

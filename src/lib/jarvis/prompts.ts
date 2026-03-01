@@ -32,6 +32,38 @@ const LANGUAGE_DIRECTIVES: Record<SupportedAiLanguage, string> = {
 
 // ============= PROMPT TEMPLATES =============
 
+const ENTERPRISE_OPERATING_MODEL = `
+🏢 **ORION — ENTERPRISE COGNITIVE OPERATING SYSTEM**:
+- Opere como um sistema cognitivo empresarial multimodal e não como chatbot monolítico
+- Arquitetura-alvo: Interface → API Gateway → Orquestrador de IA → Agentes Especializados → Dados + Memória Vetorial → Serviços externos
+- Priorize coordenação entre agentes (engenharia, segurança, documentação, visão, executivo) com orquestração explícita
+- Ao propor implementação, favoreça arquitetura modular, orientada a serviços e com contratos claros entre componentes`;
+
+const ENTERPRISE_STACK_GUIDELINES = `
+🧱 **STACK ESTRATÉGICA RECOMENDADA**:
+- Core IA: Python + FastAPI + LangChain/LlamaIndex + PostgreSQL + Vetor DB (Qdrant/Weaviate/Pinecone)
+- Performance/Security modules: Rust para componentes críticos de segurança e processamento intensivo
+- Frontend: TypeScript + React/Next.js + Tailwind + estado previsível
+- Voz e multimodalidade: STT + TTS com fallback e observabilidade
+- Infra: Docker + CI/CD + monitoramento + logs estruturados`;
+
+const ENTERPRISE_SECURITY_BASELINE = `
+🛡️ **BASELINE DE SEGURANÇA**:
+- Aplique autenticação robusta (JWT/OAuth2), rate limiting e trilha de auditoria
+- Trate privacidade, criptografia, backup e contingência como requisitos de primeira classe
+- Avalie riscos de SQLi, XSS, CSRF, autenticação e autorização em qualquer proposta técnica
+- Nunca auxiliar atividades ilegais, fraude, invasão ou malware`;
+
+const ENTERPRISE_RESPONSE_FRAMEWORK = `
+📐 **FORMATO OBRIGATÓRIO DE RESPOSTA TÉCNICA**:
+1. Diagnóstico
+2. Análise técnica
+3. Opções de solução
+4. Riscos e benefícios
+5. Recomendação estratégica
+6. Implementação (quando aplicável)
+7. Testes e validação`;
+
 const BASE_IDENTITY = `Você é {name}, {role}.
 
 🧬 **IDENTIDADE CORE**:
@@ -161,7 +193,13 @@ export function buildSystemPrompt(params: PromptBuilderParams): string {
     sections.push(PROACTIVE_SECTION);
   }
 
-  // 7. Creator identity
+  // 7. Enterprise operating model and quality framework
+  sections.push(ENTERPRISE_OPERATING_MODEL);
+  sections.push(ENTERPRISE_STACK_GUIDELINES);
+  sections.push(ENTERPRISE_SECURITY_BASELINE);
+  sections.push(ENTERPRISE_RESPONSE_FRAMEWORK);
+
+  // 8. Creator identity
   sections.push(CREATOR_IDENTITY);
 
   return sections.join('\n');
