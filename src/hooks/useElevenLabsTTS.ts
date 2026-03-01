@@ -89,7 +89,7 @@ export const useElevenLabsTTS = (options: UseElevenLabsTTSOptions = {}) => {
     const cleanText = text
       .replace(/```[\s\S]*?```/g, "")
       .replace(/`[^`]*`/g, "")
-      .replace(/[#*_~>\[\]()]/g, "")
+      .replace(/[#*_~>[\]()]/g, "")
       .replace(/\n{2,}/g, ". ")
       .replace(/\n/g, " ")
       .replace(/\s{2,}/g, " ")

@@ -100,7 +100,11 @@ export const VoiceWaveform = forwardRef<HTMLDivElement, VoiceWaveformProps>(({
           const r = ringRadius + wobble;
           const x = cx + Math.cos(angle) * r;
           const y = cy + Math.sin(angle) * r;
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
         ctx.closePath();
         ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${ringAlpha})`;
