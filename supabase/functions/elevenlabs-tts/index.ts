@@ -4,7 +4,7 @@ import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/b
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -17,20 +17,23 @@ serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!ELEVENLABS_API_KEY) {
-      throw new Error("ELEVENLABS_API_KEY não configurada");
+      return new Response(
+        JSON.stringify({ error: "ELEVENLABS_API_KEY não configurada", fallback: true }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (!text || text.trim().length === 0) {
-      throw new Error("Texto não fornecido");
+      return new Response(
+        JSON.stringify({ error: "Texto não fornecido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Limitar texto para evitar custos excessivos (max ~500 chars por request)
     const trimmedText = text.substring(0, 1000);
+    const selectedVoiceId = voiceId || "FGY2WhTYpPnrIDTdsKH5";
 
     console.log(`🔊 ElevenLabs TTS - Gerando áudio para: "${trimmedText.substring(0, 50)}..."`);
-    console.log(`🎤 Voice ID: ${voiceId || "FGY2WhTYpPnrIDTdsKH5 (Laura)"}`);
-
-    const selectedVoiceId = voiceId || "FGY2WhTYpPnrIDTdsKH5"; // Laura - voz feminina natural
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}?output_format=mp3_44100_128`,
@@ -57,7 +60,12 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ ElevenLabs API Error [${response.status}]:`, errorText);
-      throw new Error(`ElevenLabs API Error: ${response.status} - ${errorText}`);
+      
+      // Return fallback flag so client uses browser TTS instead of crashing
+      return new Response(
+        JSON.stringify({ error: `ElevenLabs: ${response.status}`, fallback: true, details: errorText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const audioBuffer = await response.arrayBuffer();
@@ -67,20 +75,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ audioContent: audioBase64 }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("❌ Erro na função elevenlabs-tts:", error);
     return new Response(
-      JSON.stringify({
-        error: (error as Error).message || "Erro ao gerar áudio",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: (error as Error).message || "Erro ao gerar áudio", fallback: true }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
