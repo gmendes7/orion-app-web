@@ -81,7 +81,7 @@ jobs:
             npm install --no-audit --no-fund
           fi
       - name: Smoke test
-        run: node -e "require('./gateway.js'); console.log('gateway loaded')"
+        run: node -e "const g=require('./gateway.js'); if(!g.app||typeof g.startServer!=='function'){process.exit(1)}; console.log('gateway module ok')"
 
   rust:
     name: Rust Build
