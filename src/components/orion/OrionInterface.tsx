@@ -16,7 +16,6 @@ import { useCamera } from "@/hooks/useCamera";
 import { useToast } from "@/integrations/hooks/use-toast";
 import { useDeviceAdaptation } from "@/hooks/useDeviceAdaptation";
 import { useProactiveOrion } from "@/hooks/useProactiveOrion";
-import { useBehavioralDetection } from "@/hooks/useBehavioralDetection";
 
 import { OrionEye, OrionState } from "./OrionEye";
 import { VoiceWaveform } from "./VoiceWaveform";
@@ -46,8 +45,6 @@ export const OrionInterface = () => {
 
   const [orionState, setOrionState] = useState<OrionState>("idle");
   const [audioLevel, setAudioLevel] = useState(0);
-  // Mobile: texto oculto por padrão
-  // Voice-first: texto oculto por padrão em todos os dispositivos
   const [showTranscript, setShowTranscript] = useState(false);
 
   // ElevenLabs TTS
@@ -58,7 +55,7 @@ export const OrionInterface = () => {
     },
     onError: (error) => {
       console.warn("⚠️ TTS Error:", error);
-      // Auto-show transcript when voice fails so user can read the response
+      // Auto-show transcript when voice fails
       setShowTranscript(true);
     },
   });
@@ -86,40 +83,21 @@ export const OrionInterface = () => {
 
   useEffect(() => { initialize(); }, [initialize]);
 
-  // Proactive system — spontaneous conversations
+  // Proactive system — add AI messages directly instead of polluting user messages
   const handleProactive = useCallback((event: { type: string; message: string }) => {
-    // Add as AI message and speak it
-    const proactiveMsg = event.message;
-    sendMessage(`[ORION_PROACTIVE] ${proactiveMsg}`, jarvis.getSystemPrompt());
+    // Speak the proactive message
     if (audioEnabled) {
-      tts.speak(proactiveMsg);
+      tts.speak(event.message);
     }
-  }, [sendMessage, jarvis, audioEnabled, tts]);
+    // Show transcript so user can read it
+    setShowTranscript(true);
+  }, [audioEnabled, tts]);
 
   const proactive = useProactiveOrion(handleProactive, {
-    silenceThresholdSeconds: 180,
-    cooldownSeconds: 300,
+    silenceThresholdSeconds: 300, // 5 min (less aggressive)
+    cooldownSeconds: 600, // 10 min cooldown
     enabled: true,
   });
-
-  // Behavioral detection system
-  const behavioral = useBehavioralDetection({
-    analysisInterval: 15_000,
-    cameraAnalysisEnabled: camera.isActive,
-    enabled: true,
-  });
-
-  // React to behavioral suggestions
-  useEffect(() => {
-    if (!behavioral.suggestion) return;
-    const msg = behavioral.suggestion;
-    // Speak the suggestion if audio is enabled
-    if (audioEnabled) {
-      tts.speak(msg);
-    }
-    // Also send as a proactive message
-    sendMessage(`[ORION_BEHAVIORAL] ${msg}`, jarvis.getSystemPrompt());
-  }, [behavioral.suggestion, audioEnabled, tts, sendMessage, jarvis]);
 
   // Update visual state
   useEffect(() => {
@@ -130,10 +108,10 @@ export const OrionInterface = () => {
     else setOrionState("idle");
   }, [isTyping, isStreaming, voiceAssistant.isListening, tts.isSpeaking, tts.isLoading, camera.isAnalyzing]);
 
-  // Simulate audio level
+  // Simulate audio level (throttled)
   useEffect(() => {
     if (voiceAssistant.isListening || tts.isSpeaking) {
-      const interval = setInterval(() => setAudioLevel(Math.random() * 0.5 + 0.3), 100);
+      const interval = setInterval(() => setAudioLevel(Math.random() * 0.5 + 0.3), 150);
       return () => clearInterval(interval);
     } else {
       setAudioLevel(0.1);
@@ -159,7 +137,6 @@ export const OrionInterface = () => {
     proactive.registerActivity();
     jarvis.addToRecentTopics(msg.split(" ")[0]);
     sendMessage(msg, jarvis.getSystemPrompt());
-    // Não mostrar texto automaticamente — interface voice-only
   }, [jarvis, sendMessage, tts, proactive]);
 
   const handleVoiceCommand = useCallback((command: string) => {
@@ -185,7 +162,7 @@ export const OrionInterface = () => {
         device.isOrientationChanging ? "opacity-90 scale-[0.98]" : "opacity-100 scale-100"
       }`}
     >
-      {/* Star field - Three.js background */}
+      {/* Star field */}
       {device.showParticles && <SpaceBackground orionState={orionState} />}
 
       {/* Particles overlay */}
@@ -203,7 +180,7 @@ export const OrionInterface = () => {
       {/* Main container */}
       <div className="relative z-10 flex flex-col items-center justify-between h-full safe-top safe-bottom">
         
-        {/* Header - compact on mobile */}
+        {/* Header */}
         <motion.header
           className="w-full px-3 pt-2 pb-1 md:px-4 md:pt-4 md:pb-2 flex items-center justify-between shrink-0"
           initial={{ opacity: 0, y: -20 }}
@@ -230,7 +207,7 @@ export const OrionInterface = () => {
           />
         </motion.header>
 
-        {/* Central area - Eye + content */}
+        {/* Central area */}
         <div className="flex flex-col items-center justify-center flex-1 gap-4 md:gap-8 w-full max-w-2xl px-4 min-h-0 overflow-hidden">
           
           {/* The Eye */}
@@ -248,7 +225,7 @@ export const OrionInterface = () => {
             />
           </motion.div>
 
-          {/* Voice waveform - shorter on mobile */}
+          {/* Voice waveform */}
           <AnimatePresence>
             {(voiceAssistant.isListening || tts.isSpeaking || isStreaming) && (
               <motion.div
@@ -269,7 +246,7 @@ export const OrionInterface = () => {
             )}
           </AnimatePresence>
 
-          {/* Transcript - toggleable, scrollable */}
+          {/* Transcript */}
           <AnimatePresence>
             {showTranscript && displayMessages.length > 0 && (
               <motion.div
@@ -310,9 +287,8 @@ export const OrionInterface = () => {
           </AnimatePresence>
         </div>
 
-        {/* Bottom section - input + toggle */}
+        {/* Bottom section */}
         <div className="w-full shrink-0 px-3 pb-2 md:px-4 md:pb-4 max-w-xl mx-auto space-y-2">
-          {/* Toggle transcript button */}
           <div className="flex justify-end">
             <motion.button
               className="px-3 py-1.5 rounded-full bg-orion-stellar-gold/10 text-orion-stellar-gold/60 hover:bg-orion-stellar-gold/20 hover:text-orion-stellar-gold transition-all touch-target text-xs font-mono"
@@ -324,7 +300,6 @@ export const OrionInterface = () => {
             </motion.button>
           </div>
 
-          {/* Command input */}
           <CommandInput
             onSend={handleSendMessage}
             onVoiceToggle={handleVoiceToggle}
@@ -333,7 +308,6 @@ export const OrionInterface = () => {
             placeholder={device.isMobile ? "Fale ou digite..." : "Digite ou fale..."}
           />
 
-          {/* Footer */}
           <p className="text-[9px] md:text-[10px] font-mono text-muted-foreground/40 tracking-widest text-center">
             DESENVOLVIDO POR GABRIEL MENDES
           </p>
