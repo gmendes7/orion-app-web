@@ -50,7 +50,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "studio": "supabase studio",
     "db:push": "supabase db push",
-    "postinstall": "husky install || true"
+    "postinstall": "husky install || true",
+    "sync": "git add . && git commit -m 'auto-update' && git push",
+    "sync:safe": "node scripts/git-sync-safe.mjs",
+    "sync:watch": "node scripts/git-sync-watch.mjs",
+    "env:doctor": "pwd && ls -la && git status && git branch -a && git remote -v && node -v && npm -v"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
