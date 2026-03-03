@@ -13,3 +13,11 @@ black
 mypy
 pytest
 pybind11
+fastapi
+uvicorn[standard]
+pydantic
+httpx
+langchain
+llama-index
+celery
+redis

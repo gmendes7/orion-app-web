@@ -144,13 +144,18 @@ export const OrionInterface = () => {
     else if (command === "analyze_screen") { camera.requestCamera(); }
   }, [stopStreaming, tts, camera]);
 
-  const handleEyeClick = useCallback(() => {
-    voiceAssistant.isListening ? voiceAssistant.stopListening() : voiceAssistant.startListening();
+  const toggleListening = useCallback(() => {
+    if (voiceAssistant.isListening) {
+      voiceAssistant.stopListening();
+      return;
+    }
+
+    voiceAssistant.startListening();
   }, [voiceAssistant]);
 
-  const handleVoiceToggle = useCallback(() => {
-    voiceAssistant.isListening ? voiceAssistant.stopListening() : voiceAssistant.startListening();
-  }, [voiceAssistant]);
+  const handleEyeClick = toggleListening;
+
+  const handleVoiceToggle = toggleListening;
 
   const displayMessages = messages.map((msg) => ({
     id: msg.id, text: msg.text, isUser: msg.isUser, timestamp: new Date(msg.timestamp),

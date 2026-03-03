@@ -8,7 +8,9 @@ export const getSiteURL = () => {
       const origin = window.location.origin;
       return origin.endsWith('/') ? origin : `${origin}/`;
     }
-  } catch (_) {}
+  } catch {
+    // Ignora falhas ao acessar window em ambientes não-browser.
+  }
   // Fallback para dev
   return 'http://localhost:3000/';
 };
