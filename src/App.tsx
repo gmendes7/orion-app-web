@@ -8,16 +8,17 @@ import Dashboard from "./pages/Dashboard";
 import ApiDashboard from "./pages/ApiDashboard";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-/**
- * 🤖 App - O.R.I.Ö.N JARVIS Mode
- * 
- * Sistema de IA pessoal sem autenticação.
- * Acesso direto e imediato.
- */
 const App = () => {
-  console.log('🤖 JARVIS Mode - Inicializando sistema autônomo...');
   
   return (
     <QueryClientProvider client={queryClient}>
