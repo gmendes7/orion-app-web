@@ -171,15 +171,18 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
 
     sendMessage: async (content: string, systemPrompt?: string) => {
       const { currentConversationId, messages, conversations } = get();
-      if (!content.trim() || !currentConversationId) return;
+      
+      // Input validation & sanitization
+      const sanitized = content.trim();
+      if (!sanitized || sanitized.length > 10000 || !currentConversationId) return;
 
       const abortController = new AbortController();
       set({ isStreaming: true, isTyping: true, abortController, error: null });
 
-      // Criar mensagem do usuário
+      // Criar mensagem do usuário (sanitized)
       const userMessage: LocalMessage = {
         id: crypto.randomUUID(),
-        text: content,
+        text: sanitized,
         isUser: true,
         timestamp: new Date(),
       };
@@ -206,8 +209,8 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         // Streaming via fetch direto (supabase.functions.invoke não suporta streaming)
         console.log("🚀 Enviando para chat-ai (streaming)...");
 
-        const SUPABASE_URL = "https://wcwwqfiolxcluyuhmxxf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://wcwwqfiolxcluyuhmxxf.supabase.co";
+        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
 
         const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
           method: "POST",

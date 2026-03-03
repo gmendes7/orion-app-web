@@ -1,9 +1,17 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './index.css'
 
-console.log('🚀 Iniciando aplicação O.R.I.Ö.N...');
+// Global unhandled error handlers — prevent silent crashes
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('🛡️ Unhandled Promise Rejection:', event.reason);
+});
+
+window.addEventListener('error', (event) => {
+  console.error('🛡️ Unhandled Error:', event.error?.message || event.message);
+});
 
 try {
   const rootElement = document.getElementById("root");
@@ -11,17 +19,13 @@ try {
     throw new Error('Elemento root não encontrado no DOM');
   }
 
-  console.log('✅ Elemento root encontrado, criando React root...');
-  const root = createRoot(rootElement);
-  
-  console.log('✅ React root criado, renderizando App...');
-  root.render(
+  createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </React.StrictMode>
   );
-  
-  console.log('✅ Aplicação renderizada com sucesso!');
 } catch (error) {
   console.error('❌ Erro crítico ao inicializar aplicação:', error);
 }

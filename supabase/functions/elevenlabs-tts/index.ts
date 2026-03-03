@@ -13,7 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId } = await req.json();
+    const body = await req.json();
+    const { text, voiceId } = body;
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
     if (!ELEVENLABS_API_KEY) {
@@ -23,9 +24,17 @@ serve(async (req) => {
       );
     }
 
-    if (!text || text.trim().length === 0) {
+    // Input validation
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Texto não fornecido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (text.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: "Texto excede limite de 5000 caracteres" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
