@@ -3,16 +3,10 @@
  * 
  * Store Zustand que gerencia o chat LOCALMENTE sem necessidade de autenticação.
  * Ideal para o modo JARVIS single-user.
- * 
- * Features:
- * - Conversas persistidas em localStorage
- * - Comunicação com Edge Functions (chat-ai)
- * - Streaming de respostas
- * - Sem dependência de user_id
  */
 
 import { create } from "zustand";
-import { supabase } from "@/integrations/supabase/client";
+import { checkRateLimit } from "@/lib/security";
 
 // ============= TIPOS =============
 
@@ -56,39 +50,75 @@ interface LocalChatActions {
   clearError: () => void;
 }
 
-// ============= STORAGE =============
+// ============= CONSTANTS =============
 
 const STORAGE_KEY = "jarvis_local_conversations";
+const MAX_MESSAGE_LENGTH = 8000;
+const MAX_CONVERSATIONS = 100;
+const MAX_MESSAGES_PER_CONVERSATION = 200;
+
+// ============= STORAGE =============
 
 function loadConversationsFromStorage(): LocalConversation[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Reconstruct dates
-      return parsed.map((conv: Record<string, unknown>) => ({
-        ...conv,
-        updatedAt: new Date(conv.updatedAt as string),
-        messages: ((conv.messages as Array<Record<string, unknown>>) || []).map(
-          (msg: Record<string, unknown>) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp as string),
-          })
-        ),
-      }));
-    }
-  } catch (error) {
-    console.error("Erro ao carregar conversas:", error);
+    if (!saved) return [];
+    
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    
+    return parsed.slice(0, MAX_CONVERSATIONS).map((conv: Record<string, unknown>) => ({
+      id: conv.id as string,
+      title: conv.title as string,
+      updatedAt: new Date(conv.updatedAt as string),
+      messages: ((conv.messages as Array<Record<string, unknown>>) || [])
+        .slice(-MAX_MESSAGES_PER_CONVERSATION)
+        .map((msg: Record<string, unknown>) => ({
+          id: msg.id as string,
+          text: msg.text as string,
+          isUser: msg.isUser as boolean,
+          timestamp: new Date(msg.timestamp as string),
+        })),
+    }));
+  } catch {
+    console.error("Erro ao carregar conversas — resetando storage");
+    localStorage.removeItem(STORAGE_KEY);
+    return [];
   }
-  return [];
 }
 
 function saveConversationsToStorage(conversations: LocalConversation[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+    const trimmed = conversations.slice(0, MAX_CONVERSATIONS).map(c => ({
+      ...c,
+      messages: c.messages.slice(-MAX_MESSAGES_PER_CONVERSATION),
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
   } catch (error) {
+    if (error instanceof DOMException && error.name === "QuotaExceededError") {
+      // Trim oldest conversations to free space
+      const reduced = conversations.slice(0, Math.floor(conversations.length / 2));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reduced));
+    }
     console.error("Erro ao salvar conversas:", error);
   }
+}
+
+// ============= HELPERS =============
+
+function getSupabaseConfig() {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase não configurado. Verifique as variáveis de ambiente.");
+  }
+  return { url, key };
+}
+
+function sanitizeInput(text: string): string {
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars
+    .trim();
 }
 
 // ============= STORE =============
@@ -110,8 +140,6 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
     // --- Ações ---
 
     initialize: () => {
-      console.log("🗃️ LocalChatStore - Inicializando...");
-
       const conversations = loadConversationsFromStorage();
 
       if (conversations.length > 0) {
@@ -122,12 +150,7 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
           messages: firstConv.messages,
           isLoading: false,
         });
-        console.log(
-          "🗃️ LocalChatStore - Conversa ativa:",
-          firstConv.title
-        );
       } else {
-        // Criar primeira conversa
         const newConv: LocalConversation = {
           id: crypto.randomUUID(),
           title: "Nova Conversa",
@@ -148,9 +171,7 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
           messages: newConv.messages,
           isLoading: false,
         });
-
         saveConversationsToStorage([newConv]);
-        console.log("🗃️ LocalChatStore - Nova conversa criada");
       }
     },
 
@@ -172,14 +193,19 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
     sendMessage: async (content: string, systemPrompt?: string) => {
       const { currentConversationId, messages, conversations } = get();
       
-      // Input validation & sanitization
-      const sanitized = content.trim();
-      if (!sanitized || sanitized.length > 10000 || !currentConversationId) return;
+      // ── Input validation & rate limiting ──
+      const sanitized = sanitizeInput(content);
+      if (!sanitized || sanitized.length > MAX_MESSAGE_LENGTH || !currentConversationId) return;
+
+      const rateCheck = checkRateLimit("sendMessage", 20, 60000);
+      if (!rateCheck.allowed) {
+        set({ error: new Error(`Rate limit: aguarde ${Math.ceil(rateCheck.resetIn / 1000)}s`) });
+        return;
+      }
 
       const abortController = new AbortController();
       set({ isStreaming: true, isTyping: true, abortController, error: null });
 
-      // Criar mensagem do usuário (sanitized)
       const userMessage: LocalMessage = {
         id: crypto.randomUUID(),
         text: sanitized,
@@ -190,7 +216,7 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
       const updatedMessages = [...messages, userMessage];
       set({ messages: updatedMessages });
 
-      // Atualizar conversa no storage
+      // Persist user message immediately
       const updatedConversations = conversations.map((c) =>
         c.id === currentConversationId
           ? { ...c, messages: updatedMessages, updatedAt: new Date() }
@@ -200,24 +226,22 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
       set({ conversations: updatedConversations });
 
       try {
-        // Preparar histórico
-        const conversationHistory = updatedMessages.map((msg) => ({
-          role: msg.isUser ? "user" : "assistant",
-          content: msg.text,
-        }));
+        const { url, key } = getSupabaseConfig();
 
-        // Streaming via fetch direto (supabase.functions.invoke não suporta streaming)
-        console.log("🚀 Enviando para chat-ai (streaming)...");
+        // Prepare history (limit context window)
+        const conversationHistory = updatedMessages
+          .slice(-30)
+          .map((msg) => ({
+            role: msg.isUser ? "user" : "assistant",
+            content: msg.text,
+          }));
 
-        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://wcwwqfiolxcluyuhmxxf.supabase.co";
-        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjd3dxZmlvbHhjbHV5dWhteHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTA4MDMsImV4cCI6MjA3MDY2NjgwM30.IZQUelbBZI492dffw3xd2eYtSn7lx7RcyuKYWtyaDDc";
-
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
+        const response = await fetch(`${url}/functions/v1/chat-ai`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "apikey": key,
+            "Authorization": `Bearer ${key}`,
           },
           body: JSON.stringify({
             messages: conversationHistory,
@@ -236,7 +260,7 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
           throw new Error(errorMsg);
         }
 
-        // Streaming token-by-token
+        // ── Streaming token-by-token ──
         const reader = response.body?.getReader();
         if (!reader) throw new Error("Stream não disponível");
 
@@ -244,7 +268,6 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         const assistantMsgId = crypto.randomUUID();
         let assistantText = "";
 
-        // Create initial assistant message
         const assistantMessage: LocalMessage = {
           id: assistantMsgId,
           text: "",
@@ -260,12 +283,12 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
           const chunk = decoder.decode(value, { stream: true });
           assistantText += chunk;
 
-          // Update the assistant message progressively
-          const progressMessages = [
-            ...updatedMessages,
-            { ...assistantMessage, text: assistantText },
-          ];
-          set({ messages: progressMessages });
+          set({
+            messages: [
+              ...updatedMessages,
+              { ...assistantMessage, text: assistantText },
+            ],
+          });
         }
 
         // Final save
@@ -279,7 +302,6 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         ];
         set({ messages: finalMessages });
 
-        // Salvar
         const finalConversations = get().conversations.map((c) =>
           c.id === currentConversationId
             ? { ...c, messages: finalMessages, updatedAt: new Date() }
@@ -288,24 +310,21 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         saveConversationsToStorage(finalConversations);
         set({ conversations: finalConversations });
 
-        console.log("✅ Resposta recebida");
       } catch (error) {
-        console.error("❌ Erro ao enviar mensagem:", error);
+        if ((error as Error).name === "AbortError") return;
 
-        const errorMessage =
-          error instanceof Error ? error.message : "Erro desconhecido";
+        console.error("❌ Erro ao enviar mensagem:", (error as Error).message);
 
-        // Adicionar mensagem de erro
         const errorMsg: LocalMessage = {
           id: crypto.randomUUID(),
-          text: `⚠️ Erro: ${errorMessage}`,
+          text: `⚠️ Erro: ${(error as Error).message || "Erro desconhecido"}`,
           isUser: false,
           timestamp: new Date(),
         };
 
         set({
           messages: [...get().messages, errorMsg],
-          error: error instanceof Error ? error : new Error(errorMessage),
+          error: error instanceof Error ? error : new Error("Erro desconhecido"),
         });
       } finally {
         set({ isStreaming: false, isTyping: false, abortController: null });
@@ -314,16 +333,16 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
 
     stopStreaming: () => {
       const { abortController } = get();
-      if (abortController) {
-        abortController.abort();
-      }
+      if (abortController) abortController.abort();
       set({ isStreaming: false, isTyping: false });
     },
 
     createConversation: (title: string) => {
+      const sanitizedTitle = sanitizeInput(title).substring(0, 100) || "Nova Conversa";
+      
       const newConv: LocalConversation = {
         id: crypto.randomUUID(),
-        title,
+        title: sanitizedTitle,
         updatedAt: new Date(),
         messages: [
           {
@@ -335,7 +354,7 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         ],
       };
 
-      const updatedConversations = [newConv, ...get().conversations];
+      const updatedConversations = [newConv, ...get().conversations].slice(0, MAX_CONVERSATIONS);
       saveConversationsToStorage(updatedConversations);
 
       set({
@@ -350,7 +369,6 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
       const updated = conversations.filter((c) => c.id !== id);
 
       if (updated.length === 0) {
-        // Criar nova conversa se deletar a última
         const newConv: LocalConversation = {
           id: crypto.randomUUID(),
           title: "Nova Conversa",
@@ -372,7 +390,6 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
         });
       } else {
         saveConversationsToStorage(updated);
-
         if (currentConversationId === id) {
           set({
             conversations: updated,
@@ -386,24 +403,17 @@ export const useLocalChatStore = create<LocalChatState & LocalChatActions>(
     },
 
     renameConversation: (id: string, newTitle: string) => {
+      const sanitizedTitle = sanitizeInput(newTitle).substring(0, 100) || "Conversa";
       const updated = get().conversations.map((c) =>
-        c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c
+        c.id === id ? { ...c, title: sanitizedTitle, updatedAt: new Date() } : c
       );
       saveConversationsToStorage(updated);
       set({ conversations: updated });
     },
 
-    setAudioEnabled: (enabled: boolean) => {
-      set({ audioEnabled: enabled });
-    },
-
-    setSidebarOpen: (open: boolean) => {
-      set({ sidebarOpen: open });
-    },
-
-    clearError: () => {
-      set({ error: null });
-    },
+    setAudioEnabled: (enabled: boolean) => set({ audioEnabled: enabled }),
+    setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+    clearError: () => set({ error: null }),
   })
 );
 
