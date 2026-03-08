@@ -68,12 +68,15 @@ function loadConversationsFromStorage(): LocalConversation[] {
     if (!Array.isArray(parsed)) return [];
     
     return parsed.slice(0, MAX_CONVERSATIONS).map((conv: Record<string, unknown>) => ({
-      ...conv,
+      id: conv.id as string,
+      title: conv.title as string,
       updatedAt: new Date(conv.updatedAt as string),
       messages: ((conv.messages as Array<Record<string, unknown>>) || [])
         .slice(-MAX_MESSAGES_PER_CONVERSATION)
         .map((msg: Record<string, unknown>) => ({
-          ...msg,
+          id: msg.id as string,
+          text: msg.text as string,
+          isUser: msg.isUser as boolean,
           timestamp: new Date(msg.timestamp as string),
         })),
     }));
